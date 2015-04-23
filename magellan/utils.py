@@ -12,7 +12,7 @@ def run_in_subprocess(cmds):
     subprocess.call(cmd_args)
 
 
-def _make_virtual_env(venv_name=None):
+def make_virtual_env(venv_name=None):
     """Create a virtual env in which to install packages
     :returns : venv_name - name of virtual environment.
     :rtype : str
@@ -31,7 +31,6 @@ def _make_virtual_env(venv_name=None):
     else:
         if os.path.exists(venv_name):
             sys.exit("Name {} already exists; please select different name or delete!".format(venv_name))
-            
 
     # todo(aj) wrap in try catch
     print("Attempting to create the temporary virtualenv {}".format(venv_name))
@@ -40,7 +39,7 @@ def _make_virtual_env(venv_name=None):
     return venv_name
 
 
-def _install_requirements(requirements_txt, venv_bin):
+def install_requirements(requirements_txt, venv_bin):
     """ Install packages in environment based on requirements file. """
     print("-"*72)
     print("Installing requirements!")
@@ -59,7 +58,8 @@ def _install_requirements(requirements_txt, venv_bin):
     print("Installing packages.")
     run_in_subprocess(venv_bin + 'pip install -r {0} {1}'.format(requirements_txt, pip_options))
 
-def _resolve_venv_name(venv_name=None):
+
+def resolve_venv_name(venv_name=None):
     """Check whether virtual env exists, if not then indicate to perform analysis on current environment"""
     if venv_name is None:
         print("No virtual env specified, analysing local env")

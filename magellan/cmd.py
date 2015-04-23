@@ -9,44 +9,55 @@
 
 import argparse
 import sys
-import os
 
-from utils import run_in_subprocess, _make_virtual_env, _install_requirements, _resolve_venv_name
-from analysis import (
-    gen_pipdeptree_reports, 
-    gen_dependency_graph_pip, 
-    parse_pipdeptree_file,
-    _print_PDP_tree_parsed,
-    _print_PDP_errs_parsed,
+from utils import (
+    run_in_subprocess,
+    make_virtual_env,
+    install_requirements,
+    resolve_venv_name
 )
+
+from analysis import (
+    gen_pipdeptree_reports,
+    parse_pipdeptree_file,
+    print_pdp_tree_parsed,
+)
+
 from reports import produce_package_report
 
 VERBOSE = False
+
 
 def _go_analyse(**kwargs):
     """Script portion of the magellan analysis package.    
     
     """
-    venv_name, name_bit, venv_bin = _resolve_venv_name(kwargs['venv_name'])
+    venv_name, name_bit, venv_bin = resolve_venv_name(kwargs['venv_name'])
+
+    from analysis import write_dot_graph_to_disk, query_nodes_eges_in_venv
+    
+    nodes, edges = query_nodes_eges_in_venv(venv_bin)
+    write_dot_graph_to_disk(nodes, edges, "{}DependencyGraph.gv".format(venv_name))
+
+    sys.exit("gotta go")
 
     # Run pipdeptree reports
-    PDPft = "{0}PDP_Output_{1}.txt" # PDP File template
-    PDP_tree_file = PDPft.format(venv_name + name_bit, "Tree")
-    PDP_err_file = PDPft.format(venv_name + name_bit, "Errs")
-    gen_pipdeptree_reports(venv_bin=venv_bin, out_file=PDP_tree_file, err_file=PDP_err_file)
+    pdpft = "{0}PDP_Output_{1}.txt"
+    pdp_tree_file = pdpft.format(venv_name + name_bit, "Tree")
+    pdp_err_file = pdpft.format(venv_name + name_bit, "Errs")
+    gen_pipdeptree_reports(venv_bin=venv_bin, out_file=pdp_tree_file, err_file=pdp_err_file)
 
-    PDP_tree_parsed = parse_pipdeptree_file(PDP_tree_file, output_or_error="output")
-    if VERBOSE: _print_PDP_tree_parsed(PDP_tree_parsed)
-    
-    PDP_errs_parsed = parse_pipdeptree_file(PDP_err_file, output_or_error="error")
-    if VERBOSE: _print_PDP_errs_parsed(PDP_errs_parsed)
-    
+    # Parse pipdeptree reports
+    pdp_tree_parsed = parse_pipdeptree_file(pdp_tree_file, output_or_error="output")
+    pdp_errs_parsed = parse_pipdeptree_file(pdp_err_file, output_or_error="error")
+    if VERBOSE: 
+        print_pdp_tree_parsed(pdp_tree_parsed)
+        
     # By specific package:
     package_list = kwargs['packages']
     if package_list:
         for package in package_list:
-            produce_package_report(package, PDP_tree_parsed, PDP_errs_parsed)
-    
+            produce_package_report(package, pdp_tree_parsed, pdp_errs_parsed)
     
 
 def analysis_main():
@@ -57,7 +68,7 @@ def analysis_main():
     """
     
     parser = argparse.ArgumentParser(
-        description=("Magellan analysis"),
+        description="Magellan analysis",
         prog="Magellan",
     )
 
@@ -103,15 +114,14 @@ def _go(**kwargs):
     # print(verbose)
 
     # Install packages into new virtual env
-    venv_name = _make_virtual_env(kwargs["venv_name"])
+    venv_name = make_virtual_env(kwargs["venv_name"])
     venv_bin = venv_name + '/bin/'
     
     run_in_subprocess(venv_bin + 'pip install pipdeptree')
-    _install_requirements(kwargs["requirements"], venv_bin)
+    install_requirements(kwargs["requirements"], venv_bin)
 
     # Run analytics for reports:
     gen_pipdeptree_reports(venv_bin=venv_bin)
-
 
     # Clean up
     keep_virtual_env = kwargs["keep_virtualenv"]

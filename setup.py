@@ -21,6 +21,7 @@ setup(
     entry_points={'console_scripts': [
                                         'magellan = magellan.cmd:main', 
                                         'mag-nav = magellan.cmd:analysis_main',
+                                        'mag-scratch = magellan.dev:scratchpad',
                                     ],
     },    
 )
