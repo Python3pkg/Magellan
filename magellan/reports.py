@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Keeping ugly report code for Magellan here.
+Report code for Magellan here.
 """
 from pprint import pprint
+
 
 def produce_package_report(package, piptree, piperrs, VERBOSE=False):
     """Generates a report based on a specific package
@@ -32,7 +33,6 @@ def produce_package_report(package, piptree, piperrs, VERBOSE=False):
         print("No nodes or dependencies found for {}".format(package))
         print(nodes)
         print(deps)
-        #print(piptree['dependencies'])
         no_tree = True
     
     # From errs:
@@ -59,7 +59,8 @@ def produce_package_report(package, piptree, piperrs, VERBOSE=False):
     
     # Actually output to a file:
     write_file = "Mag_Report_{}.txt".format(package)
-    print("Generating report for: {0} as file: {1}".format(package, write_file))
+    if VERBOSE:
+        print("Generating report for: {0} as file: {1}".format(package, write_file))
     with open(write_file,'w') as f:
         # NAME:
         f.write("Package: {}".format(package))
@@ -92,7 +93,6 @@ def produce_package_report(package, piptree, piperrs, VERBOSE=False):
             f.write("\n Full ancestor requirements list for {}:\n".format(k))
             pprint(e_deps[k][2], stream=f)
 
-    
     if VERBOSE:
         pprint(nodes)
         pprint(deps)

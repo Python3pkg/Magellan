@@ -1,4 +1,5 @@
 import ez_setup
+
 ez_setup.use_setuptools()
 from setuptools import setup
 
@@ -11,7 +12,7 @@ except ImportError:
 
 setup(
     name='magellan',
-    version='0.1a',
+    version='0.1',
     description='exploration and comparison of python package dependencies',
     long_description=open('README.rst').read(),
     author='AJ De-Gol',
@@ -19,9 +20,9 @@ setup(
     packages=['magellan'],
     install_requires=install_requires,
     entry_points={'console_scripts': [
-                                        'magellan = magellan.cmd:main', 
-                                        'mag-nav = magellan.cmd:analysis_main',
-                                        'mag-scratch = magellan.dev:scratchpad',
-                                    ],
-    },    
+        'magellan = magellan.cmd:main',
+        'mag-nav = magellan.cmd_analysis:analysis_main',
+        'mag-scratch = magellan.dev:scratchpad',
+        ],
+    },
 )
