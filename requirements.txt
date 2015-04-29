@@ -1,2 +1,4 @@
 virtualenv
+vex
 pipdeptree
+argparse

@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Package contains numerous analysis routines and links to third party libraries in order to
-analyse and explore packages for Magellan.
+Package contains numerous analysis routines and links to third party libraries
+in order to analyse and explore packages for Magellan.
 """
 
 from pprint import pprint
@@ -27,17 +27,14 @@ def direct_links_to_package(package_name, edges):
 
     descendants = [x for x in edges if package_name.lower() == x[0][0].lower()]
     ancestors = [x for x in edges if package_name.lower() == x[1][0].lower()]
-    # commented out but useful for debugging:
-    # honourable_mentions = [x for x in edges if package_name.lower() in str(x).lower()]
-    # print("HONOURABLE MENTIONS")
-    # pprint(honourable_mentions)
     return ancestors, descendants
 
 
 def calc_connected_nodes(nodes, edges, include_root=False):
     """ Returns dictionary of how many nodes all nodes are connected to.
 
-    If including root then everything is connected to everything. Root is env root.
+    If including root then everything is connected to everything.
+    Root is env root.
 
     :param nodes:
     :param edges:
@@ -47,7 +44,8 @@ def calc_connected_nodes(nodes, edges, include_root=False):
 
     for n in nodes:
         n_key = n[0].lower()
-        dist_dict = calc_node_distances(n_key, nodes, edges, include_root, list_or_dict='dict')
+        dist_dict = calc_node_distances(
+            n_key, nodes, edges, include_root, list_or_dict='dict')
         conn_nodes[n] = len(dist_dict)
 
     return conn_nodes
@@ -66,22 +64,26 @@ def calc_weighted_connections(nodes, edges, include_root=False):
     sq_weighted_conn = {}
     for n in nodes:
         n_key = n[0].lower()
-        dist_dict = calc_node_distances(n_key, nodes, edges, include_root, list_or_dict='dict')
+        dist_dict = calc_node_distances(
+            n_key, nodes, edges, include_root, list_or_dict='dict')
         weighted_conn[n] = sum(map(lambda x: 1.0/(1+x), dist_dict.values()))
-        sq_weighted_conn[n] = sum(map(lambda x: 1.0/(1 + x*(2+x)), dist_dict.values()))
+        sq_weighted_conn[n] = sum(map(lambda x: 1.0/(1 + x*(2+x)),
+                                      dist_dict.values()))
 
     return weighted_conn, sq_weighted_conn
 
 
-def ancestor_trace(package, nodes, edges, include_root=True, keep_untouched_nodes=False):
+def ancestor_trace(
+        package, nodes, edges, include_root=True, keep_untouched_nodes=False):
     """ Returns dict indicating ancestor trace of package.
 
-    If X depends on Y, then if Y changes it may affect X; however not vice versa.
-    So if X changes it will not affect Y. Therefore it is the ancestors that are
-    affected by their descendants. With this in mind, this routine traces the
-    connections of a directed graph, returning only a direct ancestral lineage.
+    If X depends on Y, then if Y changes it may affect X; not vice versa.
+    So if X changes it will not affect Y. Therefore it is the ancestors that
+    are affected by their descendants. With this in mind, this routine traces
+    the connections of a directed graph, returning only a direct ancestral
+    lineage.
 
-    This should indicate what packages are at risk should any given package change.
+    This should indicate what packages are at risk should a package change.
 
     Implementation, breadth first search but focusing only on upstream links.
 
@@ -105,7 +107,8 @@ def ancestor_trace(package, nodes, edges, include_root=True, keep_untouched_node
             if not include_root:
                 anc = [nx for nx in anc if 'root' not in str(nx)]
 
-            anc_search = [nx[0][0].lower() for nx in anc if not node_touched[nx[0][0].lower()]]
+            anc_search = [nx[0][0].lower() for nx in anc
+                          if not node_touched[nx[0][0].lower()]]
             to_search_next += anc_search
 
         to_search_next = list(set(to_search_next))  # uniques
@@ -116,12 +119,14 @@ def ancestor_trace(package, nodes, edges, include_root=True, keep_untouched_node
             # END OF RECURSIVE FUNCTION #
             # ------------------------- #
 
-    start_distance = -999
-    dist_dict = {x[0].lower(): start_distance for x in nodes}  # set up distance dictionary:
+    start_dist = -999
+    # set up distance dictionary:
+    dist_dict = {x[0].lower(): start_dist for x in nodes}
     if include_root:
-        dist_dict['root'] = start_distance
+        dist_dict['root'] = start_dist
 
-    node_touched = {x[0].lower(): False for x in nodes}  # set up search dictionary:
+    # set up search dictionary:
+    node_touched = {x[0].lower(): False for x in nodes}
     if include_root:
         node_touched['root'] = False
 
@@ -131,7 +136,7 @@ def ancestor_trace(package, nodes, edges, include_root=True, keep_untouched_node
         anc_trace = {(x[0], x[1]): dist_dict[x[0].lower()] for x in nodes}
     else:
         anc_trace = {(x[0], x[1]): dist_dict[x[0].lower()]
-                     for x in nodes if dist_dict[x[0].lower()] > start_distance}
+                     for x in nodes if dist_dict[x[0].lower()] > start_dist}
     if include_root:
         anc_trace[('root', '0.0.0')] = dist_dict['root']
 
@@ -139,7 +144,10 @@ def ancestor_trace(package, nodes, edges, include_root=True, keep_untouched_node
     return anc_trace
 
 
-def calc_node_distances(package, nodes, edges, include_root=False, keep_untouched_nodes=False, list_or_dict="list"):
+def calc_node_distances(
+        package, nodes, edges, include_root=False,
+        keep_untouched_nodes=False, list_or_dict="list"):
+
     """ Calculates the distance to a node on an acyclic directed graph.
 
     :param package: package_name
@@ -177,8 +185,10 @@ def calc_node_distances(package, nodes, edges, include_root=False, keep_untouche
                 anc = [nx for nx in anc if 'root' not in str(nx)]
                 dec = [nx for nx in dec if 'root' not in str(nx)]
 
-            dec_search = [nx[1][0].lower() for nx in dec if not node_touched[nx[1][0].lower()]]
-            anc_search = [nx[0][0].lower() for nx in anc if not node_touched[nx[0][0].lower()]]
+            dec_search = [nx[1][0].lower() for nx in dec
+                          if not node_touched[nx[1][0].lower()]]
+            anc_search = [nx[0][0].lower() for nx in anc
+                          if not node_touched[nx[0][0].lower()]]
             to_search_next += dec_search + anc_search
 
         to_search_next = list(set(to_search_next))  # uniques
@@ -190,11 +200,13 @@ def calc_node_distances(package, nodes, edges, include_root=False, keep_untouche
         # ------------------------- #
 
     start_distance = -999
-    dist_dict = {x[0].lower(): start_distance for x in nodes}  # set up distance dictionary:
+    # set up distance dictionary:
+    dist_dict = {x[0].lower(): start_distance for x in nodes}
     if include_root:
         dist_dict['root'] = start_distance
 
-    node_touched = {x[0].lower(): False for x in nodes}  # set up search dictionary:
+    # set up search dictionary:
+    node_touched = {x[0].lower(): False for x in nodes}
     if include_root:
         node_touched['root'] = False
 
@@ -202,18 +214,22 @@ def calc_node_distances(package, nodes, edges, include_root=False, keep_untouche
 
     if list_or_dict == "list":
         if keep_untouched_nodes:
-            node_distances = [(x[0], x[1], dist_dict[x[0].lower()]) for x in nodes]
+            node_distances = [(x[0], x[1], dist_dict[x[0].lower()])
+                              for x in nodes]
         else:
             node_distances = [(x[0], x[1], dist_dict[x[0].lower()])
-                              for x in nodes if dist_dict[x[0].lower()] > start_distance]
+                              for x in nodes
+                              if dist_dict[x[0].lower()] > start_distance]
         if include_root:
             node_distances.append(('root', '0.0.0', dist_dict['root']))
     else:  # return type dict
         if keep_untouched_nodes:
-            node_distances = {(x[0], x[1]): dist_dict[x[0].lower()] for x in nodes}
+            node_distances = {(x[0], x[1]): dist_dict[x[0].lower()]
+                              for x in nodes}
         else:
             node_distances = {(x[0], x[1]): dist_dict[x[0].lower()]
-                              for x in nodes if dist_dict[x[0].lower()] > start_distance}
+                              for x in nodes
+                              if dist_dict[x[0].lower()] > start_distance}
         if include_root:
             node_distances[('root', '0.0.0')] = dist_dict['root']
 
@@ -252,7 +268,8 @@ def write_dot_graph_to_disk(nodes, edges, filename):
     """Write dot graph to disk."""
 
     node_template = 'n{}'
-    node_index = {(nodes[x][0].lower(), nodes[x][1]): node_template.format(x+1) for x in range(len(nodes))}
+    node_index = {(nodes[x][0].lower(), nodes[x][1]): node_template.format(x+1)
+                  for x in range(len(nodes))}
     node_index[('root', '0.0.0')] = node_template.format(0)
 
     # Fill in nodes
@@ -271,23 +288,26 @@ def write_dot_graph_to_disk(nodes, edges, filename):
         for e in edges:
             from_e = (e[0][0].lower(), e[0][1])
             to_e = (e[1][0].lower(), e[1][1])
-            # print(from_e, to_e, node_index[from_e], node_index[to_e])
-            f.write("    {0} -> {1};\n".format(node_index[from_e], node_index[to_e]))
+            f.write("    {0} -> {1};\n"
+                    .format(node_index[from_e], node_index[to_e]))
 
         f.write('}')
 
 
-def write_dot_graph_to_disk_with_distance_colour(nodes, edges, filename, distances, inc_dist_labels=True):
+def write_dot_graph_to_disk_with_distance_colour(
+        nodes, edges, filename, distances, inc_dist_labels=True):
+
     """ Create dot graph with colours.
 
     :param list nodes: list of nodes for graph
     :param list edges: list of connections between nodes
     :param str filename: output filename
-    :param dict distances: dictionary (nodes:values) giving values to be used in colouring
+    :param dict distances: (nodes:values) giving values to be used in colouring
     :param bool inc_dist_labels=True: include value of distances on node-label
     """
     node_template = 'n{}'
-    node_index = {(nodes[x][0].lower(), nodes[x][1]): node_template.format(x+1) for x in range(len(nodes))}
+    node_index = {(nodes[x][0].lower(), nodes[x][1]): node_template.format(x+1)
+                  for x in range(len(nodes))}
     node_index[('root', '0.0.0')] = node_template.format(0)
 
     # Fill in nodes
@@ -310,7 +330,8 @@ def write_dot_graph_to_disk_with_distance_colour(nodes, edges, filename, distanc
                 colour_bit = colour_bit_template.format(
                     str(1-0.5*dist_lookup[n_key]/max_col)[0:5], 1.0, 1.0)
                 if inc_dist_labels:
-                    colour_bit = '\n dist: ' + str(dist_lookup[n_key])[0:5] + colour_bit
+                    colour_bit = ('\n dist: ' + str(dist_lookup[n_key])[0:5]
+                                  + colour_bit)
             else:
                 colour_bit = orig_col_bit
 
@@ -321,18 +342,22 @@ def write_dot_graph_to_disk_with_distance_colour(nodes, edges, filename, distanc
             from_e = (e[0][0].lower(), e[0][1])
             to_e = (e[1][0].lower(), e[1][1])
             # print(from_e, to_e, node_index[from_e], node_index[to_e])
-            f.write("    {0} -> {1};\n".format(node_index[from_e], node_index[to_e]))
+            f.write("    {0} -> {1};\n"
+                    .format(node_index[from_e], node_index[to_e]))
 
         f.write('}')
 
 
-def write_dot_graph_subset(nodes, edges, filename, distances, inc_dist_labels=True):
-    """ Create dot graph with colours; truncated to only include those nodes in "distances"
+def write_dot_graph_subset(
+        nodes, edges, filename, distances, inc_dist_labels=True):
+
+    """ Create dot graph with colours; truncated to only include those nodes
+    in "distances"
 
     :param list nodes: list of nodes for graph
     :param list edges: list of connections between nodes
     :param str filename: output filename
-    :param dict distances: dictionary (nodes:values) giving values to be used in colouring
+    :param dict distances: (nodes:values) giving values used in colouring
     :param bool inc_dist_labels=True: include value of distances on node-label
     """
 
@@ -341,7 +366,8 @@ def write_dot_graph_subset(nodes, edges, filename, distances, inc_dist_labels=Tr
     # reduce nodes and edges to only include distances:
     node_template = 'n{}'
     node_index = {(nodes[x][0].lower(), nodes[x][1]): node_template.format(x+1)
-                  for x in range(len(nodes)) if nodes[x][0].lower() in dist_lookup}
+                  for x in range(len(nodes))
+                  if nodes[x][0].lower() in dist_lookup}
     node_index[('root', '0.0.0')] = node_template.format(0)
 
     edge_index = [e for e in edges if e[0][0].lower() in dist_lookup
@@ -365,7 +391,8 @@ def write_dot_graph_subset(nodes, edges, filename, distances, inc_dist_labels=Tr
                 colour_bit = colour_bit_template.format(
                     str(1-0.5*dist_lookup[n_key]/max_col)[0:5], 1.0, 1.0)
                 if inc_dist_labels:
-                    colour_bit = '\n dist: ' + str(dist_lookup[n_key])[0:5] + colour_bit
+                    colour_bit = ('\n dist: ' + str(dist_lookup[n_key])[0:5]
+                                  + colour_bit)
             else:
                 colour_bit = orig_col_bit
 
@@ -375,15 +402,19 @@ def write_dot_graph_subset(nodes, edges, filename, distances, inc_dist_labels=Tr
         for e in edge_index:
             from_e = (e[0][0].lower(), e[0][1])
             to_e = (e[1][0].lower(), e[1][1])
-            f.write("    {0} -> {1};\n".format(node_index[from_e], node_index[to_e]))
+            f.write("    {0} -> {1};\n"
+                    .format(node_index[from_e], node_index[to_e]))
 
         f.write('}')
 
 
-def gen_pipdeptree_reports(venv_bin=None, out_file='PDP_Output_Tree.txt', err_file='PDP_Output_Errs.txt'):
-    """Runs pipdeptree and outputs results to two files: regular output and errors"""
+def gen_pipdeptree_reports(venv_bin=None, out_file='PDP_Output_Tree.txt',
+                           err_file='PDP_Output_Errs.txt'):
 
-    env_string = venv_bin if venv_bin is not None else ''  # else run in current env
+    """Runs pipdeptree and outputs two files: regular output and errors"""
+
+    env_string = venv_bin if venv_bin is not None else ''
+    # else run in current env
 
     #  run pipdeptree and process outputs
     cmd_args = shlex.split(env_string + 'pipdeptree')
@@ -391,7 +422,8 @@ def gen_pipdeptree_reports(venv_bin=None, out_file='PDP_Output_Tree.txt', err_fi
         with open(err_file, 'w') as errfile, open(out_file, 'w') as outfile:
             retcode = subprocess.call(cmd_args, stderr=errfile, stdout=outfile)
     except Exception as e:
-        print("LAPU LAPU! Error in analysis.py, gen_pipdeptree_reports when attempting to run: {}".format(cmd_args))
+        print("LAPU LAPU! Error in analysis.py, gen_pipdeptree_reports when "
+              "attempting to run: {}".format(cmd_args))
         sys.exit(e)
         # todo (aj) log to errorlog
     return retcode
@@ -447,9 +479,10 @@ def _parse_pipdeptree_error_file(f):
                 ancestor = ancestor.group()[:-3]
         
         anc_name = re.search('.*==', ancestor).group()[0:-2]
-        anc_version = re.search('==.*', ancestor).group()[2:]
-        
-        output[curr_node][(anc_name, anc_version)] = re.search('\[.*\]', line).group()
+        anc_ver = re.search('==.*', ancestor).group()[2:]
+
+        tmp = re.search('\[.*\]', line).group()
+        output[curr_node][(anc_name, anc_ver)] = tmp
         
     return output
     
@@ -498,7 +531,9 @@ from pprint import pprint
 import pickle
 import pip
 
-#default_skip = ['setuptools', 'pip', 'python', 'distribute'] # something is relying on setuptools, apparently
+#default_skip = ['setuptools', 'pip', 'python', 'distribute']
+# something is relying on setuptools, apparently
+
 default_skip = ['pip', 'python', 'distribute']
 skip = default_skip + ['pipdeptree', 'virtualenv', 'magellan']
 local_only = True
@@ -529,7 +564,7 @@ for p in pkgs:
 #for edge in edges:
 #    print("E#{}".format(edge))
 
-# Record nodes and edges to disk to be read in  by main program if needed (saves parsing)
+# Record nodes and edges to disk to be read in  by main program if needed.
 pickle.dump(nodes, open('nodes.p','wb'))
 pickle.dump(edges, open('edges.p','wb'))
 """

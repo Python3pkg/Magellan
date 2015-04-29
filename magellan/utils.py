@@ -1,26 +1,24 @@
 import subprocess
 import shlex
-import virtualenv
 import os
 import sys
 
 
 def run_in_subprocess(cmds):
     """Splits command line arguments and runs in subprocess"""
-    
     cmd_args = shlex.split(cmds)
     subprocess.call(cmd_args)
 
 
-def make_virtual_env(venv_name=None):
+def get_virtual_env_name(venv_name=None):
     """Create a virtual env in which to install packages
     :returns : venv_name - name of virtual environment.
     :rtype : str
     """
 
     if venv_name is None:
+        exists = False
         venv_template = "MagEnv{}"
-
         # check if name exists and bump repeatedly until new
         i = 0
         while True:
@@ -30,26 +28,14 @@ def make_virtual_env(venv_name=None):
             i += 1
     else:
         if os.path.exists(venv_name):
-            sys.exit("Name {} already exists; please select different name or delete!".format(venv_name))
+            exists = True
 
-    # todo(aj) wrap in try catch
-    print("Attempting to create the temporary virtualenv {}".format(venv_name))
-    virtualenv.create_environment(venv_name)
-
-    return venv_name
-
-
-def install_requirements(requirements_txt, venv_bin, pip_options):
-    """ Install packages in environment based on requirements file. """
-    print("-"*72)
-    print("Installing requirements!")
-
-    print("Installing packages.")
-    run_in_subprocess(venv_bin + 'pip install -r {0} {1}'.format(requirements_txt, pip_options))
+    return venv_name, exists
 
 
 def resolve_venv_name(venv_name=None):
-    """Check whether virtual env exists, if not then indicate to perform analysis on current environment"""
+    """Check whether virtual env exists,
+    if not then indicate to perform analysis on current environment"""
 
     if venv_name is None:
         print("No virtual env specified, analysing local env")
@@ -57,12 +43,14 @@ def resolve_venv_name(venv_name=None):
         name_bit = ''
         venv_bin = None
     else:
-        # todo (aj) strip trailing / if extant from venv_name
+        venv_name = venv_name.rstrip('/')
         print("Attempting analysis of {}".format(venv_name))
         # First check specified environment exists:
         if not os.path.exists(venv_name):
-            sys.exit('LAPU LAPU! Virtual Env "{}" does not exist, please check and try again'.format(venv_name))
+            sys.exit('LAPU LAPU! Virtual Env "{}" does not exist, '
+                     'please check name and try again'.format(venv_name))
         venv_bin = venv_name + '/bin/'
         name_bit = '_'
         
     return venv_name, name_bit, venv_bin
+

@@ -7,13 +7,13 @@ Report code for Magellan here.
 from pprint import pprint
 
 
-def produce_package_report(package, piptree, piperrs, VERBOSE=False):
+def produce_package_report(package, piptree, piperrs, verbose=False):
     """Generates a report based on a specific package
     
     :param str package: name of the package to produce report for
     :param dict piptree: parsed output from pipdeptree
     :param dict piperrs: parsed error output from pipdeptree
-    :param bool VERBOSE: verbose mode
+    :param bool verbose: verbose mode
     """
     
     # This is kind of a mess; parsing reports is backwards -aj
@@ -42,7 +42,7 @@ def produce_package_report(package, piptree, piperrs, VERBOSE=False):
         e_nodes = piperrs[package]
     
     for k in piperrs:
-        tmp_l = [(k,x) for x in piperrs[k] if package == x[0].strip()]
+        tmp_l = [(k, x) for x in piperrs[k] if package == x[0].strip()]
         if tmp_l:
             root = tmp_l[0][0]
             pv = tmp_l[0][1]
@@ -59,31 +59,33 @@ def produce_package_report(package, piptree, piperrs, VERBOSE=False):
     
     # Actually output to a file:
     write_file = "Mag_Report_{}.txt".format(package)
-    if VERBOSE:
-        print("Generating report for: {0} as file: {1}".format(package, write_file))
-    with open(write_file,'w') as f:
+    if verbose:
+        print("Generating report for: {0} as file: {1}"
+              .format(package, write_file))
+    with open(write_file, 'w') as f:
         # NAME:
         f.write("Package: {}".format(package))
         f.write('\n'*2)
         
         # PIPDEPTREE TREE
         f.write("PipDepTree Output: \n")
-        f.write( "-"*50 + "\n")
+        f.write("-"*50 + "\n")
         
         f.write("Root node:" + '\n')
         pprint(nodes, stream=f)
         f.write('\n'*2)
         f.write("Dependencies and sub-dependencies:" + '\n')
-        f.write( "-"*50 + "\n")
+        f.write("-"*50 + "\n")
         pprint(deps, stream=f)
         
         # PIPDEPTREE ERRS
         f.write('\n'*2)
         f.write("PipDepTree Conflicts/Confusing Dependencies:" + "\n"*2)
-        f.write( "-"*50 + "\n")
+        f.write("-"*50 + "\n")
         f.write("These depend on {0}:\n".format(package))
         for k in e_nodes:
-            f.write("{0} : with {1} dependency requirements {2} \n".format(k,package, e_nodes[k]))
+            f.write("{0} : with {1} dependency requirements {2} \n"
+                    .format(k, package, e_nodes[k]))
         f.write('\n'*2)
         
         for k in e_deps:
@@ -93,6 +95,6 @@ def produce_package_report(package, piptree, piperrs, VERBOSE=False):
             f.write("\n Full ancestor requirements list for {}:\n".format(k))
             pprint(e_deps[k][2], stream=f)
 
-    if VERBOSE:
+    if verbose:
         pprint(nodes)
         pprint(deps)
