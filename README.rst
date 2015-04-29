@@ -18,6 +18,7 @@ Command line interfaces:
     magellan
 
         Options:
+
         positional arguments:
           packages              Packages to explore.
 
@@ -25,14 +26,13 @@ Command line interfaces:
           -h, --help            show this help message and exit
           -s, --show-all-packages
                                 Show all packages and exit.
-          -n VENV_NAME, --venv-name VENV_NAME
+          -n, --venv-name
                                 Specify name for virtual environment, default is
                                 MagEnv0, MagEnv1 etc
-          -r REQUIREMENTS, --requirements REQUIREMENTS
+          -r, --requirements
                                 requirements file (e.g. requirements.txt) to install.
-          -po PIP_OPTIONS, --pip-options PIP_OPTIONS
-                                String. Pip options for installation of
-                                requirements.txt. E.g. '-f http://my_server.com/deployment_libs/ --trusted-host my_server.com'
+          -po, --pip-options
+                                String. Pip options for installation of requirements.txt. E.g. '-f http://my_server.com/deployment_libs/ --trusted-host my_server.com'
           -v, --verbose         Verbose mode
           -sv, --super-verbose  Super verbose mode; also sets VERBOSE as True.
 

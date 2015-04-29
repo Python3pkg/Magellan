@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# todo (security) remove default pip options before making repo public!!
+
 import argparse
 import sys
 import virtualenv
@@ -106,7 +108,6 @@ def _go(**kwargs):
     if SUPER_VERBOSE:
         print_pdp_tree_parsed(pdp_tree_parsed)
 
-    # MAIN ANALYSIS
     package_list = kwargs['packages']
     if not package_list:  # generic package-agnostic reports
         dep_graph_name = "{}DependencyGraph.gv".format(venv_name)
@@ -129,7 +130,9 @@ def _go(**kwargs):
         write_dot_graph_to_disk_with_distance_colour(
             nodes, edges, 'sq_weighted_card.gv', sq_wghtd_conn)
 
-    else:  # package specific analysis
+    #############################
+    # Package Specific Analysis #
+    else:
         for package in package_list:
             produce_package_report(package, pdp_tree_parsed, pdp_errs_parsed)
 
@@ -194,8 +197,8 @@ def main():
     parser.add_argument(
         '-po', '--pip-options', type=str, default=pip_options,
         help=("String. Pip options for installation of requirements.txt. "
-              "E.g. '-f http://sw-srv.maplecroft.com/deployment_libs/ "
-              "--trusted-host sw-srv.maplecroft.com'")
+              "E.g. '-f http://my_server.com/deployment_libs/ "
+              "--trusted-host my_server.com'")
     )
     parser.add_argument(
         '-v', '--verbose', action='store_true', default=False,
