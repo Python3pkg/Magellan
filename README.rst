@@ -22,19 +22,25 @@ Command line interfaces:
         positional arguments:
           packages              Packages to explore.
 
-        optional arguments:
+       optional arguments:
           -h, --help            show this help message and exit
           -s, --show-all-packages
                                 Show all packages and exit.
-          -n, --venv-name
+          -n VENV_NAME, --venv-name VENV_NAME
                                 Specify name for virtual environment, default is
                                 MagEnv0, MagEnv1 etc
-          -r, --requirements
+          -r REQUIREMENTS, --requirements REQUIREMENTS
                                 requirements file (e.g. requirements.txt) to install.
-          -po, --pip-options
-                                String. Pip options for installation of requirements.txt. E.g. '-f http://my_server.com/deployment_libs/ --trusted-host my_server.com'
+          -po PIP_OPTIONS, --pip-options PIP_OPTIONS
+                                String. Pip options for installation of
+                                requirements.txt. E.g. '-f
+                                http://my_server.com/deployment_libs/ --trusted-host
+                                my_server.com'
           -v, --verbose         Verbose mode
           -sv, --super-verbose  Super verbose mode; also sets VERBOSE as True.
+          --path-to-env-bin PATH_TO_ENV_BIN
+                                Path to virtual env bin
+
 
 
 Example Usage:
@@ -55,8 +61,7 @@ Example Usage:
 
 
 Roadmap:
-- Use vex to handle virtualenv stuff
-- list outdated major and minor versions
-- accept a file containing packages "-pf --package-file" which augments the package_list
-- Implement snakefood
-- highlight dependencies/packages that are actually unused - redundant imports
+    List outdated major and minor versions
+    Accept a file containing packages "-pf --package-file" which augments the package_list
+    Implement snakefood
+    Highlight dependencies/packages that are actually unused - redundant imports

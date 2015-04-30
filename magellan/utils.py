@@ -10,30 +10,50 @@ def run_in_subprocess(cmds):
     subprocess.call(cmd_args)
 
 
-def get_virtual_env_name(venv_name=None):
+def run_in_subp_ret_stdout(cmds):
+    """Runs in subprocess and returns std out output."""
+    cmd_args = shlex.split(cmds)
+    p = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    return p.communicate()
+
+
+def vex_check_venv_exists(venv_name):
+    """ Checks whether a virtual env exists using vex.
+
+    :rtype Bool
+    :return : True/False if env exists or not
+    """
+
+    vex_list = run_in_subp_ret_stdout('vex --list')[0].split("\n")
+    return venv_name in vex_list
+
+
+def create_vex_new_virtual_env(venv_name=None):
     """Create a virtual env in which to install packages
     :returns : venv_name - name of virtual environment.
     :rtype : str
     """
 
     if venv_name is None:
-        exists = False
         venv_template = "MagEnv{}"
         # check if name exists and bump repeatedly until new
         i = 0
         while True:
             venv_name = venv_template.format(i)
-            if not os.path.exists(venv_name):
+            if not vex_check_venv_exists(venv_name):
+                run_in_subprocess("vex -m {} true".format(venv_name))
                 break
             i += 1
     else:
-        if os.path.exists(venv_name):
-            exists = True
+        if vex_check_venv_exists(venv_name):
+            run_in_subprocess("vex -r {} true".format(venv_name))
 
-    return venv_name, exists
+        run_in_subprocess("vex -m {} true".format(venv_name))
+
+    return venv_name
 
 
-def resolve_venv_name(venv_name=None):
+def vex_resolve_venv_name(venv_name=None):
     """Check whether virtual env exists,
     if not then indicate to perform analysis on current environment"""
 
@@ -41,16 +61,76 @@ def resolve_venv_name(venv_name=None):
         print("No virtual env specified, analysing local env")
         venv_name = ''
         name_bit = ''
-        venv_bin = None
     else:
         venv_name = venv_name.rstrip('/')
         print("Attempting analysis of {}".format(venv_name))
         # First check specified environment exists:
-        if not os.path.exists(venv_name):
+        if not vex_check_venv_exists(venv_name):
             sys.exit('LAPU LAPU! Virtual Env "{}" does not exist, '
                      'please check name and try again'.format(venv_name))
-        venv_bin = venv_name + '/bin/'
         name_bit = '_'
-        
-    return venv_name, name_bit, venv_bin
 
+    return venv_name, name_bit
+
+
+# Would require installing magellan into newly built virtualenv
+# then calling magellan from magellan
+# leave for now
+#
+# def vex_query_nodes_edges_in_venv(venv_name):
+#     """Generate Nodes and Edges of packages in virtual env.
+#
+#     :param venv_bin: bin directory of virtualenv
+#     :rtype list, list
+#     :return: nodes, edges
+#     """
+#     import pickle
+#
+#     # execute
+#     cmd_to_run = "vex {0} magellan -n {0} --do-edge-node-detection".format(venv_name)
+#     run_in_subprocess(cmd_to_run)
+#
+#     # Load in nodes and edges pickles
+#     nodes = pickle.load(open('nodes.p', 'rb'))
+#     edges = pickle.load(open('edges.p', 'rb'))
+#
+#     return nodes, edges
+
+
+# def detect_nodes_edges_in_env():
+#     """Detect packages and their requirements in current environment.
+#
+#     The way this function is used is by calling:
+#         magellan -n ENVNAME --do-edge-node-detection
+#
+#     """
+#     import pickle
+#     import pip
+#
+#     default_skip = ['pip', 'python', 'distribute']
+#     skip = default_skip + ['pipdeptree', 'virtualenv', 'magellan', 'vex']
+#     local_only = True
+#     packages = pip.get_installed_distributions(local_only=local_only,
+#                                                skip=skip)
+#
+#     # FORM NODES
+#     nodes = [(x.project_name, x.version) for x in packages]
+#
+#     # FORM EDGES
+#     installed_vers = {x.key: x.version for x in packages}
+#     edges = []
+#     for p in packages:
+#         p_tup = (p.project_name, p.version)
+#         edges.append([('root','0.0.0'), p_tup])
+#         requirements = p.requires()
+#         if requirements:
+#             for r in requirements:
+#                 if r.key in installed_vers:
+#                     r_tup = (r.key, installed_vers[r.key])
+#                 else:
+#                     r_tup = (r.key)  # leave as tuple
+#                 edges.append([p_tup, r_tup, r.specs])
+#
+#     # Record nodes and edges to disk to be read in  by main program if needed.
+#     pickle.dump(nodes, open('nodes.p', 'wb'))
+#     pickle.dump(edges, open('edges.p', 'wb'))
