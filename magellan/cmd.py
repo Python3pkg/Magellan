@@ -5,22 +5,24 @@
 
 import argparse
 import sys
-import virtualenv
+import os
 from pprint import pprint
 
-from magellan.utils import (run_in_subprocess, get_virtual_env_name,
-                            resolve_venv_name,)
+from magellan.utils import (run_in_subprocess, create_vex_new_virtual_env,
+                            vex_resolve_venv_name,)
 
-from magellan.analysis import (gen_pipdeptree_reports, parse_pipdeptree_file,
-                               print_pdp_tree_parsed, direct_links_to_package,
-                               write_dot_graph_to_disk_with_distance_colour,
-                               calc_node_distances, calc_weighted_connections,
-                               calc_connected_nodes, ancestor_trace,
-                               write_dot_graph_subset, write_dot_graph_to_disk,
-                               query_nodes_eges_in_venv)
+from magellan.analysis import (
+    gen_pipdeptree_reports, parse_pipdeptree_file,
+    print_pdp_tree_parsed, direct_links_to_package,
+    write_dot_graph_to_disk_with_distance_colour,
+    calc_node_distances, calc_weighted_connections,
+    calc_connected_nodes, ancestor_trace,
+    write_dot_graph_subset,
+    query_nodes_edges_in_venv,
+    write_dot_graph_to_disk,
+    vex_gen_pipdeptree_reports,)
 
 from magellan.reports import produce_package_report
-
 
 VERBOSE = False
 SUPER_VERBOSE = False
@@ -46,35 +48,39 @@ def _go(**kwargs):
     global VERBOSE
     global SUPER_VERBOSE
 
+    venv_name = kwargs["venv_name"]
+
     #################
     # INITIAL SETUP #
     #################
     req_file = kwargs['requirements']
     if req_file:  # Install requirements
-        venv_name, env_exists = get_virtual_env_name(kwargs["venv_name"])
-        if env_exists:
-            # todo (aj) delete virtual env once on vex
-            sys.exit("*env exists* TODO: Delete virtual env and then install")
+        venv_name = create_vex_new_virtual_env(venv_name)
+        name_bit = '_'
         if VERBOSE:
             print("installing into virtual environment {}".format(venv_name))
-        venv_bin = venv_name + '/bin/'
-        name_bit = '_'
-
-        # Install into virtual env
-        # todo (aj) switch this to vex
-        if VERBOSE:
             print("Creating virtualenv {}".format(venv_name))
             print("Installing requirements.")
-        virtualenv.create_environment(venv_name)
-        cmd_to_run = (venv_bin + 'pip install -r {0} {1}'
-                      .format(req_file, kwargs["pip_options"]))
-        run_in_subprocess(cmd_to_run)
-        run_in_subprocess(venv_bin + 'pip install pipdeptree')
-    else:
-        venv_name, name_bit, venv_bin = resolve_venv_name(kwargs["venv_name"])
 
-    # todo (aj) switch this fn. to vex
-    nodes, edges = query_nodes_eges_in_venv(venv_bin)
+        cmd_to_run = ('vex {0} pip install -r {1} {2}'
+                      .format(venv_name, req_file, kwargs["pip_options"]))
+        run_in_subprocess(cmd_to_run)
+        run_in_subprocess('vex {0} pip install pipdeptree'.format(venv_name))
+
+    else:
+        venv_name, name_bit = vex_resolve_venv_name(venv_name)
+
+    # todo (anyone) better soln probably required
+    venv_bin = kwargs['path_to_env_bin']
+    if not venv_bin:
+        user = os.environ.get('USER')
+        venv_bin = "/home/{0}/.virtualenvs/{1}/bin/".format(user, venv_name)
+    if not os.path.exists(venv_bin):
+        sys.exit('LAPU LAPU! {} does not exist, please specify path to {} bin '
+              'using magellan -n ENV_NAME --path-to-env-bin ENV_BIN_PATH'
+                 .format(venv_bin, venv_name))
+
+    nodes, edges = query_nodes_edges_in_venv(venv_bin)
 
     ####################
     # ANALYSIS SECTION #
@@ -93,13 +99,17 @@ def _go(**kwargs):
     pdp_err_file = pdp_file_template.format(venv_name + name_bit, "Errs")
     if VERBOSE:
         print("Generating pipdeptree report")
-    gen_pipdeptree_reports(
-        venv_bin=venv_bin, out_file=pdp_tree_file, err_file=pdp_err_file)
-    # Parse pipdeptree reports
+
+    vex_gen_pipdeptree_reports(
+        venv_name, out_file=pdp_tree_file, err_file=pdp_err_file)
+    # gen_pipdeptree_reports(venv_bin=venv_bin,
+    #                        out_file=pdp_tree_file, err_file=pdp_err_file)
+
     if VERBOSE:
         print("Parsing pipdeptree report and outputting to: {0} and {1}"
               .format(pdp_tree_file, pdp_err_file))
 
+    # Parse pipdeptree reports
     pdp_tree_parsed = parse_pipdeptree_file(
         pdp_tree_file, output_or_error="output")
     pdp_errs_parsed = parse_pipdeptree_file(
@@ -132,6 +142,7 @@ def _go(**kwargs):
 
     #############################
     # Package Specific Analysis #
+    #############################
     else:
         for package in package_list:
             produce_package_report(package, pdp_tree_parsed, pdp_errs_parsed)
@@ -143,7 +154,7 @@ def _go(**kwargs):
                 nodes, edges, '{}.gv'.format(package), distances_dict)
 
             if SUPER_VERBOSE:
-                print("\n" + "-"*50 + "\n" + package + "\n")
+                print("\n" + "-" * 50 + "\n" + package + "\n")
                 print("DIRECT DESCENDENTS - depended on by {}".format(package))
                 pprint(descendants)
                 print("DIRECT ANCESTORS - these depend on {}".format(package))
@@ -207,6 +218,10 @@ def main():
     parser.add_argument(
         '-sv', '--super-verbose', action='store_true', default=False,
         help="Super verbose mode; also sets VERBOSE as True."
+    )
+    parser.add_argument(
+        '--path-to-env-bin', default=None,
+        help="Path to virtual env bin"
     )
 
     # If no args, just display help and exit

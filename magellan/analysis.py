@@ -237,8 +237,45 @@ def calc_node_distances(
     return node_distances
 
 
-def query_nodes_eges_in_venv(venv_bin=None):
-    """Generate Nodes and Edges of packages in virtual env."""
+def vex_query_nodes_eges_in_venv(venv_bin=None):
+    """Generate Nodes and Edges of packages in virtual env.
+
+    :param venv_bin: bin directory of virtualenv
+    :rtype list, list
+    :return: nodes, edges
+    """
+
+    venv_bin = '' if venv_bin is None else venv_bin
+
+    # Get super_unique_name for temporary file
+    super_unique_name = 'super_unique_name.py'
+    while True:
+        if not os.path.exists(super_unique_name):
+            break
+        super_unique_name = "{}.py".format(_get_random_string_of_length_n(16))
+
+    # write script
+    with open(super_unique_name, 'w') as f:
+        f.write(_return_script_string())
+
+    # execute
+    run_in_subprocess('{0}python {1}'.format(venv_bin, super_unique_name))
+    run_in_subprocess('rm {}'.format(super_unique_name))
+
+    # Load in nodes and edges pickles
+    nodes = pickle.load(open('nodes.p', 'rb'))
+    edges = pickle.load(open('edges.p', 'rb'))
+
+    return nodes, edges
+
+
+def query_nodes_edges_in_venv(venv_bin=None):
+    """Generate Nodes and Edges of packages in virtual env.
+
+    :param venv_bin: bin directory of virtualenv
+    :rtype list, list
+    :return: nodes, edges
+    """
 
     venv_bin = '' if venv_bin is None else venv_bin
 
@@ -406,6 +443,23 @@ def write_dot_graph_subset(
                     .format(node_index[from_e], node_index[to_e]))
 
         f.write('}')
+
+
+def vex_gen_pipdeptree_reports(venv_name, out_file='PDP_Output_Tree.txt',
+                               err_file='PDP_Output_Errs.txt'):
+    """Runs pipdeptree and outputs two files: regular output and errors"""
+
+    #  run pipdeptree and process outputs
+    cmd_args = shlex.split('vex {0} pipdeptree'.format(venv_name))
+
+    try:
+        with open(err_file, 'w') as errfile, open(out_file, 'w') as outfile:
+            retcode = subprocess.call(cmd_args, stderr=errfile, stdout=outfile)
+    except Exception as e:
+        print("LAPU LAPU! Error in analysis.py, gen_pipdeptree_reports when "
+              "attempting to run: {}".format(cmd_args))
+        sys.exit(e)
+    return retcode
 
 
 def gen_pipdeptree_reports(venv_bin=None, out_file='PDP_Output_Tree.txt',
