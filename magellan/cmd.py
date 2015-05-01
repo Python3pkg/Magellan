@@ -8,7 +8,8 @@ import sys
 from pprint import pprint
 
 from magellan.utils import (run_in_subprocess, create_vex_new_virtual_env,
-                            vex_resolve_venv_name, resolve_venv_bin)
+                            vex_resolve_venv_name, resolve_venv_bin,
+                            resolve_package_list)
 
 from magellan.analysis import (
     gen_pipdeptree_reports, parse_pipdeptree_file,
@@ -110,7 +111,8 @@ def _go(**kwargs):
     if SUPER_VERBOSE:
         print_pdp_tree_parsed(pdp_tree_parsed)
 
-    package_list = kwargs['packages']
+    package_list = resolve_package_list(
+        kwargs['packages'], kwargs['package_file'])
 
     ####################
     # Generic Analysis #
@@ -217,9 +219,9 @@ def main():
         help="Super verbose mode; also sets VERBOSE as True."
     )
     parser.add_argument(
-        '--path-to-env-bin', default=None,
-        help="Path to virtual env bin"
-    )
+        '--path-to-env-bin', default=None, help="Path to virtual env bin")
+    parser.add_argument(
+        '--package-file', type=str, help="File with list of packages")
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
