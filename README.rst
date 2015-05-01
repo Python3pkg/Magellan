@@ -35,6 +35,7 @@ Command line interfaces:
           -v, --verbose             Verbose mode
           -sv, --super-verbose      Super verbose mode; also sets VERBOSE as True.
           --path-to-env-bin         Path to virtual env bin
+          --package-file            File with list of packages
 
 
 
@@ -49,14 +50,16 @@ Example Usage:
             analysis.
     4. "magellan -s -n MyEnv"
             Shows all packages in MyEnv environment.
-    4. "magellan Package1 Package2 -n MyEnv -v"
+    5. "magellan Package1 Package2 -n MyEnv -v"
             Searches MyEnv for the packages "Package1" and "Package2" in
             verbose mode. Will produce a dependency graph and reports for MyEnv
             as well as reports for the specified package.
+    6. "magellan Package1 Package2 -n MyEnv --package-file myPackageFile.txt"
+            Same as above but will also take, in addition to Package[s]1/2 a
+            file containing a list of packages (csv, space or newline delimited.)
 
 
 Roadmap:
     1. List outdated major and minor versions
-    2. Accept a file containing packages "-pf --package-file" which augments the package_list
-    3. Implement snakefood
-    4. Highlight dependencies/packages that are actually unused - redundant imports
+    2. Implement snakefood
+    3. Highlight dependencies/packages that are actually unused - redundant imports
