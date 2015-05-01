@@ -99,22 +99,29 @@ def resolve_venv_bin(v_name, v_bin=None):
     return v_bin
 
 
-def resolve_package_list(p_list, p_file):
+def resolve_package_list(p_list, p_file, nodes):
     """Resolve packages into list from cmd line and file.
 
     Splits on " ", "," and "\n" when reading file.
     """
 
-    pkg_list = p_list
-    if not p_file:
-        return pkg_list
+    f_pkgs = []
+    if p_file:
+        try:
+            with open(p_file, 'rb') as pf:
+                f_pkgs = [x for x in re.split(',|\s|\n', pf.read()) if x != '']
+        except IOError as e:
+            print("File not found {0}. {1}".format(p_file, e))
 
-    # otherwise:
-    try:
-        with open(p_file, 'rb') as pf:
-            file_pkgs = [x for x in re.split(',|\s|\n', pf.read()) if x != '']
-    except IOError as e:
-        print("File not found {0}. {1}".format(p_file, e))
-        file_pkgs = []
+    pkg_list = list(set(p_list + f_pkgs))  # uniqs
 
-    return pkg_list + file_pkgs
+    ret_pkg_list = []
+    for p in pkg_list:
+        lo_pac = [x for x in nodes if x[0].lower() == p.lower()]
+        if not lo_pac:
+            print('"{}" not found in environment package list, '
+                  'dropping from packages.'.format(p))
+        else:
+            ret_pkg_list.append(p)
+
+    return ret_pkg_list
