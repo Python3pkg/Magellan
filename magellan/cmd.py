@@ -76,6 +76,9 @@ def _go(**kwargs):
     generated_outputs['generic'].append('nodes.p')
     generated_outputs['generic'].append('edges.p')
 
+    package_list = resolve_package_list(
+        kwargs['packages'], kwargs['package_file'], nodes)
+
     ####################
     # ANALYSIS SECTION #
     ####################
@@ -88,7 +91,6 @@ def _go(**kwargs):
     # Pipdeptree
     # These are package agnostic, but need to be done if parsing for specific
     # packages. Would prefer to remove
-
     pdp_file_template = '{0}PDP_Output_{1}.txt'
     pdp_tree_file = pdp_file_template.format(venv_name + name_bit, "Tree")
     pdp_err_file = pdp_file_template.format(venv_name + name_bit, "Errs")
@@ -110,9 +112,6 @@ def _go(**kwargs):
         pdp_tree_file, pdp_err_file)
     if SUPER_VERBOSE:
         print_pdp_tree_parsed(pdp_tree_parsed)
-
-    package_list = resolve_package_list(
-        kwargs['packages'], kwargs['package_file'])
 
     ####################
     # Generic Analysis #
@@ -141,13 +140,15 @@ def _go(**kwargs):
     #############################
     else:
         for package in package_list:
-            produce_package_report(package, pdp_tree_parsed, pdp_errs_parsed)
+            produce_package_report(
+                package, pdp_tree_parsed, pdp_errs_parsed, VERBOSE)
 
             ancestors, descendants = direct_links_to_package(package, edges)
             distances_dict = calc_node_distances(
                 package, nodes, edges, include_root=False, list_or_dict='dict')
-            write_dot_graph_to_disk_with_distance_colour(
-                nodes, edges, '{}.gv'.format(package), distances_dict)
+            if distances_dict:
+                write_dot_graph_to_disk_with_distance_colour(
+                    nodes, edges, '{}.gv'.format(package), distances_dict)
 
             if SUPER_VERBOSE:
                 print("\n" + "-" * 50 + "\n" + package + "\n")
@@ -162,14 +163,15 @@ def _go(**kwargs):
 
             anc_track = ancestor_trace(package, nodes, edges)
 
-            ft = '{}_anc_track.gv'
-            write_dot_graph_to_disk_with_distance_colour(
-                nodes, edges, ft.format(package), anc_track)
+            if anc_track:
+                ft = '{}_anc_track.gv'
+                write_dot_graph_to_disk_with_distance_colour(
+                    nodes, edges, ft.format(package), anc_track)
 
-            ft = '{}_anc_track_trunc.gv'
-            write_dot_graph_subset(
-                nodes, edges, ft.format(package), anc_track)
-            del ft
+                ft = '{}_anc_track_trunc.gv'
+                write_dot_graph_subset(
+                    nodes, edges, ft.format(package), anc_track)
+                del ft
 
 
 #######################

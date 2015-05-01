@@ -16,7 +16,7 @@ def produce_package_report(package, piptree, piperrs, verbose=False):
     :param bool verbose: verbose mode
     """
     
-    # This is kind of a mess; parsing reports is backwards -aj
+    # parsing reports is messy -aj
     
     search_package = package + ' '
     
@@ -30,11 +30,10 @@ def produce_package_report(package, piptree, piperrs, verbose=False):
 
     no_tree = False
     if not nodes and not deps:
-        print("No nodes or dependencies found for {}".format(package))
-        print(nodes)
-        print(deps)
         no_tree = True
-    
+        if verbose:
+            print("No nodes or dependencies found for {}".format(package))
+
     # From errs:
     e_nodes = []
     e_deps = {}
@@ -51,9 +50,11 @@ def produce_package_report(package, piptree, piperrs, verbose=False):
         
     no_errs = False
     if not e_nodes and not e_deps:
-        print("No conflict information found for {}".format(package))
         no_errs = True
-    
+        if verbose:
+            print("No conflict information found for {}".format(package))
+
+    # Exit if nothing to report.
     if no_tree and no_errs:
         return None
     
@@ -94,7 +95,3 @@ def produce_package_report(package, piptree, piperrs, verbose=False):
             f.write("{}\n".format(e_deps[k][1]))
             f.write("\n Full ancestor requirements list for {}:\n".format(k))
             pprint(e_deps[k][2], stream=f)
-
-    if verbose:
-        pprint(nodes)
-        pprint(deps)
