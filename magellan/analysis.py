@@ -256,7 +256,7 @@ def vex_query_nodes_eges_in_venv(venv_bin=None):
 
     # write script
     with open(super_unique_name, 'w') as f:
-        f.write(_return_script_string())
+        f.write(_return_node_edge_script_string())
 
     # execute
     run_in_subprocess('{0}python {1}'.format(venv_bin, super_unique_name))
@@ -288,7 +288,7 @@ def query_nodes_edges_in_venv(venv_bin=None):
 
     # write script
     with open(super_unique_name, 'w') as f:
-        f.write(_return_script_string())
+        f.write(_return_node_edge_script_string())
 
     # execute
     run_in_subprocess('{0}python {1}'.format(venv_bin, super_unique_name))
@@ -309,6 +309,8 @@ def write_dot_graph_to_disk(nodes, edges, filename):
                   for x in range(len(nodes))}
     node_index[('root', '0.0.0')] = node_template.format(0)
 
+    pprint(node_index)
+
     # Fill in nodes
     node_template = '    {0} [label="{1}"];\n'
 
@@ -325,6 +327,7 @@ def write_dot_graph_to_disk(nodes, edges, filename):
         for e in edges:
             from_e = (e[0][0].lower(), e[0][1])
             to_e = (e[1][0].lower(), e[1][1])
+            print(from_e, to_e)
             f.write("    {0} -> {1};\n"
                     .format(node_index[from_e], node_index[to_e]))
 
@@ -464,8 +467,11 @@ def vex_gen_pipdeptree_reports(venv_name, out_file='PDP_Output_Tree.txt',
 
 def gen_pipdeptree_reports(venv_bin=None, out_file='PDP_Output_Tree.txt',
                            err_file='PDP_Output_Errs.txt'):
+    """Runs pipdeptree and outputs two files: regular output and errors.
 
-    """Runs pipdeptree and outputs two files: regular output and errors"""
+    This serves as an alternative function which just requires the location
+    of the bin directory of the virtual env
+    """
 
     env_string = venv_bin if venv_bin is not None else ''
     # else run in current env
@@ -541,21 +547,13 @@ def _parse_pipdeptree_error_file(f):
     return output
     
     
-def parse_pipdeptree_file(input_file=None, output_or_error="output"):
-    """Takes output from pipdeptree and returns dictionary
-    
-    If output_or_error is anything other than "output" it will be processed
-    as though it is the output from stderr.
-    
-    """
-    if input_file is None:
-        print("No file given, please specifiy.")
-    
-    with open(input_file, 'r') as f:
-        if output_or_error == "output":
-            return _parse_pipdeptree_output_file(f)
-        else:
-            return _parse_pipdeptree_error_file(f)
+def parse_pipdeptree_file(in_tree, in_errs):
+    """Takes output from pipdeptree and returns dictionaries."""
+    with open(in_tree, 'r') as f:
+        tree_ret = _parse_pipdeptree_output_file(f)
+    with open(in_errs, 'r') as f:
+        err_ret = _parse_pipdeptree_error_file(f)
+    return tree_ret, err_ret
 
 
 def print_pdp_tree_parsed(pdp_tree_parsed):
@@ -577,7 +575,7 @@ def _get_random_string_of_length_n(n):
     return "".join(random.choice(string.ascii_letters) for _ in range(n))
 
 
-def _return_script_string():
+def _return_node_edge_script_string():
     """Returns a script to write into local dir; execute under virtualenv"""
 
     script = """
@@ -585,14 +583,11 @@ from pprint import pprint
 import pickle
 import pip
 
-#default_skip = ['setuptools', 'pip', 'python', 'distribute']
-# something is relying on setuptools, apparently
-
 default_skip = ['pip', 'python', 'distribute']
-skip = default_skip + ['pipdeptree', 'virtualenv', 'magellan']
+skip = ['pipdeptree', 'virtualenv', 'magellan', 'vex']
 local_only = True
 pkgs = pip.get_installed_distributions(local_only=local_only,
-                                        skip=skip)
+                                        skip=skip+default_skip)
 
 # FORM NODES
 nodes = [(x.project_name, x.version) for x in pkgs]
@@ -612,11 +607,6 @@ for p in pkgs:
                 r_tup = (r.key)
             edges.append([p_tup, r_tup, r.specs])
 
-# Output:
-#for node in nodes:
-#    print("N#{}".format(node))
-#for edge in edges:
-#    print("E#{}".format(edge))
 
 # Record nodes and edges to disk to be read in  by main program if needed.
 pickle.dump(nodes, open('nodes.p','wb'))

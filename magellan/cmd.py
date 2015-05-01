@@ -5,11 +5,10 @@
 
 import argparse
 import sys
-import os
 from pprint import pprint
 
 from magellan.utils import (run_in_subprocess, create_vex_new_virtual_env,
-                            vex_resolve_venv_name,)
+                            vex_resolve_venv_name, resolve_venv_bin)
 
 from magellan.analysis import (
     gen_pipdeptree_reports, parse_pipdeptree_file,
@@ -48,6 +47,7 @@ def _go(**kwargs):
     global VERBOSE
     global SUPER_VERBOSE
 
+    generated_outputs = {'generic': [], 'package_spec': {}}
     venv_name = kwargs["venv_name"]
 
     #################
@@ -66,21 +66,14 @@ def _go(**kwargs):
                       .format(venv_name, req_file, kwargs["pip_options"]))
         run_in_subprocess(cmd_to_run)
         run_in_subprocess('vex {0} pip install pipdeptree'.format(venv_name))
-
     else:
         venv_name, name_bit = vex_resolve_venv_name(venv_name)
 
-    # todo (anyone) better soln probably required
-    venv_bin = kwargs['path_to_env_bin']
-    if not venv_bin:
-        user = os.environ.get('USER')
-        venv_bin = "/home/{0}/.virtualenvs/{1}/bin/".format(user, venv_name)
-    if not os.path.exists(venv_bin):
-        sys.exit('LAPU LAPU! {} does not exist, please specify path to {} bin '
-              'using magellan -n ENV_NAME --path-to-env-bin ENV_BIN_PATH'
-                 .format(venv_bin, venv_name))
+    venv_bin = resolve_venv_bin(venv_name, kwargs['path_to_env_bin'])
 
     nodes, edges = query_nodes_edges_in_venv(venv_bin)
+    generated_outputs['generic'].append('nodes.p')
+    generated_outputs['generic'].append('edges.p')
 
     ####################
     # ANALYSIS SECTION #
@@ -89,41 +82,44 @@ def _go(**kwargs):
     if show_all_packages_and_exit:
         print('"Show all packages" selected. Nodes found:')
         pprint(nodes)
-        sys.exit()
+        sys.exit(0)
 
     # Pipdeptree
     # These are package agnostic, but need to be done if parsing for specific
     # packages. Would prefer to remove
+
     pdp_file_template = '{0}PDP_Output_{1}.txt'
     pdp_tree_file = pdp_file_template.format(venv_name + name_bit, "Tree")
     pdp_err_file = pdp_file_template.format(venv_name + name_bit, "Errs")
     if VERBOSE:
         print("Generating pipdeptree report")
-
-    vex_gen_pipdeptree_reports(
-        venv_name, out_file=pdp_tree_file, err_file=pdp_err_file)
-    # gen_pipdeptree_reports(venv_bin=venv_bin,
-    #                        out_file=pdp_tree_file, err_file=pdp_err_file)
+    # todo -- collapse this code
+    if not venv_bin:
+        gen_pipdeptree_reports(
+            venv_bin, out_file=pdp_tree_file, err_file=pdp_err_file)
+    else:
+        vex_gen_pipdeptree_reports(
+            venv_name, out_file=pdp_tree_file, err_file=pdp_err_file)
+    generated_outputs['generic'].append(pdp_tree_file)
+    generated_outputs['generic'].append(pdp_err_file)
 
     if VERBOSE:
-        print("Parsing pipdeptree report and outputting to: {0} and {1}"
-              .format(pdp_tree_file, pdp_err_file))
-
-    # Parse pipdeptree reports
-    pdp_tree_parsed = parse_pipdeptree_file(
-        pdp_tree_file, output_or_error="output")
-    pdp_errs_parsed = parse_pipdeptree_file(
-        pdp_err_file, output_or_error="error")
-
+        print("Parsing pipdeptree reports")
+    pdp_tree_parsed, pdp_errs_parsed = parse_pipdeptree_file(
+        pdp_tree_file, pdp_err_file)
     if SUPER_VERBOSE:
         print_pdp_tree_parsed(pdp_tree_parsed)
 
     package_list = kwargs['packages']
+
+    ####################
+    # Generic Analysis #
+    ####################
     if not package_list:  # generic package-agnostic reports
         dep_graph_name = "{}DependencyGraph.gv".format(venv_name)
-        write_dot_graph_to_disk(nodes, edges, dep_graph_name)
         if VERBOSE:
             print("Writing dependency graph to {}".format(dep_graph_name))
+        write_dot_graph_to_disk(nodes, edges, dep_graph_name)
 
         # Calculate connectedness of graph
         if VERBOSE:
@@ -131,12 +127,10 @@ def _go(**kwargs):
         abs_conn = calc_connected_nodes(nodes, edges)
         write_dot_graph_to_disk_with_distance_colour(
             nodes, edges, 'abs_card.gv', abs_conn)
-
         wghtd_conn, sq_wghtd_conn = calc_weighted_connections(nodes, edges)
 
         write_dot_graph_to_disk_with_distance_colour(
             nodes, edges, 'weighted_card.gv', wghtd_conn)
-
         write_dot_graph_to_disk_with_distance_colour(
             nodes, edges, 'sq_weighted_card.gv', sq_wghtd_conn)
 
@@ -176,6 +170,9 @@ def _go(**kwargs):
             del ft
 
 
+#######################
+# Command Entry Point #
+#######################
 def main():
     """Command line entry point for magellan."""
 

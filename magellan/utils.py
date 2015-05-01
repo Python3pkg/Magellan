@@ -73,64 +73,28 @@ def vex_resolve_venv_name(venv_name=None):
     return venv_name, name_bit
 
 
-# Would require installing magellan into newly built virtualenv
-# then calling magellan from magellan
-# leave for now
-#
-# def vex_query_nodes_edges_in_venv(venv_name):
-#     """Generate Nodes and Edges of packages in virtual env.
-#
-#     :param venv_bin: bin directory of virtualenv
-#     :rtype list, list
-#     :return: nodes, edges
-#     """
-#     import pickle
-#
-#     # execute
-#     cmd_to_run = "vex {0} magellan -n {0} --do-edge-node-detection".format(venv_name)
-#     run_in_subprocess(cmd_to_run)
-#
-#     # Load in nodes and edges pickles
-#     nodes = pickle.load(open('nodes.p', 'rb'))
-#     edges = pickle.load(open('edges.p', 'rb'))
-#
-#     return nodes, edges
+def resolve_venv_bin(v_name, v_bin=None):
+    """
+    :param venv_name: virtual env name
+    :param venv_bin: virtual env bin dir, if any
+    :return: path to venv bin directory.
+    """
 
+    # Analyse local env.
+    if not v_bin and v_name == '':
+        print("1")
+        return None
 
-# def detect_nodes_edges_in_env():
-#     """Detect packages and their requirements in current environment.
-#
-#     The way this function is used is by calling:
-#         magellan -n ENVNAME --do-edge-node-detection
-#
-#     """
-#     import pickle
-#     import pip
-#
-#     default_skip = ['pip', 'python', 'distribute']
-#     skip = default_skip + ['pipdeptree', 'virtualenv', 'magellan', 'vex']
-#     local_only = True
-#     packages = pip.get_installed_distributions(local_only=local_only,
-#                                                skip=skip)
-#
-#     # FORM NODES
-#     nodes = [(x.project_name, x.version) for x in packages]
-#
-#     # FORM EDGES
-#     installed_vers = {x.key: x.version for x in packages}
-#     edges = []
-#     for p in packages:
-#         p_tup = (p.project_name, p.version)
-#         edges.append([('root','0.0.0'), p_tup])
-#         requirements = p.requires()
-#         if requirements:
-#             for r in requirements:
-#                 if r.key in installed_vers:
-#                     r_tup = (r.key, installed_vers[r.key])
-#                 else:
-#                     r_tup = (r.key)  # leave as tuple
-#                 edges.append([p_tup, r_tup, r.specs])
-#
-#     # Record nodes and edges to disk to be read in  by main program if needed.
-#     pickle.dump(nodes, open('nodes.p', 'wb'))
-#     pickle.dump(edges, open('edges.p', 'wb'))
+    # If not supplied path, derive from v_name.
+    if not v_bin and v_name:
+        print("2")
+        user = os.environ.get('USER')
+        v_bin = "/home/{0}/.virtualenvs/{1}/bin/".format(user, v_name)
+
+    # Check path and/or derived path.
+    if not os.path.exists(v_bin):
+        sys.exit('LAPU LAPU! {} does not exist, please specify path to '
+                 '{} bin using magellan -n ENV_NAME --path-to-env-bin '
+                 'ENV_BIN_PATH'.format(v_bin, v_name))
+    print("3")
+    return v_bin
