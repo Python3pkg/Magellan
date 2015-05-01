@@ -61,5 +61,6 @@ Example Usage:
 
 Roadmap:
     1. List outdated major and minor versions
-    2. Implement snakefood
-    3. Highlight dependencies/packages that are actually unused - redundant imports
+    2. Redo analysis section to make much cleaner
+    3. Implement snakefood
+    4. Highlight dependencies/packages that are actually unused - redundant imports

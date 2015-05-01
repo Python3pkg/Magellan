@@ -119,7 +119,8 @@ def _go(**kwargs):
     ####################
     # Generic Analysis #
     ####################
-    if not package_list:  # generic package-agnostic reports
+    skip_generic_analysis = kwargs['skip_generic_analysis']
+    if not skip_generic_analysis:  # generic package-agnostic reports
         dep_graph_name = "{}DependencyGraph.gv".format(venv_name)
         if VERBOSE:
             print("Writing dependency graph to {}".format(dep_graph_name))
@@ -141,7 +142,7 @@ def _go(**kwargs):
     #############################
     # Package Specific Analysis #
     #############################
-    else:
+    if package_list:
         for package in package_list:
             produce_package_report(
                 package, pdp_tree_parsed, pdp_errs_parsed, VERBOSE)
@@ -227,6 +228,9 @@ def main():
         '--path-to-env-bin', default=None, help="Path to virtual env bin")
     parser.add_argument(
         '--package-file', type=str, help="File with list of packages")
+    parser.add_argument(
+        '--skip-generic-analysis', action='store_true', default=False,
+        help="Skip generic analysis - useful for purely package analysis.")
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
