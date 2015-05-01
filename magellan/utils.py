@@ -2,6 +2,7 @@ import subprocess
 import shlex
 import os
 import sys
+import re
 
 
 def run_in_subprocess(cmds):
@@ -82,12 +83,10 @@ def resolve_venv_bin(v_name, v_bin=None):
 
     # Analyse local env.
     if not v_bin and v_name == '':
-        print("1")
         return None
 
     # If not supplied path, derive from v_name.
     if not v_bin and v_name:
-        print("2")
         user = os.environ.get('USER')
         v_bin = "/home/{0}/.virtualenvs/{1}/bin/".format(user, v_name)
 
@@ -96,5 +95,25 @@ def resolve_venv_bin(v_name, v_bin=None):
         sys.exit('LAPU LAPU! {} does not exist, please specify path to '
                  '{} bin using magellan -n ENV_NAME --path-to-env-bin '
                  'ENV_BIN_PATH'.format(v_bin, v_name))
-    print("3")
     return v_bin
+
+
+def resolve_package_list(p_list, p_file):
+    """Resolve packages into list from cmd line and file.
+
+    Splits on " ", "," and "\n" when reading file.
+    """
+
+    pkg_list = p_list
+    if not p_file:
+        return pkg_list
+
+    # otherwise:
+    try:
+        with open(p_file, 'rb') as pf:
+            file_pkgs = [x for x in re.split(',|\s|\n', pf.read()) if x != '']
+    except IOError as e:
+        print("File not found {0}. {1}".format(p_file, e))
+        file_pkgs = []
+
+    return pkg_list + file_pkgs
