@@ -76,6 +76,8 @@ def _go(**kwargs):
     generated_outputs['generic'].append('nodes.p')
     generated_outputs['generic'].append('edges.p')
 
+    # PACKAGES LIST
+    # ************ #
     package_list = resolve_package_list(
         kwargs['packages'], kwargs['package_file'], nodes)
 
@@ -103,6 +105,7 @@ def _go(**kwargs):
     else:
         vex_gen_pipdeptree_reports(
             venv_name, out_file=pdp_tree_file, err_file=pdp_err_file)
+
     generated_outputs['generic'].append(pdp_tree_file)
     generated_outputs['generic'].append(pdp_err_file)
 
@@ -112,11 +115,6 @@ def _go(**kwargs):
         pdp_tree_file, pdp_err_file)
     if SUPER_VERBOSE:
         print_pdp_tree_parsed(pdp_tree_parsed)
-
-    # PACKAGES LIST
-    # ************ #
-    package_list = resolve_package_list(
-        kwargs['packages'], kwargs['package_file'], nodes)
 
     ####################
     # Generic Analysis #
