@@ -87,8 +87,7 @@ def _go(**kwargs):
 
     # Pipdeptree
     # These are package agnostic, but need to be done if parsing for specific
-    # packages. Would prefer to remove
-
+    # packages. Remove/change?
     pdp_file_template = '{0}PDP_Output_{1}.txt'
     pdp_tree_file = pdp_file_template.format(venv_name + name_bit, "Tree")
     pdp_err_file = pdp_file_template.format(venv_name + name_bit, "Errs")
@@ -111,6 +110,8 @@ def _go(**kwargs):
     if SUPER_VERBOSE:
         print_pdp_tree_parsed(pdp_tree_parsed)
 
+    # PACKAGES LIST
+    # ************ #
     package_list = resolve_package_list(
         kwargs['packages'], kwargs['package_file'])
 

@@ -14,7 +14,8 @@ def run_in_subprocess(cmds):
 def run_in_subp_ret_stdout(cmds):
     """Runs in subprocess and returns std out output."""
     cmd_args = shlex.split(cmds)
-    p = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(cmd_args,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return p.communicate()
 
 
@@ -76,8 +77,8 @@ def vex_resolve_venv_name(venv_name=None):
 
 def resolve_venv_bin(v_name, v_bin=None):
     """
-    :param venv_name: virtual env name
-    :param venv_bin: virtual env bin dir, if any
+    :param v_name: virtual env name
+    :param v_bin: virtual env bin dir, if any
     :return: path to venv bin directory.
     """
 
