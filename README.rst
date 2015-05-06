@@ -36,7 +36,8 @@ Command line interfaces:
           -sv, --super-verbose      Super verbose mode; also sets VERBOSE as True.
           --path-to-env-bin         Path to virtual env bin
           --package-file            File with list of packages
-
+          --skip-generic-analysis   Skip generic analysis - useful for purely package
+                                    analysis.
 
 
 Example Usage:
@@ -57,7 +58,7 @@ Example Usage:
     6. "magellan Package1 Package2 -n MyEnv --package-file myPackageFile.txt"
             Same as above but will also take, in addition to Package[s]1/2 a
             file containing a list of packages (csv, space or newline delimited.)
-
+    7. "magellan -n MyEnv --package-file myPackageFile.txt --skip-generic-analysis"
 
 Roadmap:
     1. List outdated major and minor versions

@@ -24,6 +24,7 @@ class Environment(object):
         self.bin = None
         self.nodes = []
         self.edges = []
+        self.all_packages = {}
 
         # Pipdeptree:
         self.pdp_meta = {'generated': False, 'parsed': False,
@@ -45,8 +46,13 @@ class Environment(object):
         self.resolve_venv_bin(kwargs['path_to_env_bin'])
         self.query_nodes_edges_in_venv()
 
-        if kwargs['show_all_packages']:
-            self.show_all_packages_and_exit()
+        self.all_packages = {p[0].lower(): Package(p[0], p[1]) 
+                             for p in self.nodes}
+
+        if (kwargs['show_all_packages'] or
+                kwargs['show_all_packages_and_versions']):
+            self.show_all_packages_and_exit(
+                kwargs['show_all_packages_and_versions'])
 
     def create_vex_new_virtual_env(self):
         """Create a virtual env in which to install packages
@@ -156,10 +162,14 @@ class Environment(object):
         self.nodes = pickle.load(open('nodes.p', 'rb'))
         self.edges = pickle.load(open('edges.p', 'rb'))
 
-    def show_all_packages_and_exit(self):
+    def show_all_packages_and_exit(self, with_versions=False):
         """ Prints nodes and exits"""
         print('"Show all packages" selected. Nodes found:')
-        pprint(self.nodes)
+        for _, p in self.all_packages.iteritems():
+            if with_versions:
+                print("{0} : {1} ".format(p.name, p.version))
+            else:
+                print(p.name) # just show nodes
         sys.exit(0)
 
     def gen_pipdeptree_reports(self, verbose):
