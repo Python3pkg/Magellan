@@ -12,6 +12,7 @@ import sys
 from pprint import pprint
 
 from magellan.utils import (run_in_subprocess, run_in_subp_ret_stdout,)
+from magellan.package_utils import Package
 
 
 class Environment(object):
@@ -24,10 +25,14 @@ class Environment(object):
         self.nodes = []
         self.edges = []
 
+        # Pipdeptree:
         self.pdp_meta = {'generated': False, 'parsed': False,
-                         'pdp_tree_file': '', 'pdp_err_file': ''}
+                         'pdp_tree_file': '', 'pdp_err_file': '', }
         self.pdp_tree = {}
         self.pdp_errs = {}
+
+        # Connectedness:
+        self.connectedness = {}
 
     def magellan_setup_go_env(self, kwargs):
         """ Set up environment for main script."""
@@ -201,6 +206,75 @@ class Environment(object):
             self.pdp_errs = _parse_pipdeptree_error_file(f)
         self.pdp_meta['parsed'] = True
 
+    def write_dot_graph_to_disk(self):
+        """Writes dependency graph of environment to disk as dot file."""
+        dep_graph_name = "{}DependencyGraph.gv".format(self.name)
+        _write_dot_graph_to_disk(self.nodes, self.edges, dep_graph_name)
+
+    # todo (aj) refactor out repetition on connected nodes
+    def connected_nodes(self, include_root=False):
+        """ Returns dictionary of how many nodes all nodes are connected to.
+
+        If including root then everything is connected to everything.
+        Root is env root.
+
+        :return: dictionary of how many nodes any other is connected to.
+        """
+        if 'conn_nodes' not in self.connectedness:
+            self._calc_connected_nodes(include_root)
+        return self.connectedness['conn_nodes']
+
+    def _calc_connected_nodes(self, include_root=False):
+        """ sets dictionary of how many nodes all nodes are connected to.
+
+        If including root then everything is connected to everything.
+        Root is env root.
+
+        :return: dictionary of how many nodes any other is connected to.
+        """
+        conn_nodes = {}
+        for n in self.nodes:
+            n_key = n[0].lower()
+            dist_dict = Package.calc_node_distances(
+                n_key, self.nodes, self.edges, include_root,
+                list_or_dict='dict')
+            conn_nodes[n] = len(dist_dict)
+
+        self.connectedness['conn_nodes'] = conn_nodes
+
+    def sq_weighted_connections(self):
+        if 'sq_weighted_conn' not in self.connectedness:
+            self._calc_weighted_connections()
+        return self.connectedness['sq_weighted_conn']
+
+    def weighted_connections(self):
+        if 'weighted_conn' not in self.connectedness:
+            self._calc_weighted_connections()
+        return self.connectedness['weighted_conn']
+
+    def _calc_weighted_connections(self, include_root=False):
+        """ Returns measures of connectedness as a fn. of number of nodes and
+        distance to those nodes.
+
+        :param include_root: bool if including env root.
+        """
+        weighted_conn = {}
+        sq_weighted_conn = {}
+        for n in self.nodes:
+            n_key = n[0].lower()
+            dist_dict = Package.calc_node_distances(
+                n_key, self.nodes, self.edges, include_root,
+                list_or_dict='dict')
+
+            weighted_conn[n] = sum(
+                map(lambda x: 1.0/(1+x), dist_dict.values())
+            )
+            sq_weighted_conn[n] = sum(map(lambda x: 1.0/(1 + x*(2+x)),
+                                          dist_dict.values()))
+
+        self.connectedness['sq_weighted_conn'] = sq_weighted_conn
+        self.connectedness['weighted_conn'] = weighted_conn
+
 
 def _get_random_string_of_length_n(n):
     """Returns random string of length n"""
@@ -305,3 +379,33 @@ def _parse_pipdeptree_error_file(f):
         output[curr_node][(anc_name, anc_ver)] = tmp
 
     return output
+
+
+def _write_dot_graph_to_disk(nodes, edges, filename):
+    """Write dot graph to disk."""
+
+    node_template = 'n{}'
+    node_index = {(nodes[x][0].lower(), nodes[x][1]): node_template.format(x+1)
+                  for x in range(len(nodes))}
+    node_index[('root', '0.0.0')] = node_template.format(0)
+
+    # Fill in nodes
+    node_template = '    {0} [label="{1}"];\n'
+
+    with open(filename, 'wb') as f:
+
+        f.write('digraph magout {\n')
+
+        # Nodes
+        f.write(node_template.format("n0", "root"))
+        for n in node_index:
+            f.write(node_template.format(node_index[n], n))
+
+        # Fill in edge
+        for e in edges:
+            from_e = (e[0][0].lower(), e[0][1])
+            to_e = (e[1][0].lower(), e[1][1])
+            f.write("    {0} -> {1};\n"
+                    .format(node_index[from_e], node_index[to_e]))
+
+        f.write('}')

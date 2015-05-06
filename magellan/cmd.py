@@ -12,11 +12,7 @@ from magellan.package_utils import Package
 from magellan.env_utils import Environment
 
 from magellan.analysis import (
-    print_pdp_tree_parsed,
-    write_dot_graph_to_disk_with_distance_colour,
-    write_dot_graph_subset, write_dot_graph_to_disk,
-    calc_weighted_connections, calc_connected_nodes,
-    )
+    write_dot_graph_to_disk_with_distance_colour, write_dot_graph_subset,)
 
 from magellan.reports import produce_package_report
 
@@ -24,7 +20,7 @@ VERBOSE = False
 SUPER_VERBOSE = False
 
 
-def _go(**kwargs):
+def _go(venv_name, **kwargs):
     """Main script of magellan program.
     
     1) If passed a requirements file it will install those requirements into
@@ -44,81 +40,69 @@ def _go(**kwargs):
     global VERBOSE
     global SUPER_VERBOSE
 
-    # INITIAL SETUP
-    venv = Environment(kwargs['venv_name'])
+    skip_generic_analysis = kwargs['skip_generic_analysis']
+
+    # Setup
+    venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
-    # ANALYSIS SECTION
-    venv.gen_pipdeptree_reports(VERBOSE)
-    venv.parse_pipdeptree_reports()
 
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): Package(p) for p in package_list}
 
+    # Analysis
+    if package_list or not skip_generic_analysis:
+        venv.gen_pipdeptree_reports(VERBOSE)
+        venv.parse_pipdeptree_reports()
 
-    sys.exit(0)
-
-    ####################
-    # Generic Analysis #
-    ####################
-    skip_generic_analysis = kwargs['skip_generic_analysis']
-    if not skip_generic_analysis:  # generic package-agnostic reports
-        dep_graph_name = "{}DependencyGraph.gv".format(venv_name)
-        if VERBOSE:
-            print("Writing dependency graph to {}".format(dep_graph_name))
-        write_dot_graph_to_disk(nodes, edges, dep_graph_name)
-
+    # Generic Analysis - package-agnostic reports
+    if not skip_generic_analysis:
+        venv.write_dot_graph_to_disk()
         # Calculate connectedness of graph
-        if VERBOSE:
-            print("Calculating connectedness of nodes in environment")
-        abs_conn = calc_connected_nodes(nodes, edges)
+        # todo (aj) profile and speed up! ..all nodes as Packages! proxima onda
         write_dot_graph_to_disk_with_distance_colour(
-            nodes, edges, 'abs_card.gv', abs_conn)
-        wghtd_conn, sq_wghtd_conn = calc_weighted_connections(nodes, edges)
+            venv, 'abs_card.gv', venv.connected_nodes())
 
         write_dot_graph_to_disk_with_distance_colour(
-            nodes, edges, 'weighted_card.gv', wghtd_conn)
+            venv, 'weighted_card.gv', venv.weighted_connections())
+
         write_dot_graph_to_disk_with_distance_colour(
-            nodes, edges, 'sq_weighted_card.gv', sq_wghtd_conn)
+            venv, 'sq_weighted_card.gv', venv.sq_weighted_connections())
 
     #############################
     # Package Specific Analysis #
     #############################
+
     if package_list:
-        for package in package_list:
+        for p_k, p in packages.iteritems():
+
+            if VERBOSE:
+                print("Analysing {}".format(p.name))
+
             produce_package_report(
-                package, pdp_tree_parsed, pdp_errs_parsed, VERBOSE)
+                p.name, venv.pdp_tree, venv.pdp_errs, VERBOSE)
 
-            ancestors, descendants = direct_links_to_package(package, edges)
-            distances_dict = calc_node_distances(
-                package, nodes, edges, include_root=False, list_or_dict='dict')
-
-            if distances_dict:
-                write_dot_graph_to_disk_with_distance_colour(
-                    nodes, edges, '{}.gv'.format(package), distances_dict)
+            write_dot_graph_to_disk_with_distance_colour(
+                venv, '{}.gv'.format(p.name), p.calc_self_node_distances(venv))
 
             if SUPER_VERBOSE:
-                print("\n" + "-" * 50 + "\n" + package + "\n")
-                print("DIRECT DESCENDENTS - depended on by {}".format(package))
-                pprint(descendants)
-                print("DIRECT ANCESTORS - these depend on {}".format(package))
-                pprint(ancestors)
+                print("\n" + "-" * 50 + "\n" + p.name + "\n")
+                print("DIRECT DESCENDENTS - depended on by {}".format(p.name))
+                pprint(p.descendants(venv.edges))
+                print("DIRECT ANCESTORS - these depend on {}".format(p.name))
+                pprint(p.ancestors(venv.edges))
 
             # Calculate ancestor trace of package
             if VERBOSE:
-                print("Calculating ancestor trace for {}".format(package))
+                print("Calculating ancestor trace for {}".format(p.name))
 
-            anc_track = ancestor_trace(package, nodes, edges)
+            ft = '{}_anc_track.gv'
+            write_dot_graph_to_disk_with_distance_colour(
+                venv, ft.format(p.name), p.ancestor_trace(venv))
 
-            # todo (aj)
-            if anc_track:
-                ft = '{}_anc_track.gv'
-                write_dot_graph_to_disk_with_distance_colour(
-                    nodes, edges, ft.format(package), anc_track)
-
-                ft = '{}_anc_track_trunc.gv'
-                write_dot_graph_subset(
-                    nodes, edges, ft.format(package), anc_track)
-                del ft
+            ft = '{}_anc_track_trunc.gv'
+            write_dot_graph_subset(
+                venv, ft.format(p.name), p.ancestor_trace(venv))
+            del ft
 
 
 #######################
