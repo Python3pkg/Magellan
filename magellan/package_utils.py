@@ -6,7 +6,6 @@ This is a collection of methods concerning package analysis.
 """
 
 import re
-from pprint import pprint
 
 class Package(object):
     """ Package type to hold analysis of packages.
@@ -26,7 +25,7 @@ class Package(object):
 
     def check_versions(self):
         """Checks the major and minor versions (PyPI), compares to current."""
-        from distutils.version import StrictVersion, LooseVersion
+        from distutils.version import LooseVersion
         from pkg_resources import parse_version
         import yarg
 
@@ -92,7 +91,7 @@ class Package(object):
     def produce_package_report(
             self, pdp_tree_parsed, pdp_errs_parsed, verbose):
         """ Produce package report."""
-        from magellan.reports import produce_package_report as ppr
+        from magellan.reports import produce_pdp_package_report as ppr
         ppr(self.name, pdp_tree_parsed, pdp_errs_parsed, verbose)
 
     def calc_self_node_distances(
@@ -100,9 +99,7 @@ class Package(object):
             list_or_dict="dict", do_full_calc=False):
         """ Calculates the distance to a node on an acyclic directed graph.
 
-        :param packages: dictionary of Packages
-        :param nodes: list of nodes
-        :param edges: list of edges (node links)
+        :param venv: virtual env containing nodes and edges
         :param include_root=False: whether to include the environment root
         :param keep_untouched_nodes=False: whether to return untouched nodes
         :param list_or_dict="dict": return type
@@ -141,8 +138,7 @@ class Package(object):
 
         Implementation, breadth first search but focusing on upstream links.
 
-        :param nodes: list of nodes
-        :param edges: list of edges
+        :param Environment venv: virtual env containing nodes and edges
         :return: dict indicating ancestor trace of package
         """
 
@@ -159,7 +155,7 @@ class Package(object):
                     dist_dict[p] = cur_level
                 node_touched[p] = True
 
-                #anc = p.ancestors(edges)
+                # anc = p.ancestors(edges)
                 anc, _ = self.get_direct_links_to_any_package(p, venv.edges)
 
                 if not include_root:
@@ -247,7 +243,6 @@ class Package(object):
         """ Calculates the distance to a node on an acyclic directed graph.
 
         :param package: package to calculate distances from
-        :param packages: dictionary of Packages
         :param nodes: list of nodes
         :param edges: list of edges (node links)
         :param include_root=False: whether to include the environment root
