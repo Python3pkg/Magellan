@@ -39,6 +39,8 @@ def write_dot_graph_to_disk_with_distance_colour(
         orig_col_bit = colour_bit_template.format(0.25, 0.25, 0.25)
         f.write(node_template.format("n0", "root", orig_col_bit))
         max_col = max(distances.values())
+        if max_col <= 0:
+            max_col = 1.0
         for n in node_index:
             n_key = n[0].lower()
             if n_key in dist_lookup:
