@@ -6,20 +6,71 @@ This is a collection of methods concerning package analysis.
 """
 
 import re
-
+from pprint import pprint
 
 class Package(object):
     """ Package type to hold analysis of packages.
     """
 
-    def __init__(self, name=""):
+    def __init__(self, name="", version=None):
         self.name = name
         self.key = name.lower()
+
+        self.version = version
+        self.versions = {}
 
         self._descendants = []
         self._ancestors = []
         self._node_distances = {}
         self._ancestor_trace = []
+
+    def check_versions(self):
+        """Checks the major and minor versions (PyPI), compares to current."""
+        from distutils.version import StrictVersion, LooseVersion
+        from pkg_resources import parse_version
+        import yarg
+
+        try:
+            yp = yarg.get(self.name)
+            rels = yp.release_ids
+        except yarg.HTTPError as e:
+            print("{0} not found at PyPI; "
+                  "no version information available.".format(self.name))
+            # log e
+            return None
+
+        rels.sort(key=LooseVersion)
+        if not rels:
+            print('No version info available for "{}" at CheeseShop (PyPI)'
+                  .format(self.name))
+            return
+
+        major_outdated = parse_version(self.version) < parse_version(rels[-1])
+        if major_outdated:
+            print("{0} Major Outdated: {1} > {2}"
+                  .format(self.name, rels[-1], self.version))
+            major_v = self.version.split('.')[0]
+            minor_v = self.version.split('.')[1]
+
+            minor_rels = [x for x in rels
+                          if x.split('.')[0] == major_v
+                          and x.split('.')[1] == minor_v]
+
+            if not minor_rels:
+                print("Unable to check minor_versions for {0}"
+                      .format(self.name))
+            else:
+                minor_outdated = (parse_version(self.version)
+                                  < parse_version(minor_rels[-1]))
+                if minor_outdated:
+                    print("{0} Minor Outdated: {1} > {2}"
+                          .format(self.name, minor_rels[-1], self.version))
+                else:
+                    print("{0} Minor up to date: {1} <= {2}"
+                          .format(self.name, minor_rels[-1], self.version))
+        else:
+            print("{0} up to date, current: {1}, latest: {2}"
+                  .format(self.name, self.version, rels[-1]))
 
     def ancestors(self, edges):
         """Packages that this depends on."""

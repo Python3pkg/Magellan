@@ -14,7 +14,7 @@ from magellan.env_utils import Environment
 from magellan.analysis import (
     write_dot_graph_to_disk_with_distance_colour, write_dot_graph_subset,)
 
-from magellan.reports import produce_package_report
+from magellan.reports import produce_pdp_package_report
 
 VERBOSE = False
 SUPER_VERBOSE = False
@@ -42,12 +42,16 @@ def _go(venv_name, **kwargs):
 
     skip_generic_analysis = kwargs['skip_generic_analysis']
 
+    check_versions = kwargs['check_versions']
+    if check_versions:
+        skip_generic_analysis = True
+
     # Setup
     venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
 
     package_list = Package.resolve_package_list(venv, kwargs)
-    packages = {p.lower(): Package(p) for p in package_list}
+    packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
     # Analysis
     if package_list or not skip_generic_analysis:
@@ -73,12 +77,18 @@ def _go(venv_name, **kwargs):
     #############################
 
     if package_list:
-        for p_k, p in packages.iteritems():
 
+        if check_versions:
+            for p_k, p in packages.iteritems():
+                print("Analysing {}".format(p.name))
+                p.check_versions()
+            sys.exit(0)
+
+        for p_k, p in packages.iteritems():
             if VERBOSE:
                 print("Analysing {}".format(p.name))
 
-            produce_package_report(
+            produce_pdp_package_report(
                 p.name, venv.pdp_tree, venv.pdp_errs, VERBOSE)
 
             write_dot_graph_to_disk_with_distance_colour(
@@ -124,7 +134,10 @@ def main():
     # OPTIONAL ARGUMENTS:
     parser.add_argument(
         '-s', '--show-all-packages', action='store_true', default=False,
-        help="Show all packages and exit.")
+        help="Show all packages by name and exit.")
+    parser.add_argument(
+        '-sv', '--show-all-packages-and-versions', action='store_true',
+        default=False, help="Show all packages with versions and exit.")
     parser.add_argument(
         '-n', '--venv-name', default=None,
         help=("Specify name for virtual environment, "
@@ -145,7 +158,7 @@ def main():
         '-v', '--verbose', action='store_true', default=False,
         help="Verbose mode")
     parser.add_argument(
-        '-sv', '--super-verbose', action='store_true', default=False,
+        '--super-verbose', action='store_true', default=False,
         help="Super verbose mode; also sets VERBOSE as True.")
     parser.add_argument(
         '--path-to-env-bin', default=None, help="Path to virtual env bin")
@@ -154,6 +167,11 @@ def main():
     parser.add_argument(
         '--skip-generic-analysis', action='store_true', default=False,
         help="Skip generic analysis - useful for purely package analysis.")
+    parser.add_argument(
+        '-c', '--check-versions', action='store_true', default=False,
+        help=("Just checks the versions of input packages and exits. "
+              "Make sure this is not superseded by '-s'")
+    )
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:

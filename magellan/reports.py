@@ -7,7 +7,7 @@ Report code for Magellan here.
 from pprint import pprint
 
 
-def produce_package_report(package, piptree, piperrs, verbose=False):
+def produce_pdp_package_report(package, piptree, piperrs, verbose=False):
     """Generates a report based on a specific package
     
     :param str package: name of the package to produce report for
