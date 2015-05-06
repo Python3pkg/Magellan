@@ -9,7 +9,6 @@ import re
 import shlex
 import subprocess
 import sys
-from pprint import pprint
 
 from magellan.utils import (run_in_subprocess, run_in_subp_ret_stdout,)
 from magellan.package_utils import Package
@@ -148,7 +147,8 @@ class Environment(object):
         while True:
             if not os.path.exists(super_unique_name):
                 break
-            super_unique_name = "{}.py".format(_get_random_string_of_length_n(16))
+            super_unique_name = "{}.py"\
+                .format(_get_random_string_of_length_n(16))
 
         # write script
         with open(super_unique_name, 'w') as f:
@@ -169,7 +169,7 @@ class Environment(object):
             if with_versions:
                 print("{0} : {1} ".format(p.name, p.version))
             else:
-                print(p.name) # just show nodes
+                print(p.name)  # just show nodes
         sys.exit(0)
 
     def gen_pipdeptree_reports(self, verbose):

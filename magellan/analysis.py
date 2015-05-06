@@ -19,8 +19,8 @@ def write_dot_graph_to_disk_with_distance_colour(
     """
 
     node_template = 'n{}'
-    node_index = {(venv.nodes[x][0].lower(), venv.nodes[x][1])
-                  : node_template.format(x+1)
+    node_index = {(venv.nodes[x][0].lower(), venv.nodes[x][1]):
+                  node_template.format(x+1)
                   for x in range(len(venv.nodes))}
 
     node_index[('root', '0.0.0')] = node_template.format(0)
@@ -81,8 +81,8 @@ def write_dot_graph_subset(
 
     # reduce nodes and edges to only include distances:
     node_template = 'n{}'
-    node_index = {(venv.nodes[x][0].lower(), venv.nodes[x][1])
-                  : node_template.format(x+1)
+    node_index = {(venv.nodes[x][0].lower(), venv.nodes[x][1]):
+                  node_template.format(x+1)
                   for x in range(len(venv.nodes))
                   if venv.nodes[x][0].lower() in dist_lookup}
 
@@ -136,5 +136,3 @@ def print_pdp_tree_parsed(pdp_tree_parsed):
         print(n)
         for d in pdp_tree_parsed['dependencies'][n]:
             print(d)
-
-

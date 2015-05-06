@@ -163,7 +163,7 @@ def main():
     parser.add_argument(
         '--path-to-env-bin', default=None, help="Path to virtual env bin")
     parser.add_argument(
-        '--package-file', type=str, help="File with list of packages")
+        '-p', '--package-file', type=str, help="File with list of packages")
     parser.add_argument(
         '--skip-generic-analysis', action='store_true', default=False,
         help="Skip generic analysis - useful for purely package analysis.")

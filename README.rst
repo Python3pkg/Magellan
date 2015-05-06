@@ -25,6 +25,9 @@ Command line interfaces:
        optional arguments:
           -h, --help                show this help message and exit
           -s, --show-all-packages   Show all packages and exit.
+          -s, --show-all-packages   Show all packages by name and exit.
+          -sv, --show-all-packages-and-versions
+                                    Show all packages with versions and exit.
           -n, --venv-name           Specify name for virtual environment, default is
                                     MagEnv0, MagEnv1 etc
           -r, --requirements        requirements file (e.g. requirements.txt) to install.
@@ -33,11 +36,13 @@ Command line interfaces:
                                     http://my_server.com/deployment_libs/ --trusted-host
                                     my_server.com'
           -v, --verbose             Verbose mode
-          -sv, --super-verbose      Super verbose mode; also sets VERBOSE as True.
+          --super-verbose      Super verbose mode; also sets VERBOSE as True.
           --path-to-env-bin         Path to virtual env bin
-          --package-file            File with list of packages
+          -p, --package-file        File with list of packages
           --skip-generic-analysis   Skip generic analysis - useful for purely package
                                     analysis.
+          -c, --check-versions      Just checks the versions of input packages and exits.
+                                    Make sure this is not superseded by '-s'
 
 
 Example Usage:
@@ -59,9 +64,15 @@ Example Usage:
             Same as above but will also take, in addition to Package[s]1/2 a
             file containing a list of packages (csv, space or newline delimited.)
     7. "magellan -n MyEnv --package-file myPackageFile.txt --skip-generic-analysis"
+            Only package analysis.
+    8. "magellan -n MyEnv -p myPackageFile.txt --check-versions"
+            Only check versions of everything in  myPackageFile.txt
+    9."magellan -n MyEnv -p myPackageFile.txt -c | grep Outdated"
+            Same as above but highlight the outdated packages using grep.
+
 
 Roadmap:
-    1. List outdated major and minor versions
+    1. Set up folders for reporting output.
     2. Redo analysis section to make much cleaner
     3. Implement snakefood
     4. Highlight dependencies/packages that are actually unused - redundant imports
