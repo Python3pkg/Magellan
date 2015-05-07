@@ -7,6 +7,7 @@ This is a collection of methods concerning package analysis.
 
 import re
 
+
 class Package(object):
     """ Package type to hold analysis of packages.
     """
