@@ -43,6 +43,8 @@ Command line interfaces:
                                     analysis.
           -c, --check-versions      Just checks the versions of input packages and exits.
                                     Make sure this is not superseded by '-s'
+          --output-dir              Set output directory for package specific reports,
+                                    default = 'MagellanReports'
 
 
 Example Usage:
