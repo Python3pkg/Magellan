@@ -71,12 +71,11 @@ Example Usage:
             Only package analysis.
     9. "magellan -n MyEnv -p myPackageFile.txt --check-versions"
             Only check versions of everything in  myPackageFile.txt
-    10."magellan -n MyEnv -p myPackageFile.txt -c | grep Outdated"
+    10. "magellan -n MyEnv -p myPackageFile.txt -c | grep Outdated"
             Same as above but highlight the outdated packages using grep.
 
 
 Roadmap:
-    1. Set up folders for reporting output.
-    2. Redo analysis section to make much cleaner
-    3. Implement snakefood
-    4. Highlight dependencies/packages that are actually unused - redundant imports
+    1. Redo analysis section to make much cleaner
+    2. Implement snakefood
+    3. Highlight dependencies/packages that are actually unused - redundant imports
