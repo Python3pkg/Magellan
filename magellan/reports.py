@@ -7,7 +7,9 @@ Report code for Magellan here.
 from pprint import pprint
 
 
-def produce_pdp_package_report(package, piptree, piperrs, verbose=False):
+def produce_pdp_package_report(
+        package, piptree, piperrs,
+        file_template="Mag_Report_{}.txt", verbose=False):
     """Generates a report based on a specific package
     
     :param str package: name of the package to produce report for
@@ -59,7 +61,7 @@ def produce_pdp_package_report(package, piptree, piperrs, verbose=False):
         return None
     
     # Actually output to a file:
-    write_file = "Mag_Report_{}.txt".format(package)
+    write_file = file_template.format(package)
     if verbose:
         print("Generating report for: {0} as file: {1}"
               .format(package, write_file))

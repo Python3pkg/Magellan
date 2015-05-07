@@ -4,6 +4,7 @@
 # todo (security) remove default pip options before making repo public!!
 
 import argparse
+import os
 import sys
 from pprint import pprint
 
@@ -46,7 +47,11 @@ def _go(venv_name, **kwargs):
     if check_versions:
         skip_generic_analysis = True
 
-    # Setup
+    output_dir = kwargs['output_dir'].rstrip('/') + '/'
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+
+    # Environment Setup
     venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
 
@@ -55,6 +60,7 @@ def _go(venv_name, **kwargs):
 
     # Analysis
     if package_list or not skip_generic_analysis:
+        # pipdeptree reports are parsed for individual package analysis.
         venv.gen_pipdeptree_reports(VERBOSE)
         venv.parse_pipdeptree_reports()
 
@@ -63,19 +69,17 @@ def _go(venv_name, **kwargs):
         venv.write_dot_graph_to_disk()
         # Calculate connectedness of graph
         # todo (aj) profile and speed up! ..all nodes as Packages! proxima onda
+        f = output_dir + 'abs_card.gv'
         write_dot_graph_to_disk_with_distance_colour(
-            venv, 'abs_card.gv', venv.connected_nodes())
-
+            venv, f, venv.connected_nodes())
+        f = output_dir + 'weighted_card.gv'
         write_dot_graph_to_disk_with_distance_colour(
-            venv, 'weighted_card.gv', venv.weighted_connections())
-
+            venv, f, venv.weighted_connections())
+        f = output_dir + 'sq_weighted_card.gv'
         write_dot_graph_to_disk_with_distance_colour(
-            venv, 'sq_weighted_card.gv', venv.sq_weighted_connections())
+            venv, f, venv.sq_weighted_connections())
 
-    #############################
-    # Package Specific Analysis #
-    #############################
-
+    # Package Specific Analysis
     if package_list:
 
         if check_versions:
@@ -88,11 +92,13 @@ def _go(venv_name, **kwargs):
             if VERBOSE:
                 print("Analysing {}".format(p.name))
 
+            f_template = output_dir + "Mag_Report_{}.txt"
             produce_pdp_package_report(
-                p.name, venv.pdp_tree, venv.pdp_errs, VERBOSE)
+                p.name, venv.pdp_tree, venv.pdp_errs, f_template, VERBOSE)
 
+            f = output_dir + '{}.gv'.format(p.name)
             write_dot_graph_to_disk_with_distance_colour(
-                venv, '{}.gv'.format(p.name), p.calc_self_node_distances(venv))
+                venv, f, p.calc_self_node_distances(venv))
 
             if SUPER_VERBOSE:
                 print("\n" + "-" * 50 + "\n" + p.name + "\n")
@@ -105,14 +111,13 @@ def _go(venv_name, **kwargs):
             if VERBOSE:
                 print("Calculating ancestor trace for {}".format(p.name))
 
-            ft = '{}_anc_track.gv'
+            f = output_dir + '{}_anc_track.gv'
             write_dot_graph_to_disk_with_distance_colour(
-                venv, ft.format(p.name), p.ancestor_trace(venv))
+                venv, f.format(p.name), p.ancestor_trace(venv))
 
-            ft = '{}_anc_track_trunc.gv'
+            f = output_dir + '{}_anc_track_trunc.gv'
             write_dot_graph_subset(
-                venv, ft.format(p.name), p.ancestor_trace(venv))
-            del ft
+                venv, f.format(p.name), p.ancestor_trace(venv))
 
 
 #######################
@@ -145,7 +150,7 @@ def main():
     parser.add_argument(
         '-r', '--requirements', type=str,
         help="requirements file (e.g. requirements.txt) to install.")
-
+    # todo (aj) change this before release
     pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
                    "--trusted-host sw-srv.maplecroft.com")
 
@@ -170,8 +175,11 @@ def main():
     parser.add_argument(
         '-c', '--check-versions', action='store_true', default=False,
         help=("Just checks the versions of input packages and exits. "
-              "Make sure this is not superseded by '-s'")
-    )
+              "Make sure this is not superseded by '-s'"))
+    parser.add_argument(
+        '--output-dir', type=str, default="MagellanReports/",
+        help=("Set output directory for package specific reports, "
+              "default = 'MagellanReports'"))
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
