@@ -54,20 +54,22 @@ Example Usage:
     3. "magellan -s"
             Shows all packages in current environment. Performs no further
             analysis.
-    4. "magellan -s -n MyEnv"
+    4. magellan -sv"
+            As above, with versions.
+    5. "magellan -s -n MyEnv"
             Shows all packages in MyEnv environment.
-    5. "magellan Package1 Package2 -n MyEnv -v"
+    6. "magellan Package1 Package2 -n MyEnv -v"
             Searches MyEnv for the packages "Package1" and "Package2" in
             verbose mode. Will produce a dependency graph and reports for MyEnv
             as well as reports for the specified package.
-    6. "magellan Package1 Package2 -n MyEnv --package-file myPackageFile.txt"
+    7. "magellan Package1 Package2 -n MyEnv --package-file myPackageFile.txt"
             Same as above but will also take, in addition to Package[s]1/2 a
             file containing a list of packages (csv, space or newline delimited.)
-    7. "magellan -n MyEnv --package-file myPackageFile.txt --skip-generic-analysis"
+    8. "magellan -n MyEnv --package-file myPackageFile.txt --skip-generic-analysis"
             Only package analysis.
-    8. "magellan -n MyEnv -p myPackageFile.txt --check-versions"
+    9. "magellan -n MyEnv -p myPackageFile.txt --check-versions"
             Only check versions of everything in  myPackageFile.txt
-    9."magellan -n MyEnv -p myPackageFile.txt -c | grep Outdated"
+    10."magellan -n MyEnv -p myPackageFile.txt -c | grep Outdated"
             Same as above but highlight the outdated packages using grep.
 
 
