@@ -83,12 +83,12 @@ def _go(venv_name, **kwargs):
     if package_list:
 
         if check_versions:
-            for p_k, p in packages.iteritems():
+            for p_k, p in packages.items():
                 print("Analysing {}".format(p.name))
                 p.check_versions()
             sys.exit(0)
 
-        for p_k, p in packages.iteritems():
+        for p_k, p in packages.items():
             if VERBOSE:
                 print("Analysing {}".format(p.name))
 

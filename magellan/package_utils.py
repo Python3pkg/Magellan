@@ -9,8 +9,7 @@ import re
 
 
 class Package(object):
-    """ Package type to hold analysis of packages.
-    """
+    """ Package type to hold analysis of packages."""
 
     def __init__(self, name="", version=None):
         self.name = name
@@ -98,7 +97,8 @@ class Package(object):
     def calc_self_node_distances(
             self, venv, include_root=False, keep_untouched_nodes=False,
             list_or_dict="dict", do_full_calc=False):
-        """ Calculates the distance to a node on an acyclic directed graph.
+        """
+        Calculates the distance to a node on an acyclic directed graph.
 
         :param venv: virtual env containing nodes and edges
         :param include_root=False: whether to include the environment root
@@ -127,7 +127,8 @@ class Package(object):
 
     def ancestor_trace(self, venv, include_root=True,
                        keep_untouched_nodes=False, do_full_calc=False):
-        """ Returns dict indicating ancestor trace of package.
+        """
+        Returns dict indicating ancestor trace of package.
 
         If X depends on Y, then if Y changes it may affect X; not vice versa.
         So if X changes it will not affect Y. Therefore it is the ancestors
@@ -148,7 +149,7 @@ class Package(object):
 
         # Define recursive function in _scope_ of calc_node_distance_to fn.
         def rec_fun(search_set, cur_level):
-            """ Recursive function to determine distance of connected nodes"""
+            """Recursive function to determine distance of connected nodes"""
             to_search_next = []
 
             for p in search_set:
@@ -241,7 +242,8 @@ class Package(object):
             package, nodes, edges, include_root=False,
             keep_untouched_nodes=False, list_or_dict="list"):
 
-        """ Calculates the distance to a node on an acyclic directed graph.
+        """
+        Calculates the distance to a node on an acyclic directed graph.
 
         :param package: package to calculate distances from
         :param nodes: list of nodes
@@ -263,7 +265,7 @@ class Package(object):
 
         """
 
-        # Define recursive function in _scope_ of calc_node_distance_to fn.
+        # Define recursive function in scope of calc_node_distance_to fn.
         def rec_fun(search_set, cur_level):
             """ Recursive function to determine distance of connected nodes"""
             to_search_next = []
