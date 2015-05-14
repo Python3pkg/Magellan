@@ -20,8 +20,6 @@ are the node tuples.
 - Given a package and edges, return the immediate ancestors and descendants of
 said package.
 
-
-
 Package INSTANCES should:
 - Have a name
 - Optionally a version
@@ -38,7 +36,7 @@ environment root.
 
 """
 import unittest
-from mock import MagicMock
+from mock import MagicMock, mock_open, patch
 from magellan.package_utils import Package
 import pickle
 
@@ -91,7 +89,6 @@ class TestPackageFunctionalityResolvePackageList(TestPackageClass):
         """Check package "Django" is valid from command line."""
         venv = MagicMock()
         venv.nodes = self.nodes
-
         # Single package Django
         kwargs = {'package_file': None, 'packages': ['Django']}
 
@@ -102,25 +99,104 @@ class TestPackageFunctionalityResolvePackageList(TestPackageClass):
         """Check ['Django', 'whowhatwhere'] resolve from cmd line"""
         venv = MagicMock()
         venv.nodes = self.nodes
-
-        # Single package Django
-        kwargs = {'package_file': None, 'packages': ['Django, whowhatwhere']}
+        kwargs = {'package_file': None, 'packages': ['Django', 'whowhatwhere']}
 
         self.assertEqual(
-            Package.resolve_package_list(venv, kwargs), ['Django', 'whowhatwhere'])
+            sorted(Package.resolve_package_list(venv, kwargs)),
+            sorted(['Django', 'whowhatwhere']))
 
-    def test_resolve_package_list_two_packages(self):
-        """Check ['Django', 'whowhatwhere'] resolve from cmd line"""
+    def test_resolve_package_list_two_packages_one_bad(self):
+        """Check ['Django', 'NONSENSE']  returns just Django"""
         venv = MagicMock()
         venv.nodes = self.nodes
-
-        # Single package Django
-        kwargs = {'package_file': None, 'packages': ['Django, whowhatwhere']}
+        kwargs = {'package_file': None, 'packages': ['Django', 'NONSENSE']}
 
         self.assertEqual(
-            Package.resolve_package_list(venv, kwargs), ['Django', 'whowhatwhere'])
+            Package.resolve_package_list(venv, kwargs), ['Django'])
 
+    def test_resolve_package_list_two_packages_all_bad(self):
+        """Check ['bad1', 'bad2'] return []"""
+        venv = MagicMock()
+        venv.nodes = self.nodes
+        kwargs = {'package_file': None, 'packages': ['bad1', 'bad2']}
 
+        self.assertEqual(
+            Package.resolve_package_list(venv, kwargs), [])
+
+    def test_resolve_package_list_no_packages(self):
+        """Return [] if given nothing"""
+        venv = MagicMock()
+        venv.nodes = self.nodes
+        kwargs = {'package_file': None, 'packages': []}
+
+        self.assertEqual(
+            Package.resolve_package_list(venv, kwargs), [])
+
+    def test_resolve_package_list_single_package_in_file(self):
+        """Check file with contents Django returns ['Django']"""
+        venv = MagicMock()
+        venv.nodes = self.nodes
+        kwargs = {'package_file': 'FakePackageFile.txt', 'packages': []}
+
+        data = "Django"  # mocked file data
+        with patch('{}.open'.format("magellan.package_utils"),
+                   mock_open(read_data=data), create=True):
+            self.assertEqual(
+                Package.resolve_package_list(venv, kwargs), ['Django'])
+
+    def test_resolve_package_list_2_packs_in_file_1_bad(self):
+        """Check file with contents "Django, Nonsense" returns ['Django']"""
+        venv = MagicMock()
+        venv.nodes = self.nodes
+        kwargs = {'package_file': 'FakePackageFile.txt', 'packages': []}
+
+        data = "Django, Nonsense"  # mocked file data
+        with patch('{}.open'.format("magellan.package_utils"),
+                   mock_open(read_data=data), create=True):
+            self.assertEqual(
+                Package.resolve_package_list(venv, kwargs), ['Django'])
+
+    def test_resolve_package_list_empty_file_returns_empty_list(self):
+        """Empty file is returns []"""
+        venv = MagicMock()
+        venv.nodes = self.nodes
+        kwargs = {'package_file': 'FakePackageFile.txt', 'packages': []}
+
+        data = ""  # mocked file data
+        with patch('{}.open'.format("magellan.package_utils"),
+                   mock_open(read_data=data), create=True):
+            self.assertEqual(
+                Package.resolve_package_list(venv, kwargs), ['Django'])
+
+    def test_resolve_package_list_mixed_file_returns_Django(self):
+        """file with "bad1, bad2 bad3 \n Django" returns ["Django"]"""
+        venv = MagicMock()
+        venv.nodes = self.nodes
+        kwargs = {'package_file': 'FakePackageFile.txt', 'packages': []}
+
+        data = "bad1, bad2 bad3 \n Django"  # mocked file data
+        with patch('{}.open'.format("magellan.package_utils"),
+                   mock_open(read_data=data), create=True):
+            self.assertEqual(
+                Package.resolve_package_list(venv, kwargs), ['Django'])
+
+    def test_resolve_package_list_two_packages_in_file(self):
+        pass
+
+    def test_resolve_package_list_(self):
+        pass
+
+    def test_resolve_package_list_(self):
+        pass
+
+    def test_resolve_package_list_(self):
+        pass
+
+    def test_resolve_package_list_(self):
+        pass
+
+    def test_resolve_package_list_(self):
+        pass
 
 
 if __name__ == '__main__':
