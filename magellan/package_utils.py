@@ -215,8 +215,6 @@ class Package(object):
         p_list = kwargs['packages']
         p_file = kwargs['package_file']
 
-        print(p_file)
-
         f_pkgs = []
         if p_file:
             try:
