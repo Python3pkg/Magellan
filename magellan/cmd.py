@@ -55,6 +55,17 @@ def _go(venv_name, **kwargs):
     venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
 
+    pprint(venv.nodes)
+
+    import pickle
+    boo = pickle.load(open('nodes.p', 'rb'))
+
+    print("\n"*2)
+
+    pprint(boo)
+
+    sys.exit()
+
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
@@ -107,10 +118,7 @@ def _go(venv_name, **kwargs):
                 print("DIRECT ANCESTORS - these depend on {}".format(p.name))
                 pprint(p.ancestors(venv.edges))
 
-            # Calculate ancestor trace of package
-            if VERBOSE:
-                print("Calculating ancestor trace for {}".format(p.name))
-
+            # Ancestor trace of package
             f = output_dir + '{}_anc_track.gv'
             write_dot_graph_to_disk_with_distance_colour(
                 venv, f.format(p.name), p.ancestor_trace(venv))
@@ -141,7 +149,7 @@ def main():
         '-s', '--show-all-packages', action='store_true', default=False,
         help="Show all packages by name and exit.")
     parser.add_argument(
-        '-sv', '--show-all-packages-and-versions', action='store_true',
+        '-p', '--show-all-packages-and-versions', action='store_true',
         default=False, help="Show all packages with versions and exit.")
     parser.add_argument(
         '-n', '--venv-name', default=None,
@@ -155,7 +163,7 @@ def main():
                    "--trusted-host sw-srv.maplecroft.com")
 
     parser.add_argument(
-        '-po', '--pip-options', type=str, default=pip_options,
+        '-o', '--pip-options', type=str, default=pip_options,
         help=("String. Pip options for installation of requirements.txt. "
               "E.g. '-f http://my_server.com/deployment_libs/ "
               "--trusted-host my_server.com'"))
@@ -168,7 +176,7 @@ def main():
     parser.add_argument(
         '--path-to-env-bin', default=None, help="Path to virtual env bin")
     parser.add_argument(
-        '-p', '--package-file', type=str, help="File with list of packages")
+        '-f', '--package-file', type=str, help="File with list of packages")
     parser.add_argument(
         '--skip-generic-analysis', action='store_true', default=False,
         help="Skip generic analysis - useful for purely package analysis.")

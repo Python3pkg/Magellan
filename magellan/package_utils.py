@@ -215,6 +215,8 @@ class Package(object):
         p_list = kwargs['packages']
         p_file = kwargs['package_file']
 
+        print(p_file)
+
         f_pkgs = []
         if p_file:
             try:
@@ -224,7 +226,7 @@ class Package(object):
             except IOError as e:
                 print("File not found {0}. {1}".format(p_file, e))
 
-        pkg_list = list(set(p_list + f_pkgs))  # uniqs
+        pkg_list = list(set(p_list + f_pkgs))  # uniqs - hashable only...
 
         ret_pkg_list = []
         for p in pkg_list:
