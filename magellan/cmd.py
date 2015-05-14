@@ -55,17 +55,6 @@ def _go(venv_name, **kwargs):
     venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
 
-    pprint(venv.nodes)
-
-    import pickle
-    boo = pickle.load(open('nodes.p', 'rb'))
-
-    print("\n"*2)
-
-    pprint(boo)
-
-    sys.exit()
-
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 

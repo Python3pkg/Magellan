@@ -88,7 +88,7 @@ class TestPackageFunctionalityResolvePackageList(TestPackageClass):
     """
 
     def test_resolve_package_list_single_package_Django(self):
-        """Check Django is valid from command line."""
+        """Check package "Django" is valid from command line."""
         venv = MagicMock()
         venv.nodes = self.nodes
 
@@ -98,10 +98,29 @@ class TestPackageFunctionalityResolvePackageList(TestPackageClass):
         self.assertEqual(
             Package.resolve_package_list(venv, kwargs), ['Django'])
 
+    def test_resolve_package_list_two_packages(self):
+        """Check ['Django', 'whowhatwhere'] resolve from cmd line"""
+        venv = MagicMock()
+        venv.nodes = self.nodes
 
-    def test_calc_node_distances(self):
-        package = "django-haystack"
-        pass
+        # Single package Django
+        kwargs = {'package_file': None, 'packages': ['Django, whowhatwhere']}
+
+        self.assertEqual(
+            Package.resolve_package_list(venv, kwargs), ['Django', 'whowhatwhere'])
+
+    def test_resolve_package_list_two_packages(self):
+        """Check ['Django', 'whowhatwhere'] resolve from cmd line"""
+        venv = MagicMock()
+        venv.nodes = self.nodes
+
+        # Single package Django
+        kwargs = {'package_file': None, 'packages': ['Django, whowhatwhere']}
+
+        self.assertEqual(
+            Package.resolve_package_list(venv, kwargs), ['Django', 'whowhatwhere'])
+
+
 
 
 if __name__ == '__main__':
