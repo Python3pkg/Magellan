@@ -1,6 +1,7 @@
 from setuptools import setup
 
 install_requires = open('requirements.txt').read().split()
+test_requires = ['mock']  # for Python2.*
 
 classifiers = ['Development Status :: 2 - Pre-Alpha',
                'Intended Audience :: Developers',
@@ -19,6 +20,6 @@ setup(
     classifiers=classifiers,
     long_description=open('README.rst').read(),
     packages=['magellan'],
-    install_requires=install_requires,
+    install_requires=install_requires+test_requires,
     entry_points={'console_scripts': ['magellan = magellan.cmd:main']},
 )

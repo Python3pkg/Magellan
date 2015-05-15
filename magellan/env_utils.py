@@ -165,7 +165,7 @@ class Environment(object):
     def show_all_packages_and_exit(self, with_versions=False):
         """ Prints nodes and exits"""
         print('"Show all packages" selected. Nodes found:')
-        for _, p in self.all_packages.iteritems():
+        for _, p in self.all_packages.items():
             if with_versions:
                 print("{0} : {1} ".format(p.name, p.version))
             else:
@@ -173,7 +173,8 @@ class Environment(object):
         sys.exit(0)
 
     def gen_pipdeptree_reports(self, verbose):
-        """Runs pipdeptree and outputs analysis to disk.
+        """
+        Runs pipdeptree and outputs analysis to disk.
 
         These are package agnostic, but need to be done if parsing for specific
         packages.
@@ -223,7 +224,8 @@ class Environment(object):
 
     # todo (aj) refactor out repetition on connected nodes
     def connected_nodes(self, include_root=False):
-        """ Returns dictionary of how many nodes all nodes are connected to.
+        """
+        Returns dictionary of how many nodes all nodes are connected to.
 
         If including root then everything is connected to everything.
         Root is env root.
@@ -235,7 +237,8 @@ class Environment(object):
         return self.connectedness['conn_nodes']
 
     def _calc_connected_nodes(self, include_root=False):
-        """ sets dictionary of how many nodes all nodes are connected to.
+        """
+        sets dictionary of how many nodes all nodes are connected to.
 
         If including root then everything is connected to everything.
         Root is env root.
@@ -263,7 +266,8 @@ class Environment(object):
         return self.connectedness['weighted_conn']
 
     def _calc_weighted_connections(self, include_root=False):
-        """ Returns measures of connectedness as a fn. of number of nodes and
+        """
+        Returns measures of connectedness as a fn. of number of nodes and
         distance to those nodes.
 
         :param include_root: bool if including env root.
@@ -334,7 +338,8 @@ pickle.dump(edges, open('edges.p','wb'))
 
 
 def _parse_pipdeptree_output_file(f):
-    """Takes a file object as input and parses that into a tree.
+    """
+    Takes a file object as input and parses that into a tree.
 
     Returns a graph as a dictionary
     """

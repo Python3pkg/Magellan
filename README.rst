@@ -24,25 +24,24 @@ Command line interfaces:
 
        optional arguments:
           -h, --help                show this help message and exit
-          -s, --show-all-packages   Show all packages and exit.
           -s, --show-all-packages   Show all packages by name and exit.
-          -sv, --show-all-packages-and-versions
+          -p, --show-all-packages-and-versions
                                     Show all packages with versions and exit.
           -n, --venv-name           Specify name for virtual environment, default is
                                     MagEnv0, MagEnv1 etc
           -r, --requirements        requirements file (e.g. requirements.txt) to install.
-          -po, --pip-options        String. Pip options for installation of
+          -o, --pip-options        String. Pip options for installation of
                                     requirements.txt. E.g. '-f
                                     http://my_server.com/deployment_libs/ --trusted-host
                                     my_server.com'
           -v, --verbose             Verbose mode
-          --super-verbose      Super verbose mode; also sets VERBOSE as True.
+          --super-verbose           Super verbose mode; also sets VERBOSE as True.
           --path-to-env-bin         Path to virtual env bin
-          -p, --package-file        File with list of packages
+          -f, --package-file        File with list of packages
           --skip-generic-analysis   Skip generic analysis - useful for purely package
                                     analysis.
           -c, --check-versions      Just checks the versions of input packages and exits.
-                                    Make sure this is not superseded by '-s'
+                                    Make sure this is not superseded by '-s or -p'
           --output-dir              Set output directory for package specific reports,
                                     default = 'MagellanReports'
 
@@ -71,12 +70,5 @@ Example Usage:
             Only package analysis.
     9. "magellan -n MyEnv -p myPackageFile.txt --check-versions"
             Only check versions of everything in  myPackageFile.txt
-    10."magellan -n MyEnv -p myPackageFile.txt -c | grep Outdated"
+    10. "magellan -n MyEnv -p myPackageFile.txt -c | grep Outdated"
             Same as above but highlight the outdated packages using grep.
-
-
-Roadmap:
-    1. Set up folders for reporting output.
-    2. Redo analysis section to make much cleaner
-    3. Implement snakefood
-    4. Highlight dependencies/packages that are actually unused - redundant imports
