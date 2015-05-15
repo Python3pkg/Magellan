@@ -95,7 +95,7 @@ class Package(object):
         """Returns direct dependency links from a given package."""
         return self.ancestors(edges), self.descendants(edges)
 
-    # YAGNI: to remove/improve later.
+    # todo (aj) YAGNI: to remove/improve later.
     # def produce_package_report(
     #         self, pdp_tree_parsed, pdp_errs_parsed, verbose):
     #     """ Produce package report."""

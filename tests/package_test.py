@@ -111,7 +111,97 @@ class TestPackageClass(unittest.TestCase):
         pass
 
 
-class TestPackageFunctionalityResolvePackageList(TestPackageClass):
+class TestPackageCheckVersion(TestPackageClass):
+    """test check_versions"""
+    def test_WRITE_TESTS(self):
+        self.fail("TestPackageCheckVersion")
+
+
+class TestPackageDescendantsAncestors(TestPackageClass):
+    """
+    Tests for class methods related to ancestors and descendants.
+    In a directed graph, for a node N, with connected nodes N-1 and N+1,
+    where N-1 "points"/depends on N; a similar for N+1. N-1 is the ancestor
+    of N and N+1 is its descendant.
+
+    Good candidate (from Django16) for tests is: celery
+    'celery': 4 ancestors (inc. root), 3 descendants:
+
+    ANCESTORS:
+    [[('django-celery', '3.0.17'), ('celery', '3.0.19'), [('>=', '3.0.17')]],
+     [('marvin', '0.7.8'), ('celery', '3.0.19'), [('==', '3.0.19')]],
+     [('root', '0.0.0'), ('celery', '3.0.19')],
+     [('flower', '0.8.2'), ('celery', '3.0.19'), [('>=', '2.5.0')]]]
+    DESCENDANTS:
+    [[('celery', '3.0.19'),  ('billiard', '2.7.3.34'),
+        [('>=', '2.7.3.28'), ('<', '3.0')]],
+     [('celery', '3.0.19'), ('python-dateutil', '2.4.2'),
+        [('>=', '1.5')]],
+     [('celery', '3.0.19'), ('kombu', '2.5.16'), [('>=', '2.5.10'),
+        ('<', '3.0')]]]
+
+    """
+
+    def setUp(self):
+        """Augment prior setup for specific celery stuff"""
+        super(TestPackageDescendantsAncestors, self).setUp()
+        self.celery_ancestors = [
+            [('django-celery', '3.0.17'), ('celery', '3.0.19'),
+             [('>=', '3.0.17')]],
+            [('marvin', '0.7.8'), ('celery', '3.0.19'), [('==', '3.0.19')]],
+            [('root', '0.0.0'), ('celery', '3.0.19')],
+            [('flower', '0.8.2'), ('celery', '3.0.19'), [('>=', '2.5.0')]]]
+        self.celery_descendants = [
+            [('celery', '3.0.19'),  ('billiard', '2.7.3.34'),
+             [('>=', '2.7.3.28'), ('<', '3.0')]],
+            [('celery', '3.0.19'), ('python-dateutil', '2.4.2'),
+             [('>=', '1.5')]],
+            [('celery', '3.0.19'), ('kombu', '2.5.16'),
+             [('>=', '2.5.10'),('<', '3.0')]]]
+
+    def test_get_ancestors_for_celery(self):
+        """Celery returns correct ancestors"""
+        p = Package('celery')
+        self.assertEqual(p.ancestors(self.edges), self.celery_ancestors)
+
+    def test_get_descendants_for_celery(self):
+        """Celery returns correct descendants"""
+        p = Package('celery')
+        self.assertEqual(p.descendants(self.edges), self.celery_descendants)
+
+    def test_all_ancestors_and_descendants_in_Django16(self):
+        """test call to ancestors and descendants in Django16 twice!
+
+        2nd call should come from cached result.
+        """
+        packages = {x[0].lower(): Package(x[0], x[1]) for x in self.nodes}
+        for p, P in packages.items():
+            _ = P.ancestors(self.edges)
+            _ = P.ancestors(self.edges)
+            _ = P.descendants(self.edges)
+            _ = P.descendants(self.edges)
+
+
+class TestPackageGetDirectLinksToPackage(TestPackageClass):
+    """test get_direct_links_to_package"""
+    def test_WRITE_TESTS(self):
+        self.fail("TestPackageGetDirectLinksToPackage")
+
+
+class TestPackageCalcSelfNodeDistances(TestPackageClass):
+    """test calc_self_node_distances"""
+    def test_WRITE_TESTS(self):
+        self.fail("TestPackageCalcSelfNodeDistances")
+
+
+class TestPackageAncestorTrace(TestPackageClass):
+    """test ancestor_trace"""
+    def test_WRITE_TESTS(self):
+        self.fail("TestPackageAncestorTrace")
+
+# STATIC METHODS:
+
+class TestPackageResolvePackageList(TestPackageClass):
     """
     Using data from environment (nodes, edges) test correct functionality of
     static method resolve_package_list.
@@ -262,79 +352,20 @@ class TestPackageFunctionalityResolvePackageList(TestPackageClass):
                 Package.resolve_package_list(self.venv, kwargs), [])
 
 
-class TestPackageFunctionalityDescendantsAncestors(TestPackageClass):
-    """
-    Tests for class methods related to ancestors and descendants.
-    In a directed graph, for a node N, with connected nodes N-1 and N+1,
-    where N-1 "points"/depends on N; a similar for N+1. N-1 is the ancestor
-    of N and N+1 is its descendant.
-
-    Good candidate (from Django16) for tests is: celery
-    'celery': 4 ancestors (inc. root), 3 descendants:
-
-    ANCESTORS:
-    [[('django-celery', '3.0.17'), ('celery', '3.0.19'), [('>=', '3.0.17')]],
-     [('marvin', '0.7.8'), ('celery', '3.0.19'), [('==', '3.0.19')]],
-     [('root', '0.0.0'), ('celery', '3.0.19')],
-     [('flower', '0.8.2'), ('celery', '3.0.19'), [('>=', '2.5.0')]]]
-    DESCENDANTS:
-    [[('celery', '3.0.19'),  ('billiard', '2.7.3.34'),
-        [('>=', '2.7.3.28'), ('<', '3.0')]],
-     [('celery', '3.0.19'), ('python-dateutil', '2.4.2'),
-        [('>=', '1.5')]],
-     [('celery', '3.0.19'), ('kombu', '2.5.16'), [('>=', '2.5.10'),
-        ('<', '3.0')]]]
-
-    """
-
-    def setUp(self):
-        """Augment prior setup for specific celery stuff"""
-        super(TestPackageFunctionalityDescendantsAncestors, self).setUp()
-        self.celery_ancestors = [
-            [('django-celery', '3.0.17'), ('celery', '3.0.19'),
-             [('>=', '3.0.17')]],
-            [('marvin', '0.7.8'), ('celery', '3.0.19'), [('==', '3.0.19')]],
-            [('root', '0.0.0'), ('celery', '3.0.19')],
-            [('flower', '0.8.2'), ('celery', '3.0.19'), [('>=', '2.5.0')]]]
-        self.celery_descendants = [
-            [('celery', '3.0.19'),  ('billiard', '2.7.3.34'),
-             [('>=', '2.7.3.28'), ('<', '3.0')]],
-            [('celery', '3.0.19'), ('python-dateutil', '2.4.2'),
-             [('>=', '1.5')]],
-            [('celery', '3.0.19'), ('kombu', '2.5.16'),
-             [('>=', '2.5.10'),('<', '3.0')]]]
-
-    def test_get_ancestors_for_celery(self):
-        """Celery returns correct ancestors"""
-        p = Package('celery')
-        self.assertEqual(p.ancestors(self.edges), self.celery_ancestors)
-
-    def test_get_descendants_for_celery(self):
-        """Celery returns correct descendants"""
-        p = Package('celery')
-        self.assertEqual(p.descendants(self.edges), self.celery_descendants)
-
-    def test_all_ancestors_and_descendants_in_Django16(self):
-        """test call to ancestors and descendants in Django16 twice!
-
-        2nd call should come from cached result.
-        """
-        packages = {x[0].lower(): Package(x[0], x[1]) for x in self.nodes}
-        for p, P in packages.items():
-            _ = P.ancestors(self.edges)
-            _ = P.ancestors(self.edges)
-            _ = P.descendants(self.edges)
-            _ = P.descendants(self.edges)
+class TestPackageCalcNodeDistances(TestPackageClass):
+    """test static method calc_node_distances"""
+    def test_WRITE_TESTS(self):
+        self.fail("TestPackageCalcNodeDistances")
 
 
-class TestPackageFunctionalityGetDirectLinksToAnyPackage(TestPackageClass):
+class TestPackageGetDirectLinksToAnyPackage(TestPackageClass):
     """ Tests the static method get_direct_links_to_any_package;
     similar to TestPackageFunctionalityDescendantsAncestors
     but is static and always calculates.
     """
     def setUp(self):
         """Augment prior setup for specific celery stuff"""
-        super(TestPackageFunctionalityGetDirectLinksToAnyPackage, self).setUp()
+        super(TestPackageGetDirectLinksToAnyPackage, self).setUp()
         self.celery_ancestors = [
             [('django-celery', '3.0.17'), ('celery', '3.0.19'),
              [('>=', '3.0.17')]],
@@ -377,19 +408,6 @@ class TestPackageFunctionalityGetDirectLinksToAnyPackage(TestPackageClass):
         args = ('celery', [])
         self.assertRaises(InvalidEdges,
                           Package.get_direct_links_to_any_package, *args)
-
-
-class TestPackageCheckVersion(TestPackageClass):
-    """test check_versions"""
-    def test_WRITE_TESTS(self):
-        self.fail("TestPackageCheckVersion")
-
-
-class TestPackageGetDirectLinksToPackage(TestPackageClass):
-    """test get_direct_links_to_package"""
-    def test_WRITE_TESTS(self):
-        self.fail("TestPackageGetDirectLinksToPackage")
-
 
 
 if __name__ == '__main__':
