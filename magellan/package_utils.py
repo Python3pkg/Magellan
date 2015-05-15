@@ -8,6 +8,14 @@ This is a collection of methods concerning package analysis.
 import re
 
 
+class PackageException(Exception):
+    pass
+
+
+class InvalidEdges(PackageException):
+    pass
+
+
 class Package(object):
     """ Package type to hold analysis of packages."""
 
@@ -338,6 +346,9 @@ class Package(object):
         :param edges: connections in the graph
         :return: ancestors and descendants.
         """
+        if not hasattr(edges, "__iter__"):
+            raise InvalidEdges
+
         ancestors = [x for x in edges if package.lower() == x[1][0].lower()]
         descendants = [x for x in edges if package.lower() == x[0][0].lower()]
         return ancestors, descendants

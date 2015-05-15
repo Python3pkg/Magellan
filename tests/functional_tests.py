@@ -1,4 +1,7 @@
 """
+NB: This is less than draft work-in-progress and subject to change very soon!
+
+
 (). User has a requirements.txt file and wishes to install with
 the standard maplecroft options(*1) to the new virtualenv "MapleEnv1"
 
