@@ -227,7 +227,7 @@ class Package(object):
 
         ret_pkg_list = []
         for p in pkg_list:
-            lo_pac = [x for x in venv.nodes if x[0].lower() == p.lower()]
+            lo_pac = [x for x in venv.nodes if x[0].lower() == str(p).lower()]
             if not lo_pac:
                 print('"{}" not found in environment package list, '
                       'dropping from packages.'.format(p))
