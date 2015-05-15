@@ -4,21 +4,23 @@
 """
 Report code for Magellan here.
 """
+
+# todo (aj) completely change this!
+
 from pprint import pprint
 
 
 def produce_pdp_package_report(
         package, piptree, piperrs,
         file_template="Mag_Report_{}.txt", verbose=False):
-    """Generates a report based on a specific package
+    """
+    Generates a report based on a specific package
     
     :param str package: name of the package to produce report for
     :param dict piptree: parsed output from pipdeptree
     :param dict piperrs: parsed error output from pipdeptree
     :param bool verbose: verbose mode
     """
-    
-    # parsing reports is messy -aj
     
     search_package = package + ' '
     

@@ -10,7 +10,8 @@ in order to analyse and explore packages for Magellan.
 def write_dot_graph_to_disk_with_distance_colour(
         venv, filename, distances, inc_dist_labels=True):
 
-    """ Create dot graph with colours.
+    """
+    Create dot graph with colours.
 
     :param Environment venv: virtual env containing nodes and edges
     :param str filename: output filename
@@ -68,7 +69,8 @@ def write_dot_graph_to_disk_with_distance_colour(
 def write_dot_graph_subset(
         venv, filename, distances, inc_dist_labels=True):
 
-    """ Create dot graph with colours; truncated to only include those nodes
+    """
+    Create dot graph with colours; truncated to only include those nodes
     in "distances"
 
     :param Environment venv: virtual env containing nodes and edges

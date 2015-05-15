@@ -1,16 +1,22 @@
 """
 Module containing Package class.
 
-This is a collection of methods concerning package analysis.
-
+This is a collection of methods concerning packages and their analysis.
 """
 
 import re
 
 
+class PackageException(Exception):
+    pass
+
+
+class InvalidEdges(PackageException):
+    pass
+
+
 class Package(object):
-    """ Package type to hold analysis of packages.
-    """
+    """ Package type to hold analysis of packages."""
 
     def __init__(self, name="", version=None):
         self.name = name
@@ -89,16 +95,18 @@ class Package(object):
         """Returns direct dependency links from a given package."""
         return self.ancestors(edges), self.descendants(edges)
 
-    def produce_package_report(
-            self, pdp_tree_parsed, pdp_errs_parsed, verbose):
-        """ Produce package report."""
-        from magellan.reports import produce_pdp_package_report as ppr
-        ppr(self.name, pdp_tree_parsed, pdp_errs_parsed, verbose)
+    # todo (aj) YAGNI: to remove/improve later.
+    # def produce_package_report(
+    #         self, pdp_tree_parsed, pdp_errs_parsed, verbose):
+    #     """ Produce package report."""
+    #     from magellan.reports import produce_pdp_package_report as ppr
+    #     ppr(self.name, pdp_tree_parsed, pdp_errs_parsed, verbose)
 
     def calc_self_node_distances(
             self, venv, include_root=False, keep_untouched_nodes=False,
             list_or_dict="dict", do_full_calc=False):
-        """ Calculates the distance to a node on an acyclic directed graph.
+        """
+        Calculates the distance to a node on an acyclic directed graph.
 
         :param venv: virtual env containing nodes and edges
         :param include_root=False: whether to include the environment root
@@ -127,7 +135,8 @@ class Package(object):
 
     def ancestor_trace(self, venv, include_root=True,
                        keep_untouched_nodes=False, do_full_calc=False):
-        """ Returns dict indicating ancestor trace of package.
+        """
+        Returns dict indicating ancestor trace of package.
 
         If X depends on Y, then if Y changes it may affect X; not vice versa.
         So if X changes it will not affect Y. Therefore it is the ancestors
@@ -148,7 +157,7 @@ class Package(object):
 
         # Define recursive function in _scope_ of calc_node_distance_to fn.
         def rec_fun(search_set, cur_level):
-            """ Recursive function to determine distance of connected nodes"""
+            """Recursive function to determine distance of connected nodes"""
             to_search_next = []
 
             for p in search_set:
@@ -213,7 +222,6 @@ class Package(object):
 
         p_list = kwargs['packages']
         p_file = kwargs['package_file']
-
         f_pkgs = []
         if p_file:
             try:
@@ -223,11 +231,11 @@ class Package(object):
             except IOError as e:
                 print("File not found {0}. {1}".format(p_file, e))
 
-        pkg_list = list(set(p_list + f_pkgs))  # uniqs
+        pkg_list = list(set(p_list + f_pkgs))  # uniqs - hashable only...
 
         ret_pkg_list = []
         for p in pkg_list:
-            lo_pac = [x for x in venv.nodes if x[0].lower() == p.lower()]
+            lo_pac = [x for x in venv.nodes if x[0].lower() == str(p).lower()]
             if not lo_pac:
                 print('"{}" not found in environment package list, '
                       'dropping from packages.'.format(p))
@@ -241,7 +249,8 @@ class Package(object):
             package, nodes, edges, include_root=False,
             keep_untouched_nodes=False, list_or_dict="list"):
 
-        """ Calculates the distance to a node on an acyclic directed graph.
+        """
+        Calculates the distance to a node on an acyclic directed graph.
 
         :param package: package to calculate distances from
         :param nodes: list of nodes
@@ -263,7 +272,7 @@ class Package(object):
 
         """
 
-        # Define recursive function in _scope_ of calc_node_distance_to fn.
+        # Define recursive function in scope of calc_node_distance_to fn.
         def rec_fun(search_set, cur_level):
             """ Recursive function to determine distance of connected nodes"""
             to_search_next = []
@@ -337,6 +346,9 @@ class Package(object):
         :param edges: connections in the graph
         :return: ancestors and descendants.
         """
+        if not hasattr(edges, "__iter__") or not edges:
+            raise InvalidEdges
+
         ancestors = [x for x in edges if package.lower() == x[1][0].lower()]
         descendants = [x for x in edges if package.lower() == x[0][0].lower()]
         return ancestors, descendants
