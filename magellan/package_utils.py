@@ -1,8 +1,7 @@
 """
 Module containing Package class.
 
-This is a collection of methods concerning package analysis.
-
+This is a collection of methods concerning packages and their analysis.
 """
 
 import re
@@ -96,11 +95,12 @@ class Package(object):
         """Returns direct dependency links from a given package."""
         return self.ancestors(edges), self.descendants(edges)
 
-    def produce_package_report(
-            self, pdp_tree_parsed, pdp_errs_parsed, verbose):
-        """ Produce package report."""
-        from magellan.reports import produce_pdp_package_report as ppr
-        ppr(self.name, pdp_tree_parsed, pdp_errs_parsed, verbose)
+    # YAGNI: to remove/improve later.
+    # def produce_package_report(
+    #         self, pdp_tree_parsed, pdp_errs_parsed, verbose):
+    #     """ Produce package report."""
+    #     from magellan.reports import produce_pdp_package_report as ppr
+    #     ppr(self.name, pdp_tree_parsed, pdp_errs_parsed, verbose)
 
     def calc_self_node_distances(
             self, venv, include_root=False, keep_untouched_nodes=False,
@@ -346,7 +346,7 @@ class Package(object):
         :param edges: connections in the graph
         :return: ancestors and descendants.
         """
-        if not hasattr(edges, "__iter__"):
+        if not hasattr(edges, "__iter__") or not edges:
             raise InvalidEdges
 
         ancestors = [x for x in edges if package.lower() == x[1][0].lower()]

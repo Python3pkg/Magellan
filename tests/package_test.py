@@ -373,8 +373,24 @@ class TestPackageFunctionalityGetDirectLinksToAnyPackage(TestPackageClass):
         self.assertRaises(InvalidEdges,
                           Package.get_direct_links_to_any_package, *args)
 
+    def test_raise_invalid_edges_if_edges_empty(self):
+        args = ('celery', [])
+        self.assertRaises(InvalidEdges,
+                          Package.get_direct_links_to_any_package, *args)
+
+
+class TestPackageCheckVersion(TestPackageClass):
+    """test check_versions"""
+    def test_WRITE_TESTS(self):
+        self.fail("TestPackageCheckVersion")
+
+
+class TestPackageGetDirectLinksToPackage(TestPackageClass):
+    """test get_direct_links_to_package"""
+    def test_WRITE_TESTS(self):
+        self.fail("TestPackageGetDirectLinksToPackage")
+
 
 
 if __name__ == '__main__':
     unittest.main()
-    print("\n" * 3)
