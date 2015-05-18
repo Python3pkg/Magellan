@@ -330,10 +330,11 @@ class Package(object):
         return rels
 
     @staticmethod
-    def check_latest_major_minor_versions(package, version):
+    def check_latest_major_minor_versions(package, version=None):
         """
         Compare 'version' to latest major and minor versions on PyPI.
         """
+
         from pkg_resources import parse_version
 
         versions = Package.get_package_versions_from_pypi(package)
@@ -342,6 +343,18 @@ class Package(object):
             return [None, None], [None, None]
 
         latest_major_version = versions[-1]
+
+        if not version:
+            # If not given a version, cannot do comparison; return latest.
+            return [True, latest_major_version], [True, latest_major_version]
+
+        beyond_up_to_date = (parse_version(version) >
+                             parse_version(latest_major_version))
+        if beyond_up_to_date:
+            print("{0} version {1} is beyond latest version {2}"
+                  .format(package, version, latest_major_version))
+            return [False, version], [False, version]
+
         minor_outdated = None
         major_outdated = (parse_version(version)
                           < parse_version(latest_major_version))
