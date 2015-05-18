@@ -55,10 +55,6 @@ def _go(venv_name, **kwargs):
     venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
 
-    L = Package.calc_node_distances('Django', venv.nodes, venv.edges)
-    pprint(L)
-    sys.exit()
-
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
