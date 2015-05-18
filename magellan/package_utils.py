@@ -15,6 +15,9 @@ class InvalidEdges(PackageException):
     pass
 
 
+class InvalidNodes(PackageException):
+    pass
+
 class Package(object):
     """ Package type to hold analysis of packages."""
 
@@ -27,7 +30,7 @@ class Package(object):
 
         self._descendants = []
         self._ancestors = []
-        self._node_distances = {}
+        self._node_distances = {'list': None, 'dict': None}
         self._ancestor_trace = []
 
     def check_versions(self):
@@ -75,15 +78,16 @@ class Package(object):
 
         """
 
-        if not self._node_distances or do_full_calc:
-            self._node_distances = self.calc_node_distances(
+        if not self._node_distances[list_or_dict] or do_full_calc:
+            self._node_distances[list_or_dict] = self.calc_node_distances(
                 self.name, venv.nodes, venv.edges, include_root,
                 keep_untouched_nodes, list_or_dict)
 
-        return self._node_distances
+        return self._node_distances[list_or_dict]
 
-    def ancestor_trace(self, venv, include_root=True,
-                       keep_untouched_nodes=False, do_full_calc=False):
+    # todo (aj) YAGNI?
+    def ancestor_trace(self, venv, keep_untouched_nodes=False,
+                       do_full_calc=False):
         """
         Returns dict indicating ancestor trace of package.
 
@@ -100,6 +104,9 @@ class Package(object):
         :param Environment venv: virtual env containing nodes and edges
         :return: dict indicating ancestor trace of package
         """
+
+        # todo (aj) this doesn't do much at present:
+        include_root=True
 
         if self._ancestor_trace and not do_full_calc:
             return self._ancestor_trace
@@ -193,9 +200,10 @@ class Package(object):
 
         return ret_pkg_list
 
+    #todo (aj) YAGNI candidate:
     @staticmethod
     def calc_node_distances(
-            package, nodes, edges, include_root=False,
+            package_in, nodes, edges, include_root=False,
             keep_untouched_nodes=False, list_or_dict="list"):
 
         """
@@ -251,11 +259,22 @@ class Package(object):
             # END OF RECURSIVE FUNCTION #
             # ------------------------- #
 
+        package = package_in.lower()
+
         start_distance = -999
         # set up distance dictionary:
+        if not hasattr(nodes, '__iter__'):
+            raise InvalidNodes
+
         dist_dict = {x[0].lower(): start_distance for x in nodes}
         if include_root:
             dist_dict['root'] = start_distance
+
+        if package not in dist_dict:
+            if list_or_dict == 'list':
+                return []
+            else:
+                return {}
 
         # set up search dictionary:
         node_touched = {x[0].lower(): False for x in nodes}
