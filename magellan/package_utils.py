@@ -85,8 +85,9 @@ class Package(object):
 
         return self._node_distances[list_or_dict]
 
-    def ancestor_trace(self, venv, include_root=True,
-                       keep_untouched_nodes=False, do_full_calc=False):
+    # todo (aj) YAGNI?
+    def ancestor_trace(self, venv, keep_untouched_nodes=False,
+                       do_full_calc=False):
         """
         Returns dict indicating ancestor trace of package.
 
@@ -103,6 +104,9 @@ class Package(object):
         :param Environment venv: virtual env containing nodes and edges
         :return: dict indicating ancestor trace of package
         """
+
+        # todo (aj) this doesn't do much at present:
+        include_root=True
 
         if self._ancestor_trace and not do_full_calc:
             return self._ancestor_trace

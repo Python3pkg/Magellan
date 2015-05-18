@@ -1,40 +1,7 @@
 """
 Test suite for the package_utils module.
-
-First we define the correct and incorrect Package behaviour:
-
-Package CLASS should:
-STATIC METHODS:
-- Given a virtual environment (ENVIRONMENT CLASS), and a list of packages (in
-the form of a file [comma, space and/or \n delimited], or as a list supplied
-from the command line) resolve which packages exist in the environment, and
-return a list of those packages by name.
-
-- Given any individual package name, and a list of nodes and edges(*) Calculate
-the "distance" between all other vertices.
-(*) nodes are a list of (PackageName, Version) tuples, edges are a list of
-node-tuple pairs such that the former is the direct ancestor of the latter,
-said another way: the edges are the edges of a directed graph where the
-vertices are the node tuples.
-
-- Given a package and edges, return the immediate ancestors and descendants of
-said package.
-
-Package INSTANCES should:
-- Have a name
-- Optionally a version
-- Be able to return a list of ancestors and descendants based on being
-passed a list of edges.
-    * Edges of the form:
-    [[('root', '0.0.0'), ('haystack-static-pages', '0.3.0')],
-    [('root', '0.0.0'), ('django-mailchimp-v1.3-dj16', '1.3.4-mc')],
-    [('root', '0.0.0'), ('django-cms-saq', '0.3.2')]]
-- Calculate an ancestor trace: all the packages that depend on it up to the
-environment root.
--
-
-
 """
+
 import unittest
 from mock import MagicMock, mock_open, patch
 from magellan.package_utils import (Package, InvalidEdges, InvalidNodes)
@@ -336,8 +303,42 @@ class TestPackageAncestorTrace(TestPackageClass):
         at = p.ancestor_trace(self.venv)
         self.assertEqual(type(at), dict)
 
-    def test_WRITE_TESTS(self):
-        self.fail("TestPackageAncestorTrace")
+    def test_check_ancestor_trace(self):
+
+        fake_nodes = [('a', '1.0.0'), ('b', '2.0.0'),
+                      ('c', '1.4.0'), ('d', '2.0.0'),
+                      ('e', '1.6.0'), ('f', '210.0'),]
+        fake_edges = [[('root', '0.0.0'), fake_nodes[0]],
+                      [('root', '0.0.0'), fake_nodes[1]],
+                      [fake_nodes[0], fake_nodes[1]],
+                      [fake_nodes[1], fake_nodes[2]],
+                      [fake_nodes[2], fake_nodes[3]],
+                      [fake_nodes[3], fake_nodes[4]],
+                      [fake_nodes[4], fake_nodes[5]],]
+
+        f_venv = MagicMock()
+        f_venv.nodes = fake_nodes
+        f_venv.edges = fake_edges
+
+        p = Package(fake_nodes[0][0], fake_nodes[0][1])
+        ret = p.ancestor_trace(f_venv)
+        self.assertEqual(ret,  {('root', '0.0.0'): 1, ('a', '1.0.0'): 0})
+
+        p2 = Package(fake_nodes[1][0], fake_nodes[1][1])
+        ret = p2.ancestor_trace(f_venv)
+        self.assertEqual(ret, {('root', '0.0.0'): 1,
+                               ('b', '2.0.0'): 0,
+                               ('a', '1.0.0'): 1})
+
+        p5 = Package(fake_nodes[5][0], fake_nodes[5][1])
+        ret = p5.ancestor_trace(f_venv)
+        self.assertEqual(ret, {('f', '210.0'): 0,
+                               ('e', '1.6.0'): 1,
+                               ('d', '2.0.0'): 2,
+                               ('c', '1.4.0'): 3,
+                               ('b', '2.0.0'): 4,
+                               ('a', '1.0.0'): 5,
+                               ('root', '0.0.0'): 5, })
 
 
 class TestPackageResolvePackageList(TestPackageClass):
