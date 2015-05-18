@@ -32,51 +32,7 @@ class Package(object):
 
     def check_versions(self):
         """Checks the major and minor versions (PyPI), compares to current."""
-        from distutils.version import LooseVersion
-        from pkg_resources import parse_version
-        import yarg
-
-        try:
-            yp = yarg.get(self.name)
-            rels = yp.release_ids
-        except yarg.HTTPError as e:
-            print("{0} not found at PyPI; "
-                  "no version information available.".format(self.name))
-            # log e
-            return None
-
-        rels.sort(key=LooseVersion)
-        if not rels:
-            print('No version info available for "{}" at CheeseShop (PyPI)'
-                  .format(self.name))
-            return
-
-        major_outdated = parse_version(self.version) < parse_version(rels[-1])
-        if major_outdated:
-            print("{0} Major Outdated: {1} > {2}"
-                  .format(self.name, rels[-1], self.version))
-            major_v = self.version.split('.')[0]
-            minor_v = self.version.split('.')[1]
-
-            minor_rels = [x for x in rels
-                          if x.split('.')[0] == major_v
-                          and x.split('.')[1] == minor_v]
-
-            if not minor_rels:
-                print("Unable to check minor_versions for {0}"
-                      .format(self.name))
-            else:
-                minor_outdated = (parse_version(self.version)
-                                  < parse_version(minor_rels[-1]))
-                if minor_outdated:
-                    print("{0} Minor Outdated: {1} > {2}"
-                          .format(self.name, minor_rels[-1], self.version))
-                else:
-                    print("{0} Minor up to date: {1} <= {2}"
-                          .format(self.name, minor_rels[-1], self.version))
-        else:
-            print("{0} up to date, current: {1}, latest: {2}"
-                  .format(self.name, self.version, rels[-1]))
+        return self.check_latest_major_minor_versions(self.name, self.version)
 
     def ancestors(self, edges):
         """Packages that this depends on."""
@@ -94,13 +50,6 @@ class Package(object):
     def get_direct_links_to_package(self, edges):
         """Returns direct dependency links from a given package."""
         return self.ancestors(edges), self.descendants(edges)
-
-    # todo (aj) YAGNI: to remove/improve later.
-    # def produce_package_report(
-    #         self, pdp_tree_parsed, pdp_errs_parsed, verbose):
-    #     """ Produce package report."""
-    #     from magellan.reports import produce_pdp_package_report as ppr
-    #     ppr(self.name, pdp_tree_parsed, pdp_errs_parsed, verbose)
 
     def calc_self_node_distances(
             self, venv, include_root=False, keep_untouched_nodes=False,
@@ -352,3 +301,82 @@ class Package(object):
         ancestors = [x for x in edges if package.lower() == x[1][0].lower()]
         descendants = [x for x in edges if package.lower() == x[0][0].lower()]
         return ancestors, descendants
+
+    @staticmethod
+    def get_package_versions_from_pypi(package):
+        """
+        Query PyPI for latest versions of package, return in order.
+
+        return list: version info
+        """
+        from distutils.version import LooseVersion
+        import yarg
+
+        try:
+            yp = yarg.get(package)
+            rels = yp.release_ids
+        except yarg.HTTPError as e:
+            print("{0} not found at PyPI; "
+                  "no version information available.".format(package))
+            # log e
+            return None
+
+        rels.sort(key=LooseVersion)
+        if not rels:
+            print('No version info available for "{}" at CheeseShop (PyPI)'
+                  .format(package))
+            return None
+
+        return rels
+
+    @staticmethod
+    def check_latest_major_minor_versions(package, version):
+        """
+        Compare 'version' to latest major and minor versions on PyPI.
+        """
+        from pkg_resources import parse_version
+
+        versions = Package.get_package_versions_from_pypi(package)
+        if versions is None:
+            # Something went wrong when looking for versions:
+            return [None, None], [None, None]
+
+        latest_major_version = versions[-1]
+        minor_outdated = None
+        major_outdated = (parse_version(version)
+                          < parse_version(latest_major_version))
+
+        if major_outdated:
+            print("{0} Major Outdated: {1} > {2}"
+                  .format(package, versions[-1], version))
+            major_v = version.split('.')[0]
+            minor_v = version.split('.')[1]
+
+            minor_versions = [x for x in versions
+                              if x.split('.')[0] == major_v
+                              and x.split('.')[1] == minor_v]
+
+            if not minor_versions:
+                print("Unable to check minor_versions for {0}"
+                      .format(package))
+                latest_minor_version = None
+            else:
+                latest_minor_version = minor_versions[-1]
+                minor_outdated = (parse_version(version)
+                                  < parse_version(latest_minor_version))
+                if minor_outdated:
+                    print("{0} Minor Outdated: {1} > {2}"
+                          .format(package, minor_versions[-1], version))
+                    minor_outdated = True
+                else:
+                    print("{0} Minor up to date: {1} <= {2}"
+                          .format(package, minor_versions[-1], version))
+        else:
+            minor_outdated = False
+            latest_minor_version = latest_major_version
+            print("{0} up to date, current: {1}, latest: {2}"
+                  .format(package, version, versions[-1]))
+
+        min_ret = [minor_outdated, latest_minor_version]
+        maj_ret = [major_outdated, latest_major_version]
+        return min_ret, maj_ret

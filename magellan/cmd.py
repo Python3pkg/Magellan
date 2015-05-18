@@ -85,7 +85,7 @@ def _go(venv_name, **kwargs):
         if check_versions:
             for p_k, p in packages.items():
                 print("Analysing {}".format(p.name))
-                p.check_versions()
+                _, _ = p.check_versions()
             sys.exit(0)
 
         for p_k, p in packages.items():
