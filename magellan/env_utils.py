@@ -255,40 +255,6 @@ class Environment(object):
 
         self.connectedness['conn_nodes'] = conn_nodes
 
-    def sq_weighted_connections(self):
-        if 'sq_weighted_conn' not in self.connectedness:
-            self._calc_weighted_connections()
-        return self.connectedness['sq_weighted_conn']
-
-    def weighted_connections(self):
-        if 'weighted_conn' not in self.connectedness:
-            self._calc_weighted_connections()
-        return self.connectedness['weighted_conn']
-
-    def _calc_weighted_connections(self, include_root=False):
-        """
-        Returns measures of connectedness as a fn. of number of nodes and
-        distance to those nodes.
-
-        :param include_root: bool if including env root.
-        """
-        weighted_conn = {}
-        sq_weighted_conn = {}
-        for n in self.nodes:
-            n_key = n[0].lower()
-            dist_dict = Package.calc_node_distances(
-                n_key, self.nodes, self.edges, include_root,
-                list_or_dict='dict')
-
-            weighted_conn[n] = sum(
-                map(lambda x: 1.0/(1+x), dist_dict.values())
-            )
-            sq_weighted_conn[n] = sum(map(lambda x: 1.0/(1 + x*(2+x)),
-                                          dist_dict.values()))
-
-        self.connectedness['sq_weighted_conn'] = sq_weighted_conn
-        self.connectedness['weighted_conn'] = weighted_conn
-
 
 def _get_random_string_of_length_n(n):
     """Returns random string of length n"""
