@@ -327,8 +327,15 @@ class TestPackageCalcSelfNodeDistances(TestPackageClass):
         self.assertEqual(type(ret), dict)
         self.assertEqual(ret, p._node_distances['dict'])
 
+
 class TestPackageAncestorTrace(TestPackageClass):
     """test ancestor_trace"""
+
+    def test_returns_dict(self):
+        p = Package("Django")
+        at = p.ancestor_trace(self.venv)
+        self.assertEqual(type(at), dict)
+
     def test_WRITE_TESTS(self):
         self.fail("TestPackageAncestorTrace")
 
