@@ -13,6 +13,8 @@ class TestEnvSetup(unittest.TestCase):
         venv = Environment("testName")
         self.assertEqual(venv.name, "testName")
 
+    def test_foo(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()

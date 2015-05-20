@@ -39,9 +39,13 @@ class Environment(object):
         req_file = kwargs['requirements']
         if req_file:
             self.create_vex_new_virtual_env()
-            self.vex_install_requirements(req_file, kwargs['pip_options'])
+            self.vex_install_requirements(self.name, req_file,
+                                          kwargs['pip_options'])
+
+            self.vex_install_requirement(self.name, "pipdeptree", "")
         else:
             self.name, self.name_bit = self.vex_resolve_venv_name(self.name)
+
         self.resolve_venv_bin(kwargs['path_to_env_bin'])
         self.query_nodes_edges_in_venv()
 
@@ -81,15 +85,22 @@ class Environment(object):
         vex_list = run_in_subp_ret_stdout('vex --list')[0].split("\n")
         return venv_name in vex_list
 
-    def vex_install_requirements(self, req_file, pip_options):
+    @staticmethod
+    def vex_install_requirements(env_name, req_file, pip_options):
         """ Installs requirements into virtual env
         :param req_file: Requirements to install
         :param pip_options:
         """
         cmd_to_run = ('vex {0} pip install -r {1} {2}'
-                      .format(self.name, req_file, pip_options))
+                      .format(env_name, req_file, pip_options))
         run_in_subprocess(cmd_to_run)
-        run_in_subprocess('vex {0} pip install pipdeptree'.format(self.name))
+
+    @staticmethod
+    def vex_install_requirement(env_name, requirement, pip_options):
+        """Install SINGLE requirement into env_name using vex."""
+        cmd_to_run = ('vex {0} pip install {1} {2}'
+                      .format(env_name, requirement, pip_options))
+        run_in_subprocess(cmd_to_run)
 
     @staticmethod
     def vex_resolve_venv_name(venv_name=None):
@@ -110,6 +121,16 @@ class Environment(object):
             name_bit = '_'
 
         return venv_name, name_bit
+
+    @staticmethod
+    def vex_remove_virtual_env(venv_name=None):
+        """Removes virtual environment"""
+        if venv_name is not None:
+            run_in_subprocess("vex -r {} true".format(venv_name))
+
+    def vex_delete_env_self(self):
+        """Deletes itself as a virtual environment; be careful!"""
+        self.vex_remove_virtual_env(self.name)
 
     def resolve_venv_bin(self, bin_path):
         """ Resolves the bin directory.
@@ -254,40 +275,6 @@ class Environment(object):
             conn_nodes[n] = len(dist_dict)
 
         self.connectedness['conn_nodes'] = conn_nodes
-
-    def sq_weighted_connections(self):
-        if 'sq_weighted_conn' not in self.connectedness:
-            self._calc_weighted_connections()
-        return self.connectedness['sq_weighted_conn']
-
-    def weighted_connections(self):
-        if 'weighted_conn' not in self.connectedness:
-            self._calc_weighted_connections()
-        return self.connectedness['weighted_conn']
-
-    def _calc_weighted_connections(self, include_root=False):
-        """
-        Returns measures of connectedness as a fn. of number of nodes and
-        distance to those nodes.
-
-        :param include_root: bool if including env root.
-        """
-        weighted_conn = {}
-        sq_weighted_conn = {}
-        for n in self.nodes:
-            n_key = n[0].lower()
-            dist_dict = Package.calc_node_distances(
-                n_key, self.nodes, self.edges, include_root,
-                list_or_dict='dict')
-
-            weighted_conn[n] = sum(
-                map(lambda x: 1.0/(1+x), dist_dict.values())
-            )
-            sq_weighted_conn[n] = sum(map(lambda x: 1.0/(1 + x*(2+x)),
-                                          dist_dict.values()))
-
-        self.connectedness['sq_weighted_conn'] = sq_weighted_conn
-        self.connectedness['weighted_conn'] = weighted_conn
 
 
 def _get_random_string_of_length_n(n):

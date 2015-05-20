@@ -71,4 +71,4 @@ Example Usage:
     9. "magellan -n MyEnv -p myPackageFile.txt --check-versions"
             Only check versions of everything in  myPackageFile.txt
     10. "magellan -n MyEnv -p myPackageFile.txt -c | grep Outdated"
-            Same as above but highlight the outdated packages using grep.
+        g    Same as above but highlight the outdated packages using grep.
