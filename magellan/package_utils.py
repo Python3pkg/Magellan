@@ -419,29 +419,6 @@ class PyPIHelper(object):
     """Collection of static methods to assist in interrogating PyPI"""
 
     @staticmethod
-    def get_dependencies_for_spec_ver(package, version):
-        """
-        Query cheese shop, for specfic version of package.
-        Download into temp directory.
-        Extract
-        Run setup.py egg_info, parse requirements.
-        """
-
-        ret_json = PyPIHelper.acquire_package_json_info(package)
-        # FixMe! not robust
-        releases = ret_json['releases'].keys()
-        if version not in releases:
-            print("Version {0} for {1} not found on PyPI from list of \n {2}"
-                  .format(version, package, releases))
-            return ret_json
-        else:
-            fetch_url = ret_json['releases'][version][0]['url']
-            print(fetch_url)
-            info = {'name': package, 'version': version}
-            print(PyPIHelper.download_and_store_package(fetch_url, **info))
-            return ret_json
-
-    @staticmethod
     def acquire_package_json_info(package):
         """
         Perform lookup on packages and versions. Currently just uses PyPI.
@@ -471,40 +448,3 @@ class PyPIHelper(object):
             if verbose:
                 print("failed to download {0}".format(package))
             return {}
-
-    @staticmethod
-    def download_and_store_package(url, location=None, **info):
-        """
-        :param url: url to get
-        :param location: location to store download
-        :return: location of download or None
-        """
-
-        if not location:
-            location = ("/tmp/myFilePlace{}{}"
-                        .format(info['name'], info['version']))
-
-        r = requests.get(url)
-        if r.status_code == 200:  # successfully downloaded package
-            # write to local cache:
-            with open(location, 'wb') as fd:
-                for chunk in r.iter_content():
-                    fd.write(chunk)
-            return location
-        else:
-            print("Failed to download {0}".format(url))
-            return None
-
-    @staticmethod
-    def extract_downloaded_package_into_dir(file):
-        pass
-
-    @staticmethod
-    def get_dependencies_from_package_files(location):
-        """ Run python setup.py egg_info
-
-
-        :param str location: package location (specifically setup.py)
-        :return:
-        """
-        pass

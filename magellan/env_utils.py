@@ -122,6 +122,16 @@ class Environment(object):
 
         return venv_name, name_bit
 
+    @staticmethod
+    def vex_remove_virtual_env(venv_name=None):
+        """Removes virtual environment"""
+        if venv_name is not None:
+            run_in_subprocess("vex -r {} true".format(venv_name))
+
+    def vex_delete_env_self(self):
+        """Deletes itself as a virtual environment; be careful!"""
+        self.vex_remove_virtual_env(self.name)
+
     def resolve_venv_bin(self, bin_path):
         """ Resolves the bin directory.
         """

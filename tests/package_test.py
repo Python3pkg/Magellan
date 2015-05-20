@@ -635,14 +635,5 @@ class TestPackageGetDirectLinksToAnyPackage(TestPackageClass):
                           Package.get_direct_links_to_any_package, *args)
 
 
-class TestPackageGetDependenciesForVersion(TestPackageClass):
-    """
-    Tests for getting dependencies from PyPI
-    """
-    def test_get_package_deps_of_version_returns_list(self):
-        self.assertEqual(
-            type(Package.get_dependencies_for_spec_ver('a', '1.0.0')),
-            list)
-
 if __name__ == '__main__':
     unittest.main()
