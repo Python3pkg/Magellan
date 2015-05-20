@@ -12,8 +12,7 @@ classifiers = ['Development Status :: 2 - Pre-Alpha',
 
 setup(
     name='magellan',
-    description=('Exploration of python package dependencies '
-                 'in your environment.'),
+    description='Explore python packages like your name is Fernando.',
     author='AJ De-Gol',
     author_email='anthony.de-gol@maplecroft.com',
     version='0.1',

@@ -17,6 +17,10 @@ from magellan.analysis import (
 
 from magellan.reports import produce_pdp_package_report
 
+from magellan.utils import mkdir_p, MagellanConfig
+
+from magellan.deps_utils import DepTools
+
 VERBOSE = False
 SUPER_VERBOSE = False
 
@@ -47,16 +51,20 @@ def _go(venv_name, **kwargs):
     if check_versions:
         skip_generic_analysis = True
 
-    output_dir = kwargs['output_dir'].rstrip('/') + '/'
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-
     # Environment Setup
+    if not os.path.exists(MagellanConfig.cache_dir):
+        mkdir_p(MagellanConfig.cache_dir)
+
     venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
 
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
+
+    if kwargs['upgrade_conflicts']:
+        DepTools.detect_upgrade_conflicts(kwargs['upgrade_conflicts'])
+
+    sys.exit()
 
     # Analysis
     if package_list or not skip_generic_analysis:
@@ -64,6 +72,7 @@ def _go(venv_name, **kwargs):
         venv.gen_pipdeptree_reports(VERBOSE)
         venv.parse_pipdeptree_reports()
 
+    skip_generic_analysis = True  # todo (aj) refactor prox.onda
     # Generic Analysis - package-agnostic reports
     if not skip_generic_analysis:
         venv.write_dot_graph_to_disk()
@@ -149,7 +158,7 @@ def main():
         help="requirements file (e.g. requirements.txt) to install.")
     # todo (aj) change this before release
     pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
-                   "--trusted-host sw-srv.maplecroft.com")
+                   "--trusted-host sw-srv.maplecroft.com ")
 
     parser.add_argument(
         '-o', '--pip-options', type=str, default=pip_options,
@@ -177,6 +186,15 @@ def main():
         '--output-dir', type=str, default="MagellanReports/",
         help=("Set output directory for package specific reports, "
               "default = 'MagellanReports'"))
+    parser.add_argument(
+        '-U', '--upgrade-conflicts', action='append', nargs=2,
+        help=("Check whether upgrading a package will conflict with the "
+              "current environment. NB Can be used multiple times but must "
+              "always specify desired version. "
+              "Usage -U <package-name> <desired-version>."))
+    parser.add_argument(
+        '--cache-dir', type=str, default=MagellanConfig.cache_dir,
+        help="Cache directory - used for pip installs.")
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
@@ -186,6 +204,9 @@ def main():
     # Process arguments:
     args = parser.parse_args()
     kwargs = vars(args)
+
+    # Update cache options
+    kwargs['pip_options'] += " --cache-dir {}".format(kwargs['cache_dir'])
 
     global VERBOSE
     global SUPER_VERBOSE
