@@ -1,26 +1,36 @@
 """
 NB: This is less than draft work-in-progress and subject to change very soon!
 
+Example Usage:
+"magellan" or "magellan -h"
+Prints out help file.
 
-(). User has a requirements.txt file and wishes to install with
-the standard maplecroft options(*1) to the new virtualenv "MapleEnv1"
+"magellan -r requirements.txt -n MyEnv"
+Sets up virtual environment "MyEnv", installs the requirements file using pip and runs generic analysis.
 
-(*1) standard maplecroft options:
-pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
-                   "--trusted-host sw-srv.maplecroft.com")
+"magellan -s"
+Shows all packages in current environment. Performs no further analysis.
 
-(). Now the package is installed the user wishes to view all installed packages
-in the environment.
+magellan -sv"
+As above, with versions.
 
-(). As above, but with versions
+"magellan -s -n MyEnv"
+Shows all packages in MyEnv environment.
 
-(). The user wishes to check if the Django package is outdated
+"magellan Package1 Package2 -n MyEnv -v"
+Searches MyEnv for the packages "Package1" and "Package2" in verbose mode. Will produce a dependency graph and reports for MyEnv as well as reports for the specified package.
 
-(). User wishes to find out about specific packages so creates a file
-with Django, requests, and an unknown package
+"magellan Package1 Package2 -n MyEnv --package-file myPackageFile.txt"
+Same as above but will also take, in addition to Package[s]1/2 a file containing a list of packages (csv, space or newline delimited.)
 
-Pleased that they see the packages in place they wish to learn more
-about the Django package, specifically what it is connected to.
+"magellan -n MyEnv --package-file myPackageFile.txt --skip-generic-analysis"
+Only package analysis.
 
+"magellan -n MyEnv -p myPackageFile.txt --check-versions"
+Only check versions of everything in myPackageFile.txt
 
+"magellan -n MyEnv -p myPackageFile.txt -c | grep Outdated"
+Same as above but highlight the outdated packages using grep.
 """
+
+from magellan.utils import run_in_subp_ret_stdout as runna

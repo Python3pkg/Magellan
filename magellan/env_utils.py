@@ -39,9 +39,13 @@ class Environment(object):
         req_file = kwargs['requirements']
         if req_file:
             self.create_vex_new_virtual_env()
-            self.vex_install_requirements(req_file, kwargs['pip_options'])
+            self.vex_install_requirements(self.name, req_file,
+                                          kwargs['pip_options'])
+
+            self.vex_install_requirement(self.name, "pipdeptree", "")
         else:
             self.name, self.name_bit = self.vex_resolve_venv_name(self.name)
+
         self.resolve_venv_bin(kwargs['path_to_env_bin'])
         self.query_nodes_edges_in_venv()
 
@@ -81,15 +85,22 @@ class Environment(object):
         vex_list = run_in_subp_ret_stdout('vex --list')[0].split("\n")
         return venv_name in vex_list
 
-    def vex_install_requirements(self, req_file, pip_options):
+    @staticmethod
+    def vex_install_requirements(env_name, req_file, pip_options):
         """ Installs requirements into virtual env
         :param req_file: Requirements to install
         :param pip_options:
         """
         cmd_to_run = ('vex {0} pip install -r {1} {2}'
-                      .format(self.name, req_file, pip_options))
+                      .format(env_name, req_file, pip_options))
         run_in_subprocess(cmd_to_run)
-        run_in_subprocess('vex {0} pip install pipdeptree'.format(self.name))
+
+    @staticmethod
+    def vex_install_requirement(env_name, requirement, pip_options):
+        """Install SINGLE requirement into env_name using vex."""
+        cmd_to_run = ('vex {0} pip install {1} {2}'
+                      .format(env_name, requirement, pip_options))
+        run_in_subprocess(cmd_to_run)
 
     @staticmethod
     def vex_resolve_venv_name(venv_name=None):

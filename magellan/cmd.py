@@ -8,7 +8,7 @@ import os
 import sys
 from pprint import pprint
 
-from magellan.package_utils import Package
+from magellan.package_utils import Package, PyPIHelper
 
 from magellan.env_utils import Environment
 
@@ -57,6 +57,18 @@ def _go(venv_name, **kwargs):
 
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
+
+
+    ret = PyPIHelper.acquire_package_json_info('gevent')
+    ret = PyPIHelper.acquire_package_json_info('brFFevent')
+    pprint(ret)
+
+    UC = {}
+    if kwargs['upgrade_conflicts']:
+        for u in kwargs['upgrade_conflicts']:
+            UC[u[0]] = Package(u[0], u[1])
+    pprint(UC)
+    sys.exit()
 
     # Analysis
     if package_list or not skip_generic_analysis:
@@ -177,6 +189,12 @@ def main():
         '--output-dir', type=str, default="MagellanReports/",
         help=("Set output directory for package specific reports, "
               "default = 'MagellanReports'"))
+    parser.add_argument(
+        '-U', '--upgrade-conflicts', action='append', nargs=2,
+        help=("Check whether upgrading a package will conflict with the "
+              "current environment. "
+              "Usage -U <package-name> <desired-version>.")
+    )
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
