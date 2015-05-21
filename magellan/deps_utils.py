@@ -1,10 +1,17 @@
+from pprint import pprint
 import pickle
+import operator
+from pkg_resources import parse_version
 
 from magellan.env_utils import Environment
 from magellan.utils import MagellanConfig, run_in_subprocess
 
 
 class DepTools(object):
+    ops = {'<': operator.lt, '<=': operator.le,
+           '==': operator.eq, '!=': operator.ne,
+           '>=': operator.ge, '>': operator.gt, }
+
     @staticmethod
     def get_deps_for_package_version(package, version):
         """Gets dependencies for a specific version of a package.
@@ -18,6 +25,8 @@ class DepTools(object):
             4. Run file, which pickles results to temp file
             5. reads that file from current program
             6. deletes file and returns info
+
+        7. Delete tmp env?
         """
 
         req_out_file = ("{0}_{1}_req.dat"
@@ -66,10 +75,28 @@ class DepTools(object):
             run_in_subprocess("rm {0}".format(req_out_file))
         run_in_subprocess("rm {0}".format(tmp_out_file))
 
-        # 7. Delete tmp virtual env - not necessary as it's always overwritten.
+        # 7. Delete tmp virtual env - not necessary as it's always overwritten?
         # tmp_env.vex_delete_env_self()
 
         return result
+
+    @staticmethod
+    def requirements_met(cur_ver, requirement_spec):
+        """ tests to see whether a requirement is satisfied by the
+        current version.
+        :param str cur_ver: current version to use for comparison.
+        :param tuple (str, str) requirement_spec: is tuple of: (spec, version)
+        :returns: bool
+
+        """
+        requirement_ver = requirement_spec[1]
+        requirement_sym = requirement_spec[0]
+
+        requirement_met = DepTools.ops[requirement_sym](
+            parse_version(cur_ver), parse_version(requirement_ver))
+
+        print(cur_ver, requirement_sym, requirement_ver, requirement_met)
+        return requirement_met
 
     @staticmethod
     def detect_upgrade_conflicts(data):
@@ -80,16 +107,21 @@ class DepTools(object):
         :param data: List of (package, desired_version)'s
         """
 
-        UCdeps = {}
+        uc_deps = {}
         for u in data:
             # todo (aj) check version exists on PyPI first.
             package = u[0]
             version = u[1]
-            UCdeps[package] = DepTools.get_deps_for_package_version(
+            uc_deps[package] = DepTools.get_deps_for_package_version(
                 package, version)
 
-            for r in UCdeps[package].requires():
-                print(r.project_name, r.key, r.specs)
+            pprint(uc_deps)
+            if not uc_deps[package].requires():
+                print("No requirement specs for {}".format(package))
+            else:
+                for r in uc_deps[package].requires():
+                    print(r.project_name, r.key, r.specs)
+
 
 
 def _return_interrogation_script(package, filename=None):
@@ -112,3 +144,75 @@ pkgs  = pip.get_installed_distributions()
     nl = '\n'
     return head + nl + mid + nl + out + nl + end + nl  # last one for PEP8 :p
 
+
+## for safekeeping / immediate delete - don't look here!
+# ## PRE SETUP
+# f = "/home/ade-gol/code/Magellan/dev/playground/nodes.p"
+# nodes = pickle.load(open(f, 'rb'))
+# #pprint(nodes)
+#
+# f = "/home/ade-gol/code/Magellan/dev/playground/edges.p"
+# edges = pickle.load(open(f, 'rb'))
+# #pprint(edges)
+#
+#
+# from mock import MagicMock
+# venv = MagicMock()
+# venv.nodes = nodes
+# venv.edges = edges
+#
+# ## defs
+# import pip
+# from pprint import pprint
+# import pickle
+# import operator
+# from pkg_resources import parse_version
+#
+# ops = {'<': operator.lt, '<=': operator.le,
+#         '==': operator.eq,'!=': operator.ne,
+#         '>=': operator.ge, '>': operator.gt, }
+#
+# def requirements_met(cur_ver, requirement_spec):
+#     """ tests to see whether a requirement is satisfied by the current version.
+#     requirement_spec is tuple of: (spec, version)
+#     :returns: bool
+#
+#     """
+#     requirement_ver = requirement_spec[1]
+#     requirement_sym = requirement_spec[0]
+#
+#     requirement_met = ops[requirement_sym](parse_version(cur_ver), parse_version(requirement_ver))
+#
+#     print(cur_ver, requirement_sym, requirement_ver, requirement_met)
+#     return(requirement_met)
+#
+#
+#
+# ##
+# package = 'fabtools'
+# f = "/tmp/magellan/cache/fabtools_0_19_0_req.dat"
+#
+# package = "celery"
+# f = "/tmp/magellan/cache/celery_3_0_19_req.dat"
+# # This is what's returned from  DepTools.get_deps_for_package_version(package, version)
+# # where "version" here is desired version.
+# uc_deps = {package: {"requirements": pickle.load(open(f, 'rb'))}}
+#
+# ##
+#
+# pprint(uc_deps)
+# if not uc_deps[package]['requirements'].requires():
+#     print("No requirement specs for {}".format(package))
+#
+# # SOME CODE VALID BUT NOT ALL!
+# for r in uc_deps[package]['requirements'].requires():
+#     print(r.project_name, r.key, r.specs)
+#     # using venv.nodes as pip.get_installed_distributions() is for cur. env
+#     current_version = [x for x in venv.nodes if x[0].lower() == r.key][0][1]
+#     for s in r.specs:
+#         requirements_met(current_version, s)
+#
+#
+# # for
+# # django-chimpaign==0.1.1 -> Django [required: ==1.4.5, installed: 1.6.8]
+# #

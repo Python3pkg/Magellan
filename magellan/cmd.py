@@ -65,6 +65,12 @@ def _go(venv_name, **kwargs):
     if kwargs['upgrade_conflicts']:
         DepTools.detect_upgrade_conflicts(kwargs['upgrade_conflicts'])
 
+
+
+    # test cmd:
+    # magellan -n Django16 -U pycrypto 2.6.1
+
+
     sys.exit()
 
     # Analysis
