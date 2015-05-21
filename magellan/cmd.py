@@ -17,7 +17,7 @@ from magellan.analysis import (
 
 from magellan.reports import produce_pdp_package_report
 
-from magellan.utils import mkdir_p, MagellanConfig
+from magellan.utils import MagellanConfig
 
 from magellan.deps_utils import DepTools
 
@@ -41,6 +41,7 @@ def _go(venv_name, **kwargs):
     If packages are specified then do package specific analysis. Otherwise
     perform general analysis on environment.
     """
+    # todo (aj) update above.
 
     global VERBOSE
     global SUPER_VERBOSE
@@ -52,8 +53,8 @@ def _go(venv_name, **kwargs):
         skip_generic_analysis = True
 
     # Environment Setup
-    if not os.path.exists(MagellanConfig.cache_dir):
-        mkdir_p(MagellanConfig.cache_dir)
+    if not os.path.exists(MagellanConfig.cache_dir) and MagellanConfig.caching:
+        MagellanConfig.setup_cache()
 
     venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
@@ -72,7 +73,8 @@ def _go(venv_name, **kwargs):
         venv.gen_pipdeptree_reports(VERBOSE)
         venv.parse_pipdeptree_reports()
 
-    skip_generic_analysis = True  # todo (aj) refactor prox.onda
+    # todo (aj) NBNBNBNBNBNBNBNBNBNB refactor prox.onda
+    skip_generic_analysis = True
     # Generic Analysis - package-agnostic reports
     if not skip_generic_analysis:
         venv.write_dot_graph_to_disk()
@@ -90,7 +92,7 @@ def _go(venv_name, **kwargs):
 
     # Package Specific Analysis
     if package_list:
-
+        
         if check_versions:
             for p_k, p in packages.items():
                 print("Analysing {}".format(p.name))

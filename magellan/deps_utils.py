@@ -10,17 +10,29 @@ class DepTools(object):
         """Gets dependencies for a specific version of a package.
 
         Specifically:
-            1. sets up temporary virtualenv
+        0. Check if this has already been done and cached & return that.
+            1. Set up temporary virtualenv
             2. installs package/version into there using pip
-            3. interrogates through virtual env using vex/pip/setuptool combo
-            4. pickles results to temp file
+            3. Write file to interrogate through virtual env using
+            vex/pip/setuptool combo
+            4. Run file, which pickles results to temp file
             5. reads that file from current program
             6. deletes file and returns info
         """
 
+        req_out_file = ("{0}_{1}_req.dat"
+                        .format(package.lower(), version.replace(".", "_")))
+
+        # 0. Check if this has already been done and cached & return that.
+        import os
+        cached_file = MagellanConfig.cache_dir + "/" + req_out_file
+        if os.path.exists(cached_file):
+            print("Using previously cached result at {0}".format(cached_file))
+            return pickle.load(open(cached_file, 'rb'))
+
         # todo (aj) Tests as this is fragile in too many ways!
 
-        # 1. sets up temporary virtualenv
+        # 1. Set up temporary virtualenv
         tmp_env = Environment(MagellanConfig.tmp_env_dir)
         tmp_env.create_vex_new_virtual_env()  # NB: delete if extant!!
 
@@ -32,27 +44,29 @@ class DepTools(object):
         tmp_env.vex_install_requirement(
             tmp_env.name, pip_package_str, tmp_pip_options)
 
-        # 3. interrogates through virtual env using vex/pip/setuptool combo
-        # Output to disk:
-
+        # 3. Write file to interrogate through virtual env using
+        # vex/pip/setuptool combo
         tmp_out_file = 'mag_temp_file.py'
-        req_out_file = ("{0}_{1}_req.dat"
-              .format(package.lower(), version.replace(".","_")))
-
         with open(tmp_out_file, 'wb') as outfile:
             outfile.write(_return_interrogation_script(package, req_out_file))
 
-        # 4. pickles results to temp file
-        # run file:
+        # 4. Run file, which pickles results to temp file
         run_in_subprocess("vex {0} python {1}"
                           .format(tmp_env.name, tmp_out_file))
 
         # 5. reads that file from current program
         result = pickle.load(open(req_out_file, 'rb'))
 
-        # 6. deletes file and returns info
-        # run_in_subprocess("rm {0} {1}".format(tmp_out_file, req_out_file))
-        run_in_subprocess("rm {0}".format(tmp_out_file))  # leaving dep file
+        # 6. Move file to cache dir or delete file and return info
+        if MagellanConfig.caching:
+            cmd_to_run = "mv {0} {1}/"\
+                .format(req_out_file, MagellanConfig.cache_dir)
+            run_in_subprocess(cmd_to_run)
+        else:
+            run_in_subprocess("rm {0}".format(req_out_file))
+        run_in_subprocess("rm {0}".format(tmp_out_file))
+
+        # 7. Delete tmp virtual env - not necessary as it's always overwritten.
         # tmp_env.vex_delete_env_self()
 
         return result
