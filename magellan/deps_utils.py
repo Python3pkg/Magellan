@@ -95,12 +95,51 @@ class DepTools(object):
         requirement_met = DepTools.ops[requirement_sym](
             parse_version(cur_ver), parse_version(requirement_ver))
 
-        print(cur_ver, requirement_sym, requirement_ver, requirement_met)
-        return requirement_met
+        # print(cur_ver, requirement_sym, requirement_ver, requirement_met)
+        return requirement_met, (cur_ver, requirement_sym,
+                                 requirement_ver, requirement_met)
+
+    @staticmethod
+    def check_if_ancestors_still_satisfied(
+            package, new_version, ancestors, package_requirements):
+        """
+        Makes sure you haven't offended any of your forefathers...
+
+        Checks whether the packages which depend on the current package and version
+        will still have their requirements satisfied.
+
+        :param str package:
+        :param str new_version:
+        :param list ancestors:
+        :param dict package_requirements: from virtual env
+        :rtype dict, dict
+        :return: checks, conflicts
+        """
+
+        to_check = [x[0][0] for x in ancestors if x[0][0] != 'root']
+        checks = {}
+        conflicts = {}
+        for a in to_check:
+            anc_specs = package_requirements[a]['requires'][package]['specs']
+            checks[a] = anc_specs
+            # print(anc_specs)
+            for s in anc_specs:
+                is_ok, dets = DepTools.check_requirement_version_vs_current(
+                    new_version, s)
+                if not is_ok:
+                    if a in conflicts:
+                        conflicts[a].append(dets)
+                    else:
+                        conflicts[a] = dets
+
+        # pprint(checks)
+        # pprint(conflicts)
+        return checks, conflicts
 
     @staticmethod
     def check_changes_in_requirements_vs_env(requirements, descendants):
-        """ Checks to see if there are any new or removed packages in a
+        """
+        Checks to see if there are any new or removed packages in a
         requirements set vs what is currently in the env.
         NB: Checks name only, not version!
 
@@ -109,10 +148,11 @@ class DepTools(object):
         :rtype: list, list
         :returns
 
+        requirements = DepTools.get_deps_for_package_version(package, version)
+
         descendants look like a list of edges in acyclic graph e.g.:
             [..[('celery', '3.0.19'), ('kombu', '2.5.16')
                 , [('>=', '2.5.10'), ('<', '3.0')]]..[] etc]
-
             (NB: specs are optional)
         """
         # todo (aj) urgent: test!
@@ -124,22 +164,69 @@ class DepTools(object):
 
         removed_deps = [dec_keys[x] for x in (dset - rset)]
         new_deps = [rec_keys[x] for x in (rset - dset)]
-
-        # todo (aj) remove after commit for backup
-        # previous way - using loops
-        # removed_deps = []
-        # new_deps = []
-        # for r in requirements.requires():
-        #     # if rec key doesn't exist in decs it must be new.
-        #     if r.key not in dec_keys.keys():
-        #         new_deps.append(r.project_name)
-        #
-        # for d in dec_keys:
-        #     # if descendant not in requirements it must have been removed.
-        #     if d not in rec_keys.keys():
-        #         removed_deps.append(dec_keys[d])
-
+        # package = "celery"
+        # f = "/tmp/magellan/cache/celery_3_0_19_req.dat"
+        # # This is what's returned from
+        # DepTools.get_deps_for_package_version(package, version)
+        # # where "version" here is desired version.
+        # uc_deps = {package: {"requirements": pickle.load(open(f, 'rb'))}}
+        # requirements = uc_deps[package]['requirements']
+        # ancs, descendants = Package.get_direct_links_to_any_package(
+        # package, venv.edges)
         return removed_deps, new_deps
+
+    @staticmethod
+    def check_req_deps_satisfied_by_current_env(requirements, nodes):
+        """
+        Checks nodes (package, version) of current environment against requirements
+        to see if they are satisfied
+
+        :param <class 'pip._vendor.pkg_resources.Distribution'> requirements:
+        :param list nodes: current env nodes (package, version) tuples list
+
+        :rtype dict{dict, dict, list}
+        :returns: to_return{checks, conflicts, missing}
+
+        "checks" is a dictionary of the current checks
+        "conflicts" has at least 1 conflict with required specs
+        "missing" highlights any packages that are not in current environment
+
+        """
+        #todo (aj) test and break, e.g. bad nodes etc
+
+        check_ret = DepTools.check_requirement_version_vs_current
+        node_keys = {x[0].lower(): x[1] for x in nodes}
+
+        checks = {}
+        conflicts = {}
+        missing = []
+
+        for r in requirements.requires():
+            checks[r.project_name] = []
+
+            if r.key not in node_keys.keys():
+                print("Requirement {0}{1} not in current environment"
+                      .format(r.project_name, r.specs))
+                checks[r.project_name].append(None)
+                missing.append(r.project_name)
+            else:
+                for s in r.specs:
+                    req_satisfied, req_dets = check_ret(node_keys[r.key], s)
+                    # print(req_dets)
+                    checks[r.project_name].append(req_dets)
+                    if not req_satisfied:
+                        if conflicts[r.project_name]:
+                            conflicts[r.project_name].append(req_dets)
+                        else:
+                            conflicts[r.project_name] = [req_dets]
+
+
+        to_return = {
+            'checks': checks,
+            'conflicts': conflicts,
+            'missing': missing,
+        }
+        return to_return
 
     @staticmethod
     def detect_upgrade_conflicts(data):
@@ -166,7 +253,6 @@ class DepTools(object):
                     print(r.project_name, r.key, r.specs)
 
 
-
 def _return_interrogation_script(package, filename=None):
     """Return script to interrogate deps for package inside env"""
     head = """
@@ -186,76 +272,3 @@ pkgs  = pip.get_installed_distributions()
 
     nl = '\n'
     return head + nl + mid + nl + out + nl + end + nl  # last one for PEP8 :p
-
-
-## for safekeeping / immediate delete - don't look here!
-# ## PRE SETUP
-# f = "/home/ade-gol/code/Magellan/dev/playground/nodes.p"
-# nodes = pickle.load(open(f, 'rb'))
-# #pprint(nodes)
-#
-# f = "/home/ade-gol/code/Magellan/dev/playground/edges.p"
-# edges = pickle.load(open(f, 'rb'))
-# #pprint(edges)
-#
-#
-# from mock import MagicMock
-# venv = MagicMock()
-# venv.nodes = nodes
-# venv.edges = edges
-#
-# ## defs
-# import pip
-# from pprint import pprint
-# import pickle
-# import operator
-# from pkg_resources import parse_version
-#
-# ops = {'<': operator.lt, '<=': operator.le,
-#         '==': operator.eq,'!=': operator.ne,
-#         '>=': operator.ge, '>': operator.gt, }
-#
-# def requirements_met(cur_ver, requirement_spec):
-#     """ tests to see whether a requirement is satisfied by the current version.
-#     requirement_spec is tuple of: (spec, version)
-#     :returns: bool
-#
-#     """
-#     requirement_ver = requirement_spec[1]
-#     requirement_sym = requirement_spec[0]
-#
-#     requirement_met = ops[requirement_sym](parse_version(cur_ver), parse_version(requirement_ver))
-#
-#     print(cur_ver, requirement_sym, requirement_ver, requirement_met)
-#     return(requirement_met)
-#
-#
-#
-# ##
-# package = 'fabtools'
-# f = "/tmp/magellan/cache/fabtools_0_19_0_req.dat"
-#
-# package = "celery"
-# f = "/tmp/magellan/cache/celery_3_0_19_req.dat"
-# # This is what's returned from  DepTools.get_deps_for_package_version(package, version)
-# # where "version" here is desired version.
-# uc_deps = {package: {"requirements": pickle.load(open(f, 'rb'))}}
-#
-# ##
-#
-# pprint(uc_deps)
-# if not uc_deps[package]['requirements'].requires():
-#     print("No requirement specs for {}".format(package))
-#
-# # SOME CODE VALID BUT NOT ALL!
-# for r in uc_deps[package]['requirements'].requires():
-#     print(r.project_name, r.key, r.specs)
-#     # using venv.nodes as pip.get_installed_distributions() is for cur. env
-#     current_version = [x for x in venv.nodes if x[0].lower() == r.key][0][1]
-#     for s in r.specs:
-#         requirements_met(current_version, s)
-#
-#
-# # for
-# # django-chimpaign==0.1.1 -> Django [required: ==1.4.5, installed: 1.6.8]
-# #

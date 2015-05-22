@@ -65,13 +65,21 @@ def _go(venv_name, **kwargs):
     if kwargs['upgrade_conflicts']:
         DepTools.detect_upgrade_conflicts(kwargs['upgrade_conflicts'])
 
-
-
+    # ############ START TO REMOVE #############
+    def nl():
+        print("\n")
     # test cmd:
     # magellan -n Django16 -U pycrypto 2.6.1
-
+    # magellan -n Django16 -U celery 3.0.19
+    #     package = "celery"
+    # f = "/tmp/magellan/cache/celery_3_0_19_req.dat"
+    anc, _ = Package.get_direct_links_to_any_package('celery', venv.edges)
+    package = 'celery'
+    desired_version = '3.0.19'
+    DepTools.check_if_ancestors_still_satisfied()
 
     sys.exit()
+    # ############ END TO REMOVE #############
 
     # Analysis
     if package_list or not skip_generic_analysis:
