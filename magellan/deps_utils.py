@@ -81,7 +81,7 @@ class DepTools(object):
         return result
 
     @staticmethod
-    def requirements_met(cur_ver, requirement_spec):
+    def check_requirement_version_vs_current(cur_ver, requirement_spec):
         """ tests to see whether a requirement is satisfied by the
         current version.
         :param str cur_ver: current version to use for comparison.
@@ -97,6 +97,49 @@ class DepTools(object):
 
         print(cur_ver, requirement_sym, requirement_ver, requirement_met)
         return requirement_met
+
+    @staticmethod
+    def check_changes_in_requirements_vs_env(requirements, descendants):
+        """ Checks to see if there are any new or removed packages in a
+        requirements set vs what is currently in the env.
+        NB: Checks name only, not version!
+
+        :param <class 'pip._vendor.pkg_resources.Distribution'> requirements:
+        :param list descendants: current env dependencies of package.
+        :rtype: list, list
+        :returns
+
+        descendants look like a list of edges in acyclic graph e.g.:
+            [..[('celery', '3.0.19'), ('kombu', '2.5.16')
+                , [('>=', '2.5.10'), ('<', '3.0')]]..[] etc]
+
+            (NB: specs are optional)
+        """
+        # todo (aj) urgent: test!
+        dec_keys = {x[1][0].lower(): x[1][0] for x in descendants}
+        rec_keys = {x.key: x.project_name for x in requirements.requires()}
+
+        dset = set(dec_keys.keys())
+        rset = set(rec_keys.keys())
+
+        removed_deps = [dec_keys[x] for x in (dset - rset)]
+        new_deps = [rec_keys[x] for x in (rset - dset)]
+
+        # todo (aj) remove after commit for backup
+        # previous way - using loops
+        # removed_deps = []
+        # new_deps = []
+        # for r in requirements.requires():
+        #     # if rec key doesn't exist in decs it must be new.
+        #     if r.key not in dec_keys.keys():
+        #         new_deps.append(r.project_name)
+        #
+        # for d in dec_keys:
+        #     # if descendant not in requirements it must have been removed.
+        #     if d not in rec_keys.keys():
+        #         removed_deps.append(dec_keys[d])
+
+        return removed_deps, new_deps
 
     @staticmethod
     def detect_upgrade_conflicts(data):

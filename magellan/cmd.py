@@ -214,7 +214,8 @@ def main():
     kwargs = vars(args)
 
     # Update cache options
-    kwargs['pip_options'] += " --cache-dir {}".format(kwargs['cache_dir'])
+    if "--cache-dir" not in kwargs['pip_options']:
+        kwargs['pip_options'] += " --cache-dir {}".format(kwargs['cache_dir'])
 
     global VERBOSE
     global SUPER_VERBOSE
