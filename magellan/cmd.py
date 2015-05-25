@@ -63,38 +63,20 @@ def _go(venv_name, **kwargs):
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
     if kwargs['upgrade_conflicts']:
-        DepTools.detect_upgrade_conflicts(kwargs['upgrade_conflicts'])
-
-    print("\n"*2)
-    package = 'celery'
-    desired_version = '3.0.19'
-    a = DepTools.get_deps_for_package_version_json(package, desired_version)
-    print(a['project_name'])
-    pprint(a)
-
-
+        DepTools.detect_upgrade_conflicts(
+            kwargs['upgrade_conflicts'], venv)
 
     sys.exit()
 
-    # ############ START TO REMOVE #############
-    def nl():
-        print("\n")
-    # test cmd:
-    # magellan -n Django16 -U pycrypto 2.6.1
-    # magellan -n Django16 -U celery 3.0.19
-    #     package = "celery"
-    # f = "/tmp/magellan/cache/celery_3_0_19_req.dat"
-    anc, _ = Package.get_direct_links_to_any_package('celery', venv.edges)
     package = 'celery'
     desired_version = '3.0.20'
-
+    anc, _ = Package.get_direct_links_to_any_package(package, venv.edges)
     PyPIHelper.check_package_version_on_pypi(package, desired_version)
-
     checks, conflicts = DepTools.check_if_ancestors_still_satisfied(
         package, desired_version, anc, venv.package_requirements)
-
     pprint(checks)
     pprint(conflicts)
+
     sys.exit()
     # ############ END TO REMOVE #############
 
