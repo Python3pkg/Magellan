@@ -44,6 +44,13 @@ Command line interfaces:
                                     Make sure this is not superseded by '-s or -p'
           --output-dir              Set output directory for package specific reports,
                                     default = 'MagellanReports'
+          -U, --upgrade-conflicts
+                                    Check whether upgrading a package will conflict with
+                                    the current environment. NB Can be used multiple times
+                                    but must always specify desired version. Usage -U
+                                    <package-name> <desired-version>.
+          --cache-dir               Cache directory - used for pip installs.
+
 
 
 Example Usage:
@@ -71,4 +78,8 @@ Example Usage:
     9. "magellan -n MyEnv -p myPackageFile.txt --check-versions"
             Only check versions of everything in  myPackageFile.txt
     10. "magellan -n MyEnv -p myPackageFile.txt -c | grep Outdated"
-        g    Same as above but highlight the outdated packages using grep.
+            Same as above but highlight the outdated packages using grep.
+    11. "magellan -n MyEnv -U PackageToUpdate VersionToUpdateTo"
+            Highlight conflicts with current environment when upgrading
+            PackageToUpdate to VersionToUpdateTo. Note this argument can
+            be called multiple times, e.g., "magellan -n MyEnv -U celery 3.0.19 -U celery 3.0.20 -U celery 3.0.21"

@@ -262,10 +262,11 @@ class DepTools(object):
         """
 
         uc_deps = {}
+        conflicts = {}
         for u in data:
             package = u[0]
             version = u[1]
-            p_v = "{0}_{1}".format(package, version.replace('.','_'))
+            p_v = "{0}_{1}".format(package, version.replace('.', '_'))
 
             if not PyPIHelper.check_package_version_on_pypi(package, version):
                 uc_deps[p_v] = None
@@ -273,8 +274,8 @@ class DepTools(object):
 
             uc_deps[p_v] = {}
 
-            uc_deps[p_v]['requirements'] = DepTools.get_deps_for_package_version(
-                package, version)
+            uc_deps[p_v]['requirements'] = \
+                DepTools.get_deps_for_package_version(package, version)
 
             ancestors, descendants = Package.get_direct_links_to_any_package(
                 package, venv.edges)
@@ -294,16 +295,14 @@ class DepTools(object):
                 DepTools.check_if_ancestors_still_satisfied(
                     package, version, ancestors, venv.package_requirements)
 
-            conflicts = {p_v: {}}
+            conflicts[p_v] = {}
             conflicts[p_v]['dep_set'] = uc_deps[p_v]['dependency_set']
             conflicts[p_v]['req_ver'] = \
                 uc_deps[p_v]['required_versions']['conflicts']
             conflicts[p_v]['anc_dep'] = \
                 uc_deps[p_v]['ancestor_dependencies']['conflicts']
 
-
-        pprint(uc_deps)
-        pprint(conflicts)
+        return conflicts, uc_deps
 
 
 def _return_interrogation_script_json(package, filename=None):

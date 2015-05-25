@@ -19,7 +19,7 @@ from magellan.reports import produce_pdp_package_report
 
 from magellan.utils import MagellanConfig
 
-from magellan.deps_utils import DepTools, PyPIHelper
+from magellan.deps_utils import DepTools
 
 VERBOSE = False
 SUPER_VERBOSE = False
@@ -28,20 +28,16 @@ SUPER_VERBOSE = False
 def _go(venv_name, **kwargs):
     """Main script of magellan program.
     
-    1) If passed a requirements file it will install those requirements into
+    If passed a requirements file it will install those requirements into
     a fresh virtual environment. If that environment exists, it shall be
     deleted and a new one setup for installation.
 
-    2) If an environment is passed in but doesn't exist, then exit.
+    If an environment is passed in but doesn't exist, then exit.
+    If no environment is passed in, do analysis on current env.
 
-    3) If no environment is passed in, do analysis on current env.
-
-    If -S just show all packages and exit.
-
-    If packages are specified then do package specific analysis. Otherwise
-    perform general analysis on environment.
+    If packages are specified then do package specific analysis.
+    Otherwise perform general analysis on environment.
     """
-    # todo (aj) update above.
 
     global VERBOSE
     global SUPER_VERBOSE
@@ -63,8 +59,10 @@ def _go(venv_name, **kwargs):
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
     if kwargs['upgrade_conflicts']:
-        DepTools.detect_upgrade_conflicts(
+        conflicts, uc_deps = DepTools.detect_upgrade_conflicts(
             kwargs['upgrade_conflicts'], venv)
+
+    pprint(conflicts)
 
     # Analysis
     if package_list or not skip_generic_analysis:
