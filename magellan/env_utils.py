@@ -23,6 +23,7 @@ class Environment(object):
         self.bin = None
         self.nodes = []
         self.edges = []
+        self.package_requirements = {}
         self.all_packages = {}
 
         # Pipdeptree:
@@ -182,6 +183,8 @@ class Environment(object):
         # Load in nodes and edges pickles
         self.nodes = pickle.load(open('nodes.p', 'rb'))
         self.edges = pickle.load(open('edges.p', 'rb'))
+        self.package_requirements = pickle.load(
+            open('package_requirements.p', 'rb'))
 
     def show_all_packages_and_exit(self, with_versions=False):
         """ Prints nodes and exits"""
@@ -320,6 +323,22 @@ for p in pkgs:
 # Record nodes and edges to disk to be read in  by main program if needed.
 pickle.dump(nodes, open('nodes.p','wb'))
 pickle.dump(edges, open('edges.p','wb'))
+
+# To the brave souls who venture herein:
+# Doing it this long-winded way due to a cryptic pickle bug that occurs when
+# you try to pickle 'pkgs' as-is when executed in a different env.
+pkgs_out = {}
+for p in pkgs:
+#    print((p.key, p.project_name, p.version, p.requires()))
+    pkgs_out[p.key] = {}
+    pkgs_out[p.key]['project_name'] = p.project_name
+    pkgs_out[p.key]['version'] = p.version
+    pkgs_out[p.key]['requires'] = {}
+    for r in p.requires():
+        pkgs_out[p.key]['requires'][r.key] = {}
+        pkgs_out[p.key]['requires'][r.key]['project_name'] = r.project_name
+        pkgs_out[p.key]['requires'][r.key]['specs']  = r.specs
+pickle.dump(pkgs_out, open('package_requirements.p','wb'))
     """
     return script
 

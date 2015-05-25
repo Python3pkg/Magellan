@@ -17,7 +17,7 @@ from magellan.analysis import (
 
 from magellan.reports import produce_pdp_package_report
 
-from magellan.utils import mkdir_p, MagellanConfig
+from magellan.utils import MagellanConfig
 
 from magellan.deps_utils import DepTools
 
@@ -28,18 +28,15 @@ SUPER_VERBOSE = False
 def _go(venv_name, **kwargs):
     """Main script of magellan program.
     
-    1) If passed a requirements file it will install those requirements into
+    If passed a requirements file it will install those requirements into
     a fresh virtual environment. If that environment exists, it shall be
     deleted and a new one setup for installation.
 
-    2) If an environment is passed in but doesn't exist, then exit.
+    If an environment is passed in but doesn't exist, then exit.
+    If no environment is passed in, do analysis on current env.
 
-    3) If no environment is passed in, do analysis on current env.
-
-    If -S just show all packages and exit.
-
-    If packages are specified then do package specific analysis. Otherwise
-    perform general analysis on environment.
+    If packages are specified then do package specific analysis.
+    Otherwise perform general analysis on environment.
     """
 
     global VERBOSE
@@ -52,8 +49,8 @@ def _go(venv_name, **kwargs):
         skip_generic_analysis = True
 
     # Environment Setup
-    if not os.path.exists(MagellanConfig.cache_dir):
-        mkdir_p(MagellanConfig.cache_dir)
+    if not os.path.exists(MagellanConfig.cache_dir) and MagellanConfig.caching:
+        MagellanConfig.setup_cache()
 
     venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
@@ -62,9 +59,10 @@ def _go(venv_name, **kwargs):
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
     if kwargs['upgrade_conflicts']:
-        DepTools.detect_upgrade_conflicts(kwargs['upgrade_conflicts'])
+        conflicts, uc_deps = DepTools.detect_upgrade_conflicts(
+            kwargs['upgrade_conflicts'], venv)
 
-    sys.exit()
+    pprint(conflicts)
 
     # Analysis
     if package_list or not skip_generic_analysis:
@@ -72,8 +70,10 @@ def _go(venv_name, **kwargs):
         venv.gen_pipdeptree_reports(VERBOSE)
         venv.parse_pipdeptree_reports()
 
-    skip_generic_analysis = True  # todo (aj) refactor prox.onda
+    # todo (aj) NBNBNBNBNBNBNBNBNBNB refactor prox.onda
+    skip_generic_analysis = True
     # Generic Analysis - package-agnostic reports
+    output_dir = ''
     if not skip_generic_analysis:
         venv.write_dot_graph_to_disk()
         # Calculate connectedness of graph
@@ -90,7 +90,7 @@ def _go(venv_name, **kwargs):
 
     # Package Specific Analysis
     if package_list:
-
+        
         if check_versions:
             for p_k, p in packages.items():
                 print("Analysing {}".format(p.name))
@@ -111,9 +111,9 @@ def _go(venv_name, **kwargs):
 
             if SUPER_VERBOSE:
                 print("\n" + "-" * 50 + "\n" + p.name + "\n")
-                print("DIRECT DESCENDENTS - depended on by {}".format(p.name))
+                print("Package Descendants - depended on by {}".format(p.name))
                 pprint(p.descendants(venv.edges))
-                print("DIRECT ANCESTORS - these depend on {}".format(p.name))
+                print("Package Ancestors - these depend on {}".format(p.name))
                 pprint(p.ancestors(venv.edges))
 
             # Ancestor trace of package
@@ -156,6 +156,7 @@ def main():
     parser.add_argument(
         '-r', '--requirements', type=str,
         help="requirements file (e.g. requirements.txt) to install.")
+
     # todo (aj) change this before release
     pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
                    "--trusted-host sw-srv.maplecroft.com ")
@@ -206,7 +207,8 @@ def main():
     kwargs = vars(args)
 
     # Update cache options
-    kwargs['pip_options'] += " --cache-dir {}".format(kwargs['cache_dir'])
+    if "--cache-dir" not in kwargs['pip_options']:
+        kwargs['pip_options'] += " --cache-dir {}".format(kwargs['cache_dir'])
 
     global VERBOSE
     global SUPER_VERBOSE

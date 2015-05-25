@@ -413,38 +413,3 @@ class Package(object):
         min_ret = [minor_outdated, latest_minor_version]
         maj_ret = [major_outdated, latest_major_version]
         return min_ret, maj_ret
-
-
-class PyPIHelper(object):
-    """Collection of static methods to assist in interrogating PyPI"""
-
-    @staticmethod
-    def acquire_package_json_info(package):
-        """
-        Perform lookup on packages and versions. Currently just uses PyPI.
-        Returns JSON
-
-        p is package name
-        localCacheDir is a location of local cache
-        """
-
-        package = str(package)
-
-        verbose = True
-
-        PyPITemplate = 'https://pypi.python.org/pypi/{0}/json'
-        r = requests.get(PyPITemplate.format(package))
-
-        if (r.status_code == 200):  # if successfully retrieved:
-            if verbose:
-                print("{0} JSON successfully retrieved from PyPI"
-                      .format(package))
-
-            # todo (aj) Save to local cache...
-            #... and return to caller:
-            return r.json()
-
-        else: # retrival failed
-            if verbose:
-                print("failed to download {0}".format(package))
-            return {}
