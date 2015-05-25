@@ -66,20 +66,6 @@ def _go(venv_name, **kwargs):
         DepTools.detect_upgrade_conflicts(
             kwargs['upgrade_conflicts'], venv)
 
-    sys.exit()
-
-    package = 'celery'
-    desired_version = '3.0.20'
-    anc, _ = Package.get_direct_links_to_any_package(package, venv.edges)
-    PyPIHelper.check_package_version_on_pypi(package, desired_version)
-    checks, conflicts = DepTools.check_if_ancestors_still_satisfied(
-        package, desired_version, anc, venv.package_requirements)
-    pprint(checks)
-    pprint(conflicts)
-
-    sys.exit()
-    # ############ END TO REMOVE #############
-
     # Analysis
     if package_list or not skip_generic_analysis:
         # pipdeptree reports are parsed for individual package analysis.
@@ -89,6 +75,7 @@ def _go(venv_name, **kwargs):
     # todo (aj) NBNBNBNBNBNBNBNBNBNB refactor prox.onda
     skip_generic_analysis = True
     # Generic Analysis - package-agnostic reports
+    output_dir = ''
     if not skip_generic_analysis:
         venv.write_dot_graph_to_disk()
         # Calculate connectedness of graph
@@ -126,9 +113,9 @@ def _go(venv_name, **kwargs):
 
             if SUPER_VERBOSE:
                 print("\n" + "-" * 50 + "\n" + p.name + "\n")
-                print("DIRECT DESCENDENTS - depended on by {}".format(p.name))
+                print("Package Descendants - depended on by {}".format(p.name))
                 pprint(p.descendants(venv.edges))
-                print("DIRECT ANCESTORS - these depend on {}".format(p.name))
+                print("Package Ancestors - these depend on {}".format(p.name))
                 pprint(p.ancestors(venv.edges))
 
             # Ancestor trace of package
@@ -171,6 +158,7 @@ def main():
     parser.add_argument(
         '-r', '--requirements', type=str,
         help="requirements file (e.g. requirements.txt) to install.")
+
     # todo (aj) change this before release
     pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
                    "--trusted-host sw-srv.maplecroft.com ")

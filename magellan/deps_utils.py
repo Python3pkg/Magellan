@@ -16,6 +16,7 @@ class DepTools(object):
            '==': operator.eq, '!=': operator.ne,
            '>=': operator.ge, '>': operator.gt, }
 
+    # 1
     @staticmethod
     def check_changes_in_requirements_vs_env(requirements, descendants):
         """
@@ -52,13 +53,16 @@ class DepTools(object):
         out = {'removed_deps': removed_deps, 'new_deps': new_deps}
         return out
 
+    # 2
     @staticmethod
     def check_req_deps_satisfied_by_current_env(requirements, nodes):
         """
         Checks nodes (package, version) of current environment against
         requirements to see if they are satisfied
 
-        :param <class 'pip._vendor.pkg_resources.Distribution'> requirements:
+        :param dict requirements:
+        requirements = DepTools.get_deps_for_package_version(package, version)
+
         :param list nodes: current env nodes (package, version) tuples list
 
         :rtype dict{dict, dict, list}
@@ -69,7 +73,7 @@ class DepTools(object):
         "missing" highlights any packages that are not in current environment
 
         """
-        #todo (aj) test and break, e.g. bad nodes etc
+        # todo (aj) test and break, e.g. bad nodes etc
 
         check_ret = DepTools.check_requirement_version_vs_current
         node_keys = {x[0].lower(): x[1] for x in nodes}
@@ -78,25 +82,27 @@ class DepTools(object):
         conflicts = {}
         missing = []
 
-        for r in requirements.requires():
-            checks[r.project_name] = []
+        for r in requirements['requires'].values():
+            key = r['key']
+            project_name = r['project_name']
+            specs = r['specs']
+            checks[project_name] = []
 
-            if r.key not in node_keys.keys():
+            if key not in node_keys.keys():
                 print("Requirement {0}{1} not in current environment"
-                      .format(r.project_name, r.specs))
-                checks[r.project_name].append(None)
-                missing.append(r.project_name)
+                      .format(project_name, specs))
+                checks[project_name].append(None)
+                missing.append(project_name)
             else:
-                for s in r.specs:
-                    req_satisfied, req_dets = check_ret(node_keys[r.key], s)
+                for s in specs:
+                    req_satisfied, req_dets = check_ret(node_keys[key], s)
                     # print(req_dets)
-                    checks[r.project_name].append(req_dets)
+                    checks[project_name].append(req_dets)
                     if not req_satisfied:
-                        if conflicts[r.project_name]:
-                            conflicts[r.project_name].append(req_dets)
+                        if conflicts[project_name]:
+                            conflicts[project_name].append(req_dets)
                         else:
-                            conflicts[r.project_name] = [req_dets]
-
+                            conflicts[project_name] = [req_dets]
 
         to_return = {
             'checks': checks,
@@ -104,6 +110,25 @@ class DepTools(object):
             'missing': missing,
         }
         return to_return
+
+    @staticmethod
+    def check_requirement_version_vs_current(cur_ver, requirement_spec):
+        """ tests to see whether a requirement is satisfied by the
+        current version.
+        :param str cur_ver: current version to use for comparison.
+        :param tuple (str, str) requirement_spec: is tuple of: (spec, version)
+        :returns: bool
+
+        """
+        requirement_ver = requirement_spec[1]
+        requirement_sym = requirement_spec[0]
+
+        requirement_met = DepTools.ops[requirement_sym](
+            parse_version(cur_ver), parse_version(requirement_ver))
+
+        # print(cur_ver, requirement_sym, requirement_ver, requirement_met)
+        return requirement_met, (cur_ver, requirement_sym,
+                                 requirement_ver, requirement_met)
 
     @staticmethod
     def get_deps_for_package_version(package, version):
@@ -174,25 +199,6 @@ class DepTools(object):
         return result
 
     @staticmethod
-    def check_requirement_version_vs_current(cur_ver, requirement_spec):
-        """ tests to see whether a requirement is satisfied by the
-        current version.
-        :param str cur_ver: current version to use for comparison.
-        :param tuple (str, str) requirement_spec: is tuple of: (spec, version)
-        :returns: bool
-
-        """
-        requirement_ver = requirement_spec[1]
-        requirement_sym = requirement_spec[0]
-
-        requirement_met = DepTools.ops[requirement_sym](
-            parse_version(cur_ver), parse_version(requirement_ver))
-
-        # print(cur_ver, requirement_sym, requirement_ver, requirement_met)
-        return requirement_met, (cur_ver, requirement_sym,
-                                 requirement_ver, requirement_met)
-
-    @staticmethod
     def check_if_ancestors_still_satisfied(
             package, new_version, ancestors, package_requirements):
         """
@@ -205,7 +211,7 @@ class DepTools(object):
         :param str new_version:
         :param list ancestors:
         :param dict package_requirements: from virtual env
-        :rtype dict, dict
+        :rtype {dict, dict}
         :return: checks, conflicts
         """
 
@@ -227,7 +233,8 @@ class DepTools(object):
 
         # pprint(checks)
         # pprint(conflicts)
-        return checks, conflicts
+        # return checks, conflicts
+        return {'checks': checks, 'conflicts': conflicts}
 
     @staticmethod
     def detect_upgrade_conflicts(data, venv):
@@ -266,29 +273,37 @@ class DepTools(object):
 
             uc_deps[p_v] = {}
 
-            uc_deps[p_v]['reqs'] = DepTools.get_deps_for_package_version(
+            uc_deps[p_v]['requirements'] = DepTools.get_deps_for_package_version(
                 package, version)
 
             ancestors, descendants = Package.get_direct_links_to_any_package(
                 package, venv.edges)
 
             # 1:  DEPENDENCY SET - check_changes_in_requirements_vs_env
-            uc_deps[p_v]['dep_set'] = \
+            uc_deps[p_v]['dependency_set'] = \
                 DepTools.check_changes_in_requirements_vs_env(
-                uc_deps[p_v]['reqs'], descendants)
+                uc_deps[p_v]['requirements'], descendants)
 
             # 2. REQUIRED VERSIONS - check_req_deps_satisfied_by_current_env
-
+            uc_deps[p_v]['required_versions'] = \
+                DepTools.check_req_deps_satisfied_by_current_env(
+                    uc_deps[p_v]['requirements'], venv.nodes)
 
             # 3. ANCESTOR DEPENDENCIES - check_if_ancestors_still_satisfied
+            uc_deps[p_v]['ancestor_dependencies'] = \
+                DepTools.check_if_ancestors_still_satisfied(
+                    package, version, ancestors, venv.package_requirements)
 
-            # if not uc_deps[p_v].requires():
-            #     print("No requirement specs for {0} {1}"
-            #           .format(package, version))
-            # else:
-            #     for r in uc_deps[package].requires():
-            #         print(r.project_name, r.key, r.specs)
-            pprint(uc_deps[p_v])
+            conflicts = {p_v: {}}
+            conflicts[p_v]['dep_set'] = uc_deps[p_v]['dependency_set']
+            conflicts[p_v]['req_ver'] = \
+                uc_deps[p_v]['required_versions']['conflicts']
+            conflicts[p_v]['anc_dep'] = \
+                uc_deps[p_v]['ancestor_dependencies']['conflicts']
+
+
+        pprint(uc_deps)
+        pprint(conflicts)
 
 
 def _return_interrogation_script_json(package, filename=None):
