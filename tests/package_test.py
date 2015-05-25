@@ -219,7 +219,7 @@ class TestPackageDescendantsAncestors(TestPackageClass):
             [('celery', '3.0.19'), ('python-dateutil', '2.4.2'),
              [('>=', '1.5')]],
             [('celery', '3.0.19'), ('kombu', '2.5.16'),
-             [('>=', '2.5.10'),('<', '3.0')]]]
+             [('>=', '2.5.10'), ('<', '3.0')]]]
 
     def test_get_ancestors_for_celery(self):
         """Celery returns correct ancestors"""
@@ -262,7 +262,7 @@ class TestPackageGetDirectLinksToPackage(TestPackageClass):
             [('celery', '3.0.19'), ('python-dateutil', '2.4.2'),
              [('>=', '1.5')]],
             [('celery', '3.0.19'), ('kombu', '2.5.16'),
-             [('>=', '2.5.10'),('<', '3.0')]]]
+             [('>=', '2.5.10'), ('<', '3.0')]]]
 
     def test_simple_anc_dec_test(self):
         """ simply returns ancestors and descendants """
@@ -307,14 +307,14 @@ class TestPackageAncestorTrace(TestPackageClass):
 
         fake_nodes = [('a', '1.0.0'), ('b', '2.0.0'),
                       ('c', '1.4.0'), ('d', '2.0.0'),
-                      ('e', '1.6.0'), ('f', '210.0'),]
+                      ('e', '1.6.0'), ('f', '210.0'), ]
         fake_edges = [[('root', '0.0.0'), fake_nodes[0]],
                       [('root', '0.0.0'), fake_nodes[1]],
                       [fake_nodes[0], fake_nodes[1]],
                       [fake_nodes[1], fake_nodes[2]],
                       [fake_nodes[2], fake_nodes[3]],
                       [fake_nodes[3], fake_nodes[4]],
-                      [fake_nodes[4], fake_nodes[5]],]
+                      [fake_nodes[4], fake_nodes[5]], ]
 
         f_venv = MagicMock()
         f_venv.nodes = fake_nodes
@@ -492,7 +492,7 @@ class TestPackageResolvePackageList(TestPackageClass):
                 Package.resolve_package_list(self.venv, kwargs), [])
 
 
-#todo (aj) this class might be YAGNI-cleansed; test more if not.
+# todo (aj) this class might be YAGNI-cleansed; test more if not.
 class TestPackageCalcNodeDistances(TestPackageClass):
     """
     test static method calc_node_distances
@@ -505,14 +505,14 @@ class TestPackageCalcNodeDistances(TestPackageClass):
     --------------------------------------------------------------------------
         Calculates the distance to a node on an acyclic directed graph.
 
-        :param package: package to calculate distances from
-        :param nodes: list of nodes
-        :param edges: list of edges (node links)
-        :param include_root=False: whether to include the environment root
-        :param keep_untouched_nodes=False: whether to return untouched nodes
-        :param list_or_dict="dict": return type
-        :rtype: list | dict
-        :return: list or dict of nodes and distance
+        package: package to calculate distances from
+        nodes: list of nodes
+        edges: list of edges (node links)
+        include_root=False: whether to include the environment root
+        keep_untouched_nodes=False: whether to return untouched nodes
+        list_or_dict="dict": return type
+        : list | dict
+        return: list or dict of nodes and distance
 
         NB: package name will be a string of just the name, we are
         ignoring version and assuming package name is unique!
@@ -530,15 +530,17 @@ class TestPackageCalcNodeDistances(TestPackageClass):
         """
         Check runs and returns for all packages
         """
-        from random import randrange
+        # from random import randrange
         # N = 10
         # for n in range(N):
         #     package = self.nodes[randrange(0, len(self.nodes))][0]
-        #     ret = Package.calc_node_distances(package, self.nodes, self.edges)
+        #     ret = Package.calc_node_distances(
+        #       package, self.nodes, self.edges)
         #     self.assertGreaterEqual(len(ret), 1, package)
         # Or comprehensive:
         for p in self.nodes:
-            ret = Package.calc_node_distances(p[0].lower(), self.nodes, self.edges)
+            ret = Package.calc_node_distances(
+                p[0].lower(), self.nodes, self.edges)
             self.assertGreaterEqual(len(ret), 1, p)
 
     def test_correct_return_types(self):
@@ -576,10 +578,10 @@ class TestPackageCalcNodeDistances(TestPackageClass):
     def test_bad_edges_or_nodes_raises_error(self):
         """raise error with bad edge/node input"""
         package = "Django"
-        args = (package, self.nodes, 23) # bad edges
+        args = (package, self.nodes, 23)  # bad edges
         self.assertRaises(InvalidEdges, Package.calc_node_distances, *args)
 
-        args = (package, 4, self.edges) # bad edges
+        args = (package, 4, self.edges)  # bad edges
         self.assertRaises(InvalidNodes, Package.calc_node_distances, *args)
 
 
@@ -603,7 +605,7 @@ class TestPackageGetDirectLinksToAnyPackage(TestPackageClass):
             [('celery', '3.0.19'), ('python-dateutil', '2.4.2'),
              [('>=', '1.5')]],
             [('celery', '3.0.19'), ('kombu', '2.5.16'),
-             [('>=', '2.5.10'),('<', '3.0')]]]
+             [('>=', '2.5.10'), ('<', '3.0')]]]
 
     def test_return_from_celery(self):
         """ancestors and descendants should match test data."""

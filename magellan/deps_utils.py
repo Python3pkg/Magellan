@@ -1,26 +1,164 @@
+import os
+import operator
+from pprint import pprint
 import pickle
+from pkg_resources import parse_version
+import requests
+import json
 
+from magellan.package_utils import  Package
 from magellan.env_utils import Environment
 from magellan.utils import MagellanConfig, run_in_subprocess
 
 
 class DepTools(object):
+    ops = {'<': operator.lt, '<=': operator.le,
+           '==': operator.eq, '!=': operator.ne,
+           '>=': operator.ge, '>': operator.gt, }
+
+    # 1
+    @staticmethod
+    def check_changes_in_requirements_vs_env(requirements, descendants):
+        """
+        Checks to see if there are any new or removed packages in a
+        requirements set vs what is currently in the env.
+        NB: Checks name only, not version!
+
+        :param dict requirements:
+        :param list descendants: current env dependencies of package.
+        :rtype: dict{list, list}
+        :returns {new_deps, removed_deps} : new and removed(from previous
+        dependency requirements) dependencies.
+
+        requirements = DepTools.get_deps_for_package_version(package, version)
+
+        descendants look like a list of edges in acyclic graph e.g.:
+            [..[('celery', '3.0.19'), ('kombu', '2.5.16')
+                , [('>=', '2.5.10'), ('<', '3.0')]]..[] etc]
+            (NB: specs are optional)
+        """
+        # todo (aj) urgent: test!
+        dec_keys = {x[1][0].lower(): x[1][0] for x in descendants}
+
+        rec_keys = {x['key']: x['project_name']
+                    for x in requirements['requires'].values()}
+
+        dset = set(dec_keys.keys())
+        rset = set(rec_keys.keys())
+
+        removed_deps = [dec_keys[x] for x in (dset - rset)]
+        new_deps = [rec_keys[x] for x in (rset - dset)]
+
+        # return new_deps, removed_deps  # as list
+        out = {'removed_deps': removed_deps, 'new_deps': new_deps}
+        return out
+
+    # 2
+    @staticmethod
+    def check_req_deps_satisfied_by_current_env(requirements, nodes):
+        """
+        Checks nodes (package, version) of current environment against
+        requirements to see if they are satisfied
+
+        :param dict requirements:
+        requirements = DepTools.get_deps_for_package_version(package, version)
+
+        :param list nodes: current env nodes (package, version) tuples list
+
+        :rtype dict{dict, dict, list}
+        :returns: to_return{checks, conflicts, missing}
+
+        "checks" is a dictionary of the current checks
+        "conflicts" has at least 1 conflict with required specs
+        "missing" highlights any packages that are not in current environment
+
+        """
+        # todo (aj) test and break, e.g. bad nodes etc
+
+        check_ret = DepTools.check_requirement_version_vs_current
+        node_keys = {x[0].lower(): x[1] for x in nodes}
+
+        checks = {}
+        conflicts = {}
+        missing = []
+
+        for r in requirements['requires'].values():
+            key = r['key']
+            project_name = r['project_name']
+            specs = r['specs']
+            checks[project_name] = []
+
+            if key not in node_keys.keys():
+                print("Requirement {0}{1} not in current environment"
+                      .format(project_name, specs))
+                checks[project_name].append(None)
+                missing.append(project_name)
+            else:
+                for s in specs:
+                    req_satisfied, req_dets = check_ret(node_keys[key], s)
+                    # print(req_dets)
+                    checks[project_name].append(req_dets)
+                    if not req_satisfied:
+                        if conflicts[project_name]:
+                            conflicts[project_name].append(req_dets)
+                        else:
+                            conflicts[project_name] = [req_dets]
+
+        to_return = {
+            'checks': checks,
+            'conflicts': conflicts,
+            'missing': missing,
+        }
+        return to_return
+
+    @staticmethod
+    def check_requirement_version_vs_current(cur_ver, requirement_spec):
+        """ tests to see whether a requirement is satisfied by the
+        current version.
+        :param str cur_ver: current version to use for comparison.
+        :param tuple (str, str) requirement_spec: is tuple of: (spec, version)
+        :returns: bool
+
+        """
+        requirement_ver = requirement_spec[1]
+        requirement_sym = requirement_spec[0]
+
+        requirement_met = DepTools.ops[requirement_sym](
+            parse_version(cur_ver), parse_version(requirement_ver))
+
+        # print(cur_ver, requirement_sym, requirement_ver, requirement_met)
+        return requirement_met, (cur_ver, requirement_sym,
+                                 requirement_ver, requirement_met)
+
     @staticmethod
     def get_deps_for_package_version(package, version):
         """Gets dependencies for a specific version of a package.
 
         Specifically:
-            1. sets up temporary virtualenv
+        0. Check if this has already been done and cached & return that.
+            1. Set up temporary virtualenv
             2. installs package/version into there using pip
-            3. interrogates through virtual env using vex/pip/setuptool combo
-            4. pickles results to temp file
+            3. Write file to interrogate through virtual env using
+            vex/pip/setuptool combo
+            4. Run file, which pickles results to temp file
             5. reads that file from current program
             6. deletes file and returns info
+
+        7. Delete tmp env?
         """
+
+        req_out_file = ("{0}_{1}_req.json"
+                        .format(package.lower(), version.replace(".", "_")))
+
+        # 0. Check if this has already been done and cached & return that.
+        cached_file = MagellanConfig.cache_dir + "/" + req_out_file
+        if os.path.exists(cached_file):
+            print("Using previously cached result at {0}".format(cached_file))
+            return json.load(open(cached_file, 'rb'))
 
         # todo (aj) Tests as this is fragile in too many ways!
 
-        # 1. sets up temporary virtualenv
+        # 1. Set up temporary virtualenv
         tmp_env = Environment(MagellanConfig.tmp_env_dir)
         tmp_env.create_vex_new_virtual_env()  # NB: delete if extant!!
 
@@ -32,60 +170,150 @@ class DepTools(object):
         tmp_env.vex_install_requirement(
             tmp_env.name, pip_package_str, tmp_pip_options)
 
-        # 3. interrogates through virtual env using vex/pip/setuptool combo
-        # Output to disk:
-
+        # 3. Write file to interrogate through virtual env using
+        # vex/pip/setuptool combo
         tmp_out_file = 'mag_temp_file.py'
-        req_out_file = ("{0}_{1}_req.dat"
-              .format(package.lower(), version.replace(".","_")))
-
         with open(tmp_out_file, 'wb') as outfile:
-            outfile.write(_return_interrogation_script(package, req_out_file))
+            outfile.write(_return_interrogation_script_json(
+                package, req_out_file))
 
-        # 4. pickles results to temp file
-        # run file:
+        # 4. Run file, which pickles results to temp file
         run_in_subprocess("vex {0} python {1}"
                           .format(tmp_env.name, tmp_out_file))
 
         # 5. reads that file from current program
-        result = pickle.load(open(req_out_file, 'rb'))
+        result = json.load(open(req_out_file, 'rb'))
 
-        # 6. deletes file and returns info
-        # run_in_subprocess("rm {0} {1}".format(tmp_out_file, req_out_file))
-        run_in_subprocess("rm {0}".format(tmp_out_file))  # leaving dep file
-        # tmp_env.vex_delete_env_self()
+        # 6. Move file to cache dir or delete file and return info
+        if MagellanConfig.caching:
+            cmd_to_run = "mv {0} {1}/"\
+                .format(req_out_file, MagellanConfig.cache_dir)
+            run_in_subprocess(cmd_to_run)
+        else:
+            run_in_subprocess("rm {0}".format(req_out_file))
+        run_in_subprocess("rm {0}".format(tmp_out_file))
+
+        # 7. Delete tmp virtual env - not necessary as it's always overwritten?
+        #tmp_env.vex_delete_env_self()
 
         return result
 
     @staticmethod
-    def detect_upgrade_conflicts(data):
+    def check_if_ancestors_still_satisfied(
+            package, new_version, ancestors, package_requirements):
+        """
+        Makes sure you haven't offended any of your forefathers...
+
+        Checks whether the packages which depend on the current package
+        and version will still have their requirements satisfied.
+
+        :param str package:
+        :param str new_version:
+        :param list ancestors:
+        :param dict package_requirements: from virtual env
+        :rtype {dict, dict}
+        :return: checks, conflicts
+        """
+
+        to_check = [x[0][0] for x in ancestors if x[0][0] != 'root']
+        checks = {}
+        conflicts = {}
+        for a in to_check:
+            anc_specs = package_requirements[a]['requires'][package]['specs']
+            checks[a] = anc_specs
+            # print(anc_specs)
+            for s in anc_specs:
+                is_ok, dets = DepTools.check_requirement_version_vs_current(
+                    new_version, s)
+                if not is_ok:
+                    if a in conflicts:
+                        conflicts[a].append(dets)
+                    else:
+                        conflicts[a] = dets
+
+        # pprint(checks)
+        # pprint(conflicts)
+        # return checks, conflicts
+        return {'checks': checks, 'conflicts': conflicts}
+
+    @staticmethod
+    def detect_upgrade_conflicts(data, venv):
         """
         Detect conflicts between packages in current environment when upgrading
         other packages.
 
-        :param data: List of (package, desired_version)'s
+        At present this routine will look at just the immediate connections
+        to a graph in the environment. It does this in 3 major ways:
+
+        1. DEPENDENCY SET - check_changes_in_requirements_vs_env
+            Checks the required dependencies of new version against
+            current environment to see additions/removals BY NAME ONLY.
+
+        2. REQUIRED VERSIONS - check_req_deps_satisfied_by_current_env
+            For all dependencies of new version, checks to see whether
+            they are satisfied by current environment versions.
+
+        3. ANCESTOR DEPENDENCIES - check_if_ancestors_still_satisfied
+            For all the ancestor nodes that depend on PACKAGE, it checks
+            whether the dependency specs are satisfied by the new version.
+
+        :param list data: List of (package, desired_version)'s
+        :param Environment venv: virtual environment
         """
 
-        UCdeps = {}
+        uc_deps = {}
+        conflicts = {}
         for u in data:
-            # todo (aj) check version exists on PyPI first.
             package = u[0]
             version = u[1]
-            UCdeps[package] = DepTools.get_deps_for_package_version(
-                package, version)
+            p_v = "{0}_{1}".format(package, version.replace('.', '_'))
 
-            for r in UCdeps[package].requires():
-                print(r.project_name, r.key, r.specs)
+            if not PyPIHelper.check_package_version_on_pypi(package, version):
+                uc_deps[p_v] = None
+                continue
+
+            uc_deps[p_v] = {}
+
+            uc_deps[p_v]['requirements'] = \
+                DepTools.get_deps_for_package_version(package, version)
+
+            ancestors, descendants = Package.get_direct_links_to_any_package(
+                package, venv.edges)
+
+            # 1:  DEPENDENCY SET - check_changes_in_requirements_vs_env
+            uc_deps[p_v]['dependency_set'] = \
+                DepTools.check_changes_in_requirements_vs_env(
+                uc_deps[p_v]['requirements'], descendants)
+
+            # 2. REQUIRED VERSIONS - check_req_deps_satisfied_by_current_env
+            uc_deps[p_v]['required_versions'] = \
+                DepTools.check_req_deps_satisfied_by_current_env(
+                    uc_deps[p_v]['requirements'], venv.nodes)
+
+            # 3. ANCESTOR DEPENDENCIES - check_if_ancestors_still_satisfied
+            uc_deps[p_v]['ancestor_dependencies'] = \
+                DepTools.check_if_ancestors_still_satisfied(
+                    package, version, ancestors, venv.package_requirements)
+
+            conflicts[p_v] = {}
+            conflicts[p_v]['dep_set'] = uc_deps[p_v]['dependency_set']
+            conflicts[p_v]['req_ver'] = \
+                uc_deps[p_v]['required_versions']['conflicts']
+            conflicts[p_v]['anc_dep'] = \
+                uc_deps[p_v]['ancestor_dependencies']['conflicts']
+
+        return conflicts, uc_deps
 
 
-def _return_interrogation_script(package, filename=None):
-    """Return script to interrogate deps for package inside env"""
+def _return_interrogation_script_json(package, filename=None):
+    """Return script to interrogate deps for package inside env.
+    Uses json.dump instead of pickle due to cryptic pickle/requests bug."""
     head = """
 import pip
-import pickle
+import json
 pkgs  = pip.get_installed_distributions()
 """
-    mid = "p = [x for x in pkgs if x.key == '{0}'.lower()][0]".format(package)
+    mid = "package = '{0}'".format(package.lower())
 
     if not filename:
         out = ('fn = "{0}_{1}_req.dat"'
@@ -93,8 +321,83 @@ pkgs  = pip.get_installed_distributions()
     else:
         out = 'fn = "{0}"'.format(filename)
 
-    end = "pickle.dump(p, open(fn, 'wb'))"
+    conv = """
+p = [x for x in pkgs if x.key == package][0]
+
+req_dic = {'project_name': p.project_name,
+               'version': p.version, 'requires': {}}
+
+for r in p.requires():
+    req_dic['requires'][r.key] = {}
+    req_dic['requires'][r.key]['project_name'] = r.project_name
+    req_dic['requires'][r.key]['key'] = r.key
+    req_dic['requires'][r.key]['specs'] = r.specs
+
+"""
+
+    end = "json.dump(req_dic, open(fn, 'wb'))"
 
     nl = '\n'
-    return head + nl + mid + nl + out + nl + end + nl  # last one for PEP8 :p
+    return head + nl + mid + nl + conv + nl + out + nl + end + nl
 
+
+class PyPIHelper(object):
+    """Collection of static methods to assist in interrogating PyPI"""
+
+    @staticmethod
+    def check_package_version_on_pypi(package, version):
+        """
+        Queries PyPI to see if the specific version of "package" exists.
+        """
+
+        package_json = PyPIHelper.acquire_package_json_info(package)
+
+        if not package_json:
+            return False
+        else:
+            # print("JSON acquired")
+            return version in package_json['releases'].keys()
+
+    @staticmethod
+    def acquire_package_json_info(package, localcache=None):
+        """
+        Perform lookup on packages and versions. Currently just uses PyPI.
+        Returns JSON
+
+        p is package name
+        localCacheDir is a location of local cache
+        """
+        verbose = True
+
+        package = str(package)
+
+        if not localcache:
+            f = MagellanConfig.cache_dir + '/' + package + '.json'
+        else:
+            # todo (aj) test invalid local cache, not robust
+            f = localcache + '/' + package + '.json'
+
+        if os.path.exists(f):
+            if verbose:
+                print("retrieving file {0} from local cache".format(f))
+            with open(f, 'rb') as ff:
+                return json.load(ff)
+
+        PyPITemplate = 'https://pypi.python.org/pypi/{0}/json'
+
+        r = requests.get(PyPITemplate.format(package))
+        if r.status_code == 200:  # if successfully retrieved:
+            if verbose:
+                print("{0} JSON successfully retrieved from PyPI"
+                      .format(package))
+
+            # Save to local cache...
+            with open(f, 'w') as outf:
+                json.dump(r.json(), outf)
+            # ... and return to caller:
+            return r.json()
+
+        else:  # retrieval failed
+            if verbose:
+                print("failed to download {0}".format(package))
+            return {}
