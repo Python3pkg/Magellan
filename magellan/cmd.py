@@ -19,7 +19,7 @@ from magellan.reports import produce_pdp_package_report
 
 from magellan.utils import MagellanConfig
 
-from magellan.deps_utils import DepTools
+from magellan.deps_utils import DepTools, PyPIHelper
 
 VERBOSE = False
 SUPER_VERBOSE = False
@@ -65,6 +65,17 @@ def _go(venv_name, **kwargs):
     if kwargs['upgrade_conflicts']:
         DepTools.detect_upgrade_conflicts(kwargs['upgrade_conflicts'])
 
+    print("\n"*2)
+    package = 'celery'
+    desired_version = '3.0.19'
+    a = DepTools.get_deps_for_package_version_json(package, desired_version)
+    print(a['project_name'])
+    pprint(a)
+
+
+
+    sys.exit()
+
     # ############ START TO REMOVE #############
     def nl():
         print("\n")
@@ -75,9 +86,15 @@ def _go(venv_name, **kwargs):
     # f = "/tmp/magellan/cache/celery_3_0_19_req.dat"
     anc, _ = Package.get_direct_links_to_any_package('celery', venv.edges)
     package = 'celery'
-    desired_version = '3.0.19'
-    DepTools.check_if_ancestors_still_satisfied()
+    desired_version = '3.0.20'
 
+    PyPIHelper.check_package_version_on_pypi(package, desired_version)
+
+    checks, conflicts = DepTools.check_if_ancestors_still_satisfied(
+        package, desired_version, anc, venv.package_requirements)
+
+    pprint(checks)
+    pprint(conflicts)
     sys.exit()
     # ############ END TO REMOVE #############
 
