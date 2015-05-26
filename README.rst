@@ -9,6 +9,11 @@ Mission / Goals:
     important security updates no longer being maintained on a platform, thus
     this requires a solution.
 
+    NB: Logic of running script due to change imminently! Plan is to only run
+    analytics specified on CLI. The current script is an iteration of
+    functionality which must be refactored for logical flow.
+
+
     
 Installation:
     python setup.py install
@@ -62,7 +67,7 @@ Example Usage:
     3. "magellan -s"
             Shows all packages in current environment. Performs no further
             analysis.
-    4. magellan -sv"
+    4. magellan -p"
             As above, with versions.
     5. "magellan -s -n MyEnv"
             Shows all packages in MyEnv environment.
@@ -75,9 +80,9 @@ Example Usage:
             file containing a list of packages (csv, space or newline delimited.)
     8. "magellan -n MyEnv --package-file myPackageFile.txt --skip-generic-analysis"
             Only package analysis.
-    9. "magellan -n MyEnv -p myPackageFile.txt --check-versions"
-            Only check versions of everything in  myPackageFile.txt
-    10. "magellan -n MyEnv -p myPackageFile.txt -c | grep Outdated"
+    9. "magellan -n MyEnv -p myPackageFile.txt -c"
+            Only check versions of everything in myPackageFile.txt
+    10. "magellan -n MyEnv -p myPackageFile.txt --check-versions | grep Outdated"
             Same as above but highlight the outdated packages using grep.
     11. "magellan -n MyEnv -U PackageToUpdate VersionToUpdateTo"
             Highlight conflicts with current environment when upgrading

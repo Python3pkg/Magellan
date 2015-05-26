@@ -61,8 +61,7 @@ def _go(venv_name, **kwargs):
     if kwargs['upgrade_conflicts']:
         conflicts, uc_deps = DepTools.detect_upgrade_conflicts(
             kwargs['upgrade_conflicts'], venv)
-
-    pprint(conflicts)
+        pprint(conflicts)
 
     # Analysis
     if package_list or not skip_generic_analysis:
