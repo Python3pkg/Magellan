@@ -37,6 +37,7 @@ class TestAcquireJSONInfo(TestPackageClass):
         res = PyPIHelper.acquire_package_json_info(package)
         self.assertEqual(res, {})
 
+
 class TestAvailableVersions(TestPackageClass):
     """
     Testing of PyPI available versions.

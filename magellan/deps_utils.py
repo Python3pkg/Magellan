@@ -1,12 +1,10 @@
 import os
 import operator
-from pprint import pprint
-import pickle
 from pkg_resources import parse_version
 import requests
 import json
 
-from magellan.package_utils import  Package
+from magellan.package_utils import Package
 from magellan.env_utils import Environment
 from magellan.utils import MagellanConfig, run_in_subprocess
 
