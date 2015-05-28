@@ -8,18 +8,13 @@ import os
 import sys
 from pprint import pprint
 
-from magellan.package_utils import Package
-
+from magellan.utils import MagellanConfig
 from magellan.env_utils import Environment
-
+from magellan.package_utils import Package
+from magellan.deps_utils import DepTools
 from magellan.analysis import (
     write_dot_graph_to_disk_with_distance_colour, write_dot_graph_subset,)
-
 from magellan.reports import produce_pdp_package_report
-
-from magellan.utils import MagellanConfig
-
-from magellan.deps_utils import DepTools
 
 VERBOSE = False
 SUPER_VERBOSE = False
@@ -80,12 +75,6 @@ def _go(venv_name, **kwargs):
         f = output_dir + 'abs_card.gv'
         write_dot_graph_to_disk_with_distance_colour(
             venv, f, venv.connected_nodes())
-        f = output_dir + 'weighted_card.gv'
-        write_dot_graph_to_disk_with_distance_colour(
-            venv, f, venv.weighted_connections())
-        f = output_dir + 'sq_weighted_card.gv'
-        write_dot_graph_to_disk_with_distance_colour(
-            venv, f, venv.sq_weighted_connections())
 
     # Package Specific Analysis
     if package_list:

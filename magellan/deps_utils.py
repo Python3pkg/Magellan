@@ -401,3 +401,17 @@ class PyPIHelper(object):
             if verbose:
                 print("failed to download {0}".format(package))
             return {}
+
+    @staticmethod
+    def all_package_versions_on_pypi(package):
+        """Return a list of all released packages on PyPI.
+
+        :param str package: input package name
+        :rtype: list
+        :return: list of all package versions
+        """
+        all_package_info = PyPIHelper.acquire_package_json_info(package)
+        out = []
+        if 'releases' in all_package_info:
+            out = all_package_info['releases'].keys()
+        return out
