@@ -1,0 +1,1 @@
+{"project_name": "fabtools", "requires": {"fabric": {"project_name": "fabric", "specs": [[">=", "1.7.0"]], "key": "fabric"}}, "version": "0.19.0"}

@@ -1,22 +1,21 @@
 import os
 import operator
-from pprint import pprint
-import pickle
 from pkg_resources import parse_version
 import requests
 import json
 
-from magellan.package_utils import  Package
+from magellan.package_utils import Package
 from magellan.env_utils import Environment
 from magellan.utils import MagellanConfig, run_in_subprocess
 
 
 class DepTools(object):
+    """Tools for conflict detection."""
+
     ops = {'<': operator.lt, '<=': operator.le,
            '==': operator.eq, '!=': operator.ne,
            '>=': operator.ge, '>': operator.gt, }
 
-    # 1
     @staticmethod
     def check_changes_in_requirements_vs_env(requirements, descendants):
         """
@@ -37,7 +36,6 @@ class DepTools(object):
                 , [('>=', '2.5.10'), ('<', '3.0')]]..[] etc]
             (NB: specs are optional)
         """
-        # todo (aj) urgent: test!
         dec_keys = {x[1][0].lower(): x[1][0] for x in descendants}
 
         rec_keys = {x['key']: x['project_name']
@@ -53,7 +51,6 @@ class DepTools(object):
         out = {'removed_deps': removed_deps, 'new_deps': new_deps}
         return out
 
-    # 2
     @staticmethod
     def check_req_deps_satisfied_by_current_env(requirements, nodes):
         """
@@ -73,9 +70,8 @@ class DepTools(object):
         "missing" highlights any packages that are not in current environment
 
         """
-        # todo (aj) test and break, e.g. bad nodes etc
 
-        check_ret = DepTools.check_requirement_version_vs_current
+        check_ret = DepTools.check_requirement_satisfied
         node_keys = {x[0].lower(): x[1] for x in nodes}
 
         checks = {}
@@ -99,10 +95,10 @@ class DepTools(object):
                     # print(req_dets)
                     checks[project_name].append(req_dets)
                     if not req_satisfied:
-                        if conflicts[project_name]:
-                            conflicts[project_name].append(req_dets)
-                        else:
+                        if project_name not in conflicts:
                             conflicts[project_name] = [req_dets]
+                        else:
+                            conflicts[project_name].append(req_dets)
 
         to_return = {
             'checks': checks,
@@ -112,7 +108,7 @@ class DepTools(object):
         return to_return
 
     @staticmethod
-    def check_requirement_version_vs_current(cur_ver, requirement_spec):
+    def check_requirement_satisfied(cur_ver, requirement_spec):
         """ tests to see whether a requirement is satisfied by the
         current version.
         :param str cur_ver: current version to use for comparison.
@@ -156,8 +152,6 @@ class DepTools(object):
             print("Using previously cached result at {0}".format(cached_file))
             return json.load(open(cached_file, 'rb'))
 
-        # todo (aj) Tests as this is fragile in too many ways!
-
         # 1. Set up temporary virtualenv
         tmp_env = Environment(MagellanConfig.tmp_env_dir)
         tmp_env.create_vex_new_virtual_env()  # NB: delete if extant!!
@@ -194,7 +188,7 @@ class DepTools(object):
         run_in_subprocess("rm {0}".format(tmp_out_file))
 
         # 7. Delete tmp virtual env - not necessary as it's always overwritten?
-        #tmp_env.vex_delete_env_self()
+        # tmp_env.vex_delete_env_self()
 
         return result
 
@@ -211,25 +205,34 @@ class DepTools(object):
         :param str new_version:
         :param list ancestors:
         :param dict package_requirements: from virtual env
-        :rtype {dict, dict}
+        :rtype dict{dict, dict}
         :return: checks, conflicts
+
+        NB: Note distinction between package_requirements and the requirements
+        that generally go in other methods in this class. The former lists the
+        requirements for all packages int he current environment whereas the
+        latter is package specific.
         """
+
+        package_key = package.lower()
 
         to_check = [x[0][0] for x in ancestors if x[0][0] != 'root']
         checks = {}
         conflicts = {}
-        for a in to_check:
-            anc_specs = package_requirements[a]['requires'][package]['specs']
-            checks[a] = anc_specs
+        for anc in to_check:
+            anc_key = anc.lower()
+            anc_specs = \
+                package_requirements[anc_key]['requires'][package_key]['specs']
+            checks[anc_key] = anc_specs
             # print(anc_specs)
             for s in anc_specs:
-                is_ok, dets = DepTools.check_requirement_version_vs_current(
+                is_ok, dets = DepTools.check_requirement_satisfied(
                     new_version, s)
                 if not is_ok:
-                    if a in conflicts:
-                        conflicts[a].append(dets)
+                    if anc_key in conflicts:
+                        conflicts[anc_key].append(dets)
                     else:
-                        conflicts[a] = dets
+                        conflicts[anc_key] = dets
 
         # pprint(checks)
         # pprint(conflicts)
@@ -383,9 +386,9 @@ class PyPIHelper(object):
             with open(f, 'rb') as ff:
                 return json.load(ff)
 
-        PyPITemplate = 'https://pypi.python.org/pypi/{0}/json'
+        pypi_template = 'https://pypi.python.org/pypi/{0}/json'
 
-        r = requests.get(PyPITemplate.format(package))
+        r = requests.get(pypi_template.format(package))
         if r.status_code == 200:  # if successfully retrieved:
             if verbose:
                 print("{0} JSON successfully retrieved from PyPI"
@@ -401,3 +404,17 @@ class PyPIHelper(object):
             if verbose:
                 print("failed to download {0}".format(package))
             return {}
+
+    @staticmethod
+    def all_package_versions_on_pypi(package):
+        """Return a list of all released packages on PyPI.
+
+        :param str package: input package name
+        :rtype: list
+        :return: list of all package versions
+        """
+        all_package_info = PyPIHelper.acquire_package_json_info(package)
+        out = []
+        if 'releases' in all_package_info:
+            out = all_package_info['releases'].keys()
+        return out
