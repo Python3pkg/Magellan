@@ -22,7 +22,7 @@ ANCESTOR DEPENDENCIES:
 import unittest
 import pickle
 import json
-from mock import MagicMock, mock_open, patch
+from mock import MagicMock
 
 from magellan.deps_utils import DepTools
 from magellan.package_utils import Package
@@ -286,10 +286,10 @@ class TestVersionRequirements(unittest.TestCase):
 class TestRequiredVersions(TestPackageClass):
     """
     - check_req_deps_satisfied_by_current_env(requirements, nodes)
-        :param dict requirements:
+        #param dict requirements:
         requirements = DepTools.get_deps_for_package_version(package, version)
 
-        :param list nodes: current env nodes (package, version) tuples list
+        #param list nodes: current env nodes (package, version) tuples list
 
     Using for test: fabtools : 0.19.0
     """
@@ -336,13 +336,13 @@ class TestRequiredVersionsContrivedExamples(unittest.TestCase):
     Checks nodes (package, version) of current environment against
         requirements to see if they are satisfied
 
-        :param dict requirements:
+        #param dict requirements:
         requirements = DepTools.get_deps_for_package_version(package, version)
 
-        :param list nodes: current env nodes (package, version) tuples list
+        #param list nodes: current env nodes (package, version) tuples list
 
-        :rtype dict{dict, dict, list}
-        :returns: to_return{checks, conflicts, missing}
+        #rtype dict{dict, dict, list}
+        #returns: to_return{checks, conflicts, missing}
 
         "checks" is a dictionary of the current checks
         "conflicts" has at least 1 conflict with required specs
@@ -492,14 +492,145 @@ class TestRequiredVersionsContrivedExamples(unittest.TestCase):
         details = [(req['version'], specs[1][0], specs[1][1], False)]
         self.assertEqual(res['conflicts']['B'], details)
 
-# class TestAncestorDependencies(TestPackageClass):
-#     """
-#     Ancestor Dependency tests, methods:
-#     - check_if_ancestors_still_satisfied
-#     """
-#     def test_(self):
-#         """
-#
-#         """
-#         self.fail("Write Test!!!")
-#
+
+class TestAncestorDependencies(TestPackageClass):
+    """
+    Ancestor Dependency tests, method:
+
+    DepTools.check_if_ancestors_still_satisfied(
+            package, new_version, ancestors, package_requirements):
+
+    DocString:
+    Checks whether the packages which depend on the current package
+    and version will still have their requirements satisfied.
+
+    #param str package:
+    #param str new_version:
+    #param list ancestors:
+    #param dict package_requirements: from virtual env
+
+    #rtype dict {dict, dict}
+    #return: checks, conflicts
+
+    NB: Note distinction between package_requirements and the requirements
+        that generally go in other methods in this class. The former lists the
+        requirements for all packages int he current environment whereas the
+        latter is package specific.
+    """
+
+    def setUp(self):
+        super(TestAncestorDependencies, self).setUp()
+        self.package = "fabtools"
+        self.version = "0.19.0"
+        self.fab_reqs = json.load(
+            open("tests/deputils_data/fabtools_0_19_0_req.json", 'rb'))
+
+        self.ancestors, self.descendants = \
+            Package.get_direct_links_to_any_package(
+                self.package, self.venv.edges)
+
+    def test_sanity(self):
+        """
+        Should run without crashing.
+        """
+        res = DepTools.check_if_ancestors_still_satisfied(
+            self.package, '1.0.0', self.ancestors, self.package_requirements)
+
+        self.assertEqual(type(res), dict)
+        self.assertIn('checks', res)
+        self.assertEqual(type(res['checks']), dict)
+        self.assertIn('conflicts', res)
+        self.assertEqual(type(res['conflicts']), dict)
+
+    def test_check_no_conflicts(self):
+        """
+        No conflicts if package is same as environment
+        """
+        res = DepTools.check_if_ancestors_still_satisfied(
+            self.package, self.version, self.ancestors,
+            self.package_requirements)
+
+        self.assertEqual(res['conflicts'], {})
+
+
+class TestAncestorContrivedExamples(unittest.TestCase):
+    """Testing contrived and obvious examples."""
+
+    def setUp(self):
+        self.nodes = [
+            ('A', '1.0.0'),
+            ('B', '1.0.0'),
+            ('C', '1.0.0'),
+            ('X', '1.0.0'),
+            ('Y', '1.0.0'),
+            ('Z', '1.0.0'),
+        ]
+        self.edges = [[('A', '1.0.0'), ('B', '1.0.0'), ('==', '1.0.0')],
+                      [('A', '1.0.0'), ('C', '1.0.0'), ('>=', '0.5.0')],
+                      [('X', '1.0.0'), ('A', '1.0.0'), ('>=', '1.0.0')],
+                      [('Y', '1.0.0'), ('A', '1.0.0'), ('<=', '2.0.0')],
+                      [('Z', '1.0.0'), ('B', '1.0.0'), ('>=', '1.0.0')], ]
+
+        self.ancestors, self.descendants = \
+            Package.get_direct_links_to_any_package('A', self.edges)
+
+        p_r = {}  # package_requirements: build from edges.
+        for e in self.edges:
+            print(e)
+            project_name = e[0][0]
+            version = e[0][1]
+            key = project_name.lower()
+            if key not in p_r:
+                p_r[key] = {'project_name': project_name,
+                            'version': version, 'requires': {}}
+
+            sub_project_name = e[1][0]
+            sub_key = sub_project_name.lower()
+            sub_version = e[1][1]
+            specs = e[2]
+
+            p_r[key]['requires'][sub_key] = {'project_name': sub_project_name,
+                                             'version': sub_version,
+                                             'specs': [specs]}
+        self.package_requirements = p_r
+
+    def test_sanity(self):
+        """Check contrived version runs"""
+        package = 'A'
+        version = '1.0.0'
+        DepTools.check_if_ancestors_still_satisfied(
+            package, version, self.ancestors, self.package_requirements)
+
+    def test_x_fails(self):
+        """
+        X should fail with A<1
+        """
+        package = 'A'
+        version = '0.0.1'
+        res = DepTools.check_if_ancestors_still_satisfied(
+            package, version, self.ancestors, self.package_requirements)
+        self.assertIn('x', res['conflicts'])
+
+    def test_y_fails(self):
+        """
+        Y should fail with A>21
+        """
+        package = 'A'
+        version = '3.0.0'
+        res = DepTools.check_if_ancestors_still_satisfied(
+            package, version, self.ancestors, self.package_requirements)
+        self.assertIn('y', res['conflicts'])
+
+    def test_z_fails(self):
+        """
+        Z should fail with B<1
+        """
+        package = 'B'
+        version = '0.0.1'
+
+        ancestors, _ = Package.get_direct_links_to_any_package('B', self.edges)
+
+        res = DepTools.check_if_ancestors_still_satisfied(
+            package, version, ancestors, self.package_requirements)
+
+        self.assertIn('z', res['conflicts'])
