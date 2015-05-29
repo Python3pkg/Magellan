@@ -10,11 +10,12 @@ from magellan.utils import MagellanConfig, run_in_subprocess
 
 
 class DepTools(object):
+    """Tools for conflict detection."""
+
     ops = {'<': operator.lt, '<=': operator.le,
            '==': operator.eq, '!=': operator.ne,
            '>=': operator.ge, '>': operator.gt, }
 
-    # 1
     @staticmethod
     def check_changes_in_requirements_vs_env(requirements, descendants):
         """
@@ -35,7 +36,6 @@ class DepTools(object):
                 , [('>=', '2.5.10'), ('<', '3.0')]]..[] etc]
             (NB: specs are optional)
         """
-        # todo (aj) urgent: test!
         dec_keys = {x[1][0].lower(): x[1][0] for x in descendants}
 
         rec_keys = {x['key']: x['project_name']
@@ -51,7 +51,6 @@ class DepTools(object):
         out = {'removed_deps': removed_deps, 'new_deps': new_deps}
         return out
 
-    # 2
     @staticmethod
     def check_req_deps_satisfied_by_current_env(requirements, nodes):
         """
@@ -71,9 +70,8 @@ class DepTools(object):
         "missing" highlights any packages that are not in current environment
 
         """
-        # todo (aj) test and break, e.g. bad nodes etc
 
-        check_ret = DepTools.check_requirement_version_vs_current
+        check_ret = DepTools.check_requirement_satisfied
         node_keys = {x[0].lower(): x[1] for x in nodes}
 
         checks = {}
@@ -110,7 +108,7 @@ class DepTools(object):
         return to_return
 
     @staticmethod
-    def check_requirement_version_vs_current(cur_ver, requirement_spec):
+    def check_requirement_satisfied(cur_ver, requirement_spec):
         """ tests to see whether a requirement is satisfied by the
         current version.
         :param str cur_ver: current version to use for comparison.
@@ -221,7 +219,7 @@ class DepTools(object):
             checks[a] = anc_specs
             # print(anc_specs)
             for s in anc_specs:
-                is_ok, dets = DepTools.check_requirement_version_vs_current(
+                is_ok, dets = DepTools.check_requirement_satisfied(
                     new_version, s)
                 if not is_ok:
                     if a in conflicts:
