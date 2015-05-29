@@ -95,10 +95,10 @@ class DepTools(object):
                     # print(req_dets)
                     checks[project_name].append(req_dets)
                     if not req_satisfied:
-                        if conflicts[project_name]:
-                            conflicts[project_name].append(req_dets)
-                        else:
+                        if project_name not in conflicts:
                             conflicts[project_name] = [req_dets]
+                        else:
+                            conflicts[project_name].append(req_dets)
 
         to_return = {
             'checks': checks,
