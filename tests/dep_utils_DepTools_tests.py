@@ -307,17 +307,133 @@ class TestRequiredVersions(TestPackageClass):
             Package.get_direct_links_to_any_package(
                 self.package, self.venv.edges)
 
+    def sanity_checks(self, res):
+        """Standard true everytime"""
+        self.assertEqual(type(res), dict)
+
+        self.assertTrue('checks' in res)
+        self.assertEqual(type(res['checks']), dict)
+
+        self.assertTrue('conflicts' in res)
+        self.assertEqual(type(res['conflicts']), dict)
+
+        self.assertTrue('missing' in res)
+        self.assertEqual(type(res['missing']), list)
+
     def test_sanity_run(self):
         """Check runs without crashing"""
         res = DepTools.check_req_deps_satisfied_by_current_env(
             self.fab_reqs, self.nodes)
-        # return type:
+        self.sanity_checks(res)
+
+
+class TestRequiredVersionsContrivedExamples(unittest.TestCase):
+    """
+    Testing contrived and obvious examples for Required Versions
+
+    aka: check_req_deps_satisfied_by_current_env(requirements, nodes):
+
+    Checks nodes (package, version) of current environment against
+        requirements to see if they are satisfied
+
+        :param dict requirements:
+        requirements = DepTools.get_deps_for_package_version(package, version)
+
+        :param list nodes: current env nodes (package, version) tuples list
+
+        :rtype dict{dict, dict, list}
+        :returns: to_return{checks, conflicts, missing}
+
+        "checks" is a dictionary of the current checks
+        "conflicts" has at least 1 conflict with required specs
+        "missing" highlights any packages that are not in current environment
+    """
+
+    def setUp(self):
+        # Current Env:
+        self.nodes = [('A', '1.0.0'), ('B', '1.0.0'), ('C', '1.0.0')]
+        self.edges = [[('A', '1.0.0'), ('B', '1.0.0'), ('==', '1.0.0')],
+                      [('A', '1.0.0'), ('C', '1.0.0'), ('>=', '0.5.0')], ]
+        self.ancestors, self.descendants = \
+            Package.get_direct_links_to_any_package('A', self.edges)
+
+    def sanity_checks(self, res):
+        """Standard true everytime"""
         self.assertEqual(type(res), dict)
 
+        self.assertTrue('checks' in res)
+        self.assertEqual(type(res['checks']), dict)
+
+        self.assertTrue('conflicts' in res)
+        self.assertEqual(type(res['conflicts']), dict)
+
+        self.assertTrue('missing' in res)
+        self.assertEqual(type(res['missing']), list)
+
+    def test_contrived_obvious_example_1(self):
+        """
+        Should run with no requirements.
+        """
+        req_ex1 = {'project_name': 'A',
+                   'version': '1.0.0',
+                   'requires': {}, }
+        res = DepTools.check_req_deps_satisfied_by_current_env(
+            req_ex1, self.nodes)
+        self.sanity_checks(res)
+
+    def test_contrived_obvious_example_2(self):
+        """
+        All reqs should be satisfied.
+        """
+        req_ex1 = {'project_name': 'A',
+                   'version': '1.0.0',
+                   'requires': {'b': {'key': 'b',
+                                      'project_name': 'B',
+                                      'specs': [['==', '1.0.0']], },
+                                'c': {'key': 'c',
+                                      'project_name': 'C',
+                                      'specs': [['>=', '0.5.0']], }, }, }
+        res = DepTools.check_req_deps_satisfied_by_current_env(
+            req_ex1, self.nodes)
+        self.sanity_checks(res)
+
+        missing = []  # no missing
+        conflicts = {}  # no conflicts
+        self.assertEqual(res['missing'], missing)
+        self.assertEqual(res['conflicts'], conflicts)
+
+    def test_contrived_obvious_eg2_missing_req(self):
+        """
+        'D' should be in missing
+
+        A 2.
+        """
+        req_ex1 = {'project_name': 'A',
+                   'version': '1.0.0',
+                   'requires': {'b': {'key': 'b',
+                                      'project_name': 'B',
+                                      'specs': [['==', '1.0.0']], },
+                                'c': {'key': 'c',
+                                      'project_name': 'C',
+                                      'specs': [['>=', '0.5.0']], },
+                                'd': {'key': 'd',
+                                      'project_name': 'D',
+                                      'specs': [['>=', '1.5.0']], },
+                                },
+                   }
+        res = DepTools.check_req_deps_satisfied_by_current_env(
+            req_ex1, self.nodes)
+        self.sanity_checks(res)
+
+        missing = ['D']  # no missing
+        conflicts = {}  # no conflicts
+        self.assertEqual(res['missing'], missing)
+        self.assertEqual(res['conflicts'], conflicts)
 
 
-
-
+    def test_multiple_requirements(self):
+        """Multiple requirements should be evaluated when present."""
+        self.fail("Write test.")
 
 # class TestAncestorDependencies(TestPackageClass):
 #     """
@@ -330,10 +446,3 @@ class TestRequiredVersions(TestPackageClass):
 #         """
 #         self.fail("Write Test!!!")
 #
-
-
-# def test_(self):
-#         """
-#
-#         """
-#         self.fail("Write Test!!!")
