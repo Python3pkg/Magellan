@@ -86,7 +86,6 @@ class Package(object):
 
         return self._node_distances[list_or_dict]
 
-    # todo (aj) YAGNI?
     def ancestor_trace(self, venv, keep_untouched_nodes=False,
                        do_full_calc=False):
         """
@@ -201,7 +200,6 @@ class Package(object):
 
         return ret_pkg_list
 
-    #todo (aj) YAGNI candidate:
     @staticmethod
     def calc_node_distances(
             package_in, nodes, edges, include_root=False,
