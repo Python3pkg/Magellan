@@ -58,14 +58,23 @@ def _go(venv_name, **kwargs):
             kwargs['upgrade_conflicts'], venv)
         pprint(conflicts)
 
+    cur_env_conflicts = DepTools.highlight_conflicts_in_current_env(
+        venv.nodes, venv.package_requirements)
+    if cur_env_conflicts:
+        print("Conflicts in current environment:")
+        for c in cur_env_conflicts:
+            print(c)
+
+    # todo (aj) NBNBNBNBNBNBNBNBNBNB refactor prox.onda
+    skip_generic_analysis = True
     # Analysis
     if package_list or not skip_generic_analysis:
         # pipdeptree reports are parsed for individual package analysis.
         venv.gen_pipdeptree_reports(VERBOSE)
         venv.parse_pipdeptree_reports()
+        if not kwargs['keep_pipdeptree_output']:
+            venv.rm_pipdeptree_report_files()
 
-    # todo (aj) NBNBNBNBNBNBNBNBNBNB refactor prox.onda
-    skip_generic_analysis = True
     # Generic Analysis - package-agnostic reports
     output_dir = ''
     if not skip_generic_analysis:
@@ -184,6 +193,12 @@ def main():
     parser.add_argument(
         '--cache-dir', type=str, default=MagellanConfig.cache_dir,
         help="Cache directory - used for pip installs.")
+    parser.add_argument(
+        '--keep-pipdeptree-output', action='store_true', default=False,
+        help="Don't delete the pipdeptree output reports.")
+    parser.add_argument(
+        '--keep-env-files', action='store_true', default=False,
+        help="Don't delete the nodes, edges, package_requirements env files.")
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:

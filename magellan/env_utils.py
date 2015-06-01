@@ -25,6 +25,7 @@ class Environment(object):
         self.edges = []
         self.package_requirements = {}
         self.all_packages = {}
+        self.extant_env_files = []
 
         # Pipdeptree:
         self.pdp_meta = {'generated': False, 'parsed': False,
@@ -49,6 +50,8 @@ class Environment(object):
 
         self.resolve_venv_bin(kwargs['path_to_env_bin'])
         self.query_nodes_edges_in_venv()
+        if not kwargs['keep_env_files']:
+            self.remove_extant_env_files_from_disk()
 
         self.all_packages = {p[0].lower(): Package(p[0], p[1]) 
                              for p in self.nodes}
@@ -75,9 +78,12 @@ class Environment(object):
                 i += 1
         else:
             if self.vex_check_venv_exists(self.name):
+                # vex -r removes virtual env
                 run_in_subprocess("vex -r {} true".format(self.name))
-            # vex -m ; makes env
-            run_in_subprocess("vex -m {} true".format(self.name))
+
+        # vex -m ; makes env
+        print("Creating virtual env: {}".format(self.name))
+        run_in_subprocess("vex -m {} true".format(self.name))
 
     @staticmethod
     def vex_check_venv_exists(venv_name):
@@ -182,9 +188,47 @@ class Environment(object):
 
         # Load in nodes and edges pickles
         self.nodes = pickle.load(open('nodes.p', 'rb'))
+        self.add_file_to_extant_env_files('nodes.p')
+
         self.edges = pickle.load(open('edges.p', 'rb'))
+        self.add_file_to_extant_env_files('edges.p')
+
         self.package_requirements = pickle.load(
             open('package_requirements.p', 'rb'))
+        self.add_file_to_extant_env_files('package_requirements.p')
+
+    def add_file_to_extant_env_files(self, file):
+        """
+        Add file to list of existing environment files, to keep track for
+        deletion.
+        :param file: str, filename to add to self.extant_env_files list
+        """
+        self.extant_env_files.append(file)
+
+    @staticmethod
+    def remove_env_file_from_disk(file_to_remove):
+        """
+        Delete file from disk.
+        :param file: str, file to delete.
+        """
+        if os.path.exists(file_to_remove):
+            run_in_subprocess('rm {}'.format(file_to_remove))
+
+    def remove_extant_env_files_from_disk(self, to_remove=[]):
+        """
+        Removes all files in self.extant_env_files
+        :param list to_remove: list of files to remove, empty list remove
+        all files.
+        """
+        if not to_remove:  # remove all files if no list given
+            for f in self.extant_env_files:
+                self.remove_env_file_from_disk(f)
+            self.extant_env_files = []
+        else:
+            for f in to_remove:
+                self.remove_env_file_from_disk(f)
+            self.extant_env_files = [x for x in self.extant_env_files
+                                     if x not in to_remove]
 
     def show_all_packages_and_exit(self, with_versions=False):
         """ Prints nodes and exits"""
@@ -240,6 +284,20 @@ class Environment(object):
         with open(self.pdp_meta['pdp_err_file'], 'r') as f:
             self.pdp_errs = _parse_pipdeptree_error_file(f)
         self.pdp_meta['parsed'] = True
+
+    def rm_pipdeptree_report_files(self):
+        """
+        Removes the pdp_meta['pdp_tree_file'] and pdp_meta['pdp_err_file']
+        files.
+        """
+        files_to_remove = [
+            self.pdp_meta['pdp_err_file'],
+            self.pdp_meta['pdp_tree_file'],
+        ]
+
+        for f in files_to_remove:
+            if os.path.exists(f):
+                run_in_subprocess("rm {}".format(f))
 
     def write_dot_graph_to_disk(self):
         """Writes dependency graph of environment to disk as dot file."""
