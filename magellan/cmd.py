@@ -58,6 +58,13 @@ def _go(venv_name, **kwargs):
             kwargs['upgrade_conflicts'], venv)
         pprint(conflicts)
 
+    cur_env_conflicts = DepTools.highlight_conflicts_in_current_env(
+        venv.nodes, venv.package_requirements)
+    if cur_env_conflicts:
+        print("Conflicts in current environment:")
+        for c in cur_env_conflicts:
+            print(c)
+
     # todo (aj) NBNBNBNBNBNBNBNBNBNB refactor prox.onda
     skip_generic_analysis = True
     # Analysis
