@@ -12,10 +12,6 @@ from magellan.utils import MagellanConfig, run_in_subprocess
 class DepTools(object):
     """Tools for conflict detection."""
 
-    ops = {'<': operator.lt, '<=': operator.le,
-           '==': operator.eq, '!=': operator.ne,
-           '>=': operator.ge, '>': operator.gt, }
-
     @staticmethod
     def check_changes_in_requirements_vs_env(requirements, descendants):
         """
@@ -116,10 +112,15 @@ class DepTools(object):
         :returns: bool
 
         """
+
+        ops = {'<': operator.lt, '<=': operator.le,
+           '==': operator.eq, '!=': operator.ne,
+           '>=': operator.ge, '>': operator.gt, }
+
         requirement_ver = requirement_spec[1]
         requirement_sym = requirement_spec[0]
 
-        requirement_met = DepTools.ops[requirement_sym](
+        requirement_met = ops[requirement_sym](
             parse_version(cur_ver), parse_version(requirement_ver))
 
         # print(cur_ver, requirement_sym, requirement_ver, requirement_met)
@@ -306,6 +307,49 @@ class DepTools(object):
                 uc_deps[p_v]['ancestor_dependencies']['conflicts']
 
         return conflicts, uc_deps
+
+    @staticmethod
+    def highlight_conflicts_in_current_env(nodes, package_requirements):
+        """
+        Checks through all nodes (packages) in the venv environment
+
+        :param list nodes: list of nodes (packages) as (name, ver) tuple
+        :param dict package_requirements: dependencies dictionary.
+        :rtype list
+        :return: current_env_conflicts
+        """
+        # todo (aj) tests.
+        if not nodes or not package_requirements:
+            print("venv missing required data: nodes or package_requirements.")
+            return []
+
+        current_env_conflicts = []
+
+        ver_info = {n[0].lower(): n[1] for n in nodes}
+
+        for n in nodes:
+            n_key = n[0].lower()
+
+            if n_key not in package_requirements:
+                print ("{} missing from package_requirements".format(n))
+                continue
+
+            if 'requires' not in package_requirements[n_key]:
+                print("{} does not have key 'requires'".format(n_key))
+                continue
+
+            node_requirements = package_requirements[n_key]['requires']
+            for r in node_requirements:
+                cur_ver = ver_info[r.lower()]
+                for s in node_requirements[r]['specs']:
+                    req_met, req_details = \
+                        DepTools.check_requirement_satisfied(cur_ver, s)
+                    if not req_met:
+                        current_env_conflicts.append(
+                            (n, node_requirements[r]['project_name'],
+                             req_details))
+
+        return current_env_conflicts
 
 
 def _return_interrogation_script_json(package, filename=None):
