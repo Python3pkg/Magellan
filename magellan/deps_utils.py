@@ -12,10 +12,6 @@ from magellan.utils import MagellanConfig, run_in_subprocess
 class DepTools(object):
     """Tools for conflict detection."""
 
-    ops = {'<': operator.lt, '<=': operator.le,
-           '==': operator.eq, '!=': operator.ne,
-           '>=': operator.ge, '>': operator.gt, }
-
     @staticmethod
     def check_changes_in_requirements_vs_env(requirements, descendants):
         """
@@ -116,10 +112,15 @@ class DepTools(object):
         :returns: bool
 
         """
+
+        ops = {'<': operator.lt, '<=': operator.le,
+           '==': operator.eq, '!=': operator.ne,
+           '>=': operator.ge, '>': operator.gt, }
+
         requirement_ver = requirement_spec[1]
         requirement_sym = requirement_spec[0]
 
-        requirement_met = DepTools.ops[requirement_sym](
+        requirement_met = ops[requirement_sym](
             parse_version(cur_ver), parse_version(requirement_ver))
 
         # print(cur_ver, requirement_sym, requirement_ver, requirement_met)
