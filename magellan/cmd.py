@@ -58,12 +58,17 @@ def _go(venv_name, **kwargs):
             kwargs['upgrade_conflicts'], venv)
         pprint(conflicts)
 
+    if kwargs['addition_conflicts']:
+        addition_conflicts  = DepTools.detect_package_addition_conflicts(
+            kwargs['addition_conflicts'], venv)
+        pprint(addition_conflicts)
+
     cur_env_conflicts = DepTools.highlight_conflicts_in_current_env(
         venv.nodes, venv.package_requirements)
-    if cur_env_conflicts:
-        print("Conflicts in current environment:")
-        for c in cur_env_conflicts:
-            print(c)
+    # if cur_env_conflicts:
+    #     print("Conflicts in current environment:")
+    #     for c in cur_env_conflicts:
+    #         print(c)
 
     # todo (aj) NBNBNBNBNBNBNBNBNBNB refactor prox.onda
     skip_generic_analysis = True
@@ -187,6 +192,12 @@ def main():
     parser.add_argument(
         '-U', '--upgrade-conflicts', action='append', nargs=2,
         help=("Check whether upgrading a package will conflict with the "
+              "current environment. NB Can be used multiple times but must "
+              "always specify desired version. "
+              "Usage -U <package-name> <desired-version>."))
+    parser.add_argument(
+        '-A', '--addition-conflicts', action='append', nargs=2,
+        help=("Check whether adding a new package will conflict with the "
               "current environment. NB Can be used multiple times but must "
               "always specify desired version. "
               "Usage -U <package-name> <desired-version>."))

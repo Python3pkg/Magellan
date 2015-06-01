@@ -114,8 +114,8 @@ class DepTools(object):
         """
 
         ops = {'<': operator.lt, '<=': operator.le,
-           '==': operator.eq, '!=': operator.ne,
-           '>=': operator.ge, '>': operator.gt, }
+               '==': operator.eq, '!=': operator.ne,
+               '>=': operator.ge, '>': operator.gt, }
 
         requirement_ver = requirement_spec[1]
         requirement_sym = requirement_spec[0]
@@ -241,7 +241,7 @@ class DepTools(object):
         return {'checks': checks, 'conflicts': conflicts}
 
     @staticmethod
-    def detect_upgrade_conflicts(data, venv):
+    def detect_upgrade_conflicts(packages, venv):
         """
         Detect conflicts between packages in current environment when upgrading
         other packages.
@@ -261,13 +261,13 @@ class DepTools(object):
             For all the ancestor nodes that depend on PACKAGE, it checks
             whether the dependency specs are satisfied by the new version.
 
-        :param list data: List of (package, desired_version)'s
+        :param list packages: List of (package, desired_version)'s
         :param Environment venv: virtual environment
         """
 
         uc_deps = {}
         conflicts = {}
-        for u in data:
+        for u in packages:
             package = u[0]
             version = u[1]
             p_v = "{0}_{1}".format(package, version.replace('.', '_'))
@@ -351,6 +351,112 @@ class DepTools(object):
 
         return current_env_conflicts
 
+    @staticmethod
+    def detect_package_addition_conflicts(packages, venv):
+        """
+        Detect if there will be any conflicts with the addition of a new
+        package
+
+        :param packages: list of (name, version) tuple
+        :param venv: virtual env where package will be installed, of type
+        magellan.env_utils.Environment
+        :rtype dict
+        :return: conflicts
+
+
+        0. Check if package (name) is already in environment.
+        1. Check new packages to be installed
+        2. Check current environment satisfies requirements.
+        """
+        # todo (aj) tests
+        ver_info = {x[0].lower(): x[1] for x in venv.nodes}
+
+        deps = {}
+        for p in packages:
+            package = p[0]
+            version = p[1]
+            p_v = "{0}_{1}".format(package, version.replace('.', '_'))
+
+            deps[p_v] = {}
+
+            if not PyPIHelper.check_package_version_on_pypi(package, version):
+                print("Cannot get package info for {} {} on PyPI"
+                      .format(package, version))
+                deps[p_v]['status'] = "No package info on PyPI."
+                continue
+
+            # 0 EXTANT PACKAGE:
+            p_extant, details = DepTools.package_in_environment(
+                package, version, venv.nodes)
+
+            if p_extant:  # should use upgrade conflict detection.
+                deps[p_v]['status'] = (
+                    "Package currently exists - use  upgrade -U.")
+                continue
+
+            # Get requirements if it's actually a new package & on PyPI.
+            requirements = DepTools.get_deps_for_package_version(
+                package, version)
+
+            deps[p_v]['requirements'] = requirements
+            deps[p_v]['new_packages'] = []
+            deps[p_v]['may_try_upgrade'] = []
+            deps[p_v]['may_be_okay'] = []
+
+            for r in requirements['requires']:
+                r_key = r.lower()
+
+                # 1 New packages
+                if r_key not in ver_info:
+                    deps[p_v]['new_packages'].append(
+                        requirements['requires'][r]['project_name'])
+
+                # 2 Packages that may try to upgrade. All n = 1
+                else:
+                    if not requirements['requires'][r]['specs']:
+                        deps[p_v]['may_be_okay'].append(r)
+
+                    current_version = ver_info[r_key]
+                    for s in requirements['requires'][r]['specs']:
+                        res, deets = DepTools.check_requirement_satisfied(
+                            current_version, s)
+                        if not res:
+                            deps[p_v]['may_try_upgrade'].append((r, deets))
+                        else:
+                            deps[p_v]['may_be_okay'].append((r, deets))
+
+            return deps
+
+    @staticmethod
+    def package_in_environment(package, version, nodes):
+        """
+        Check to see if package exists in current env and see if it
+        matches the current version if so.
+
+        :param package: str name of package
+        :param version: str version of package
+        :param nodes: list of env nodes
+        :rtype bool, dict
+        :return: whether package exists, and if so which version.
+        """
+        key = package.lower()
+        ver_info = {x[0].lower(): x[1] for x in nodes if x[0].lower() == key}
+
+        if ver_info:
+            current_version = ver_info[key]
+            if version == current_version:
+                print("Package {0} exists with specified version {1}"
+                      .format(package, version))
+            else:
+                print("Package {0} exists with version {1} that differs from "
+                      "{2}. Try running with Upgrade Package flag -U."
+                      .format(package, current_version, version))
+
+            return True, {'name': package, 'env_version': current_version}
+        else:
+            print("Package does not exist in current env")
+            return False, {}
+
 
 def _return_interrogation_script_json(package, filename=None):
     """Return script to interrogate deps for package inside env.
@@ -421,7 +527,6 @@ class PyPIHelper(object):
         if not localcache:
             f = MagellanConfig.cache_dir + '/' + package + '.json'
         else:
-            # todo (aj) test invalid local cache, not robust
             f = localcache + '/' + package + '.json'
 
         if os.path.exists(f):
