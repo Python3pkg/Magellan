@@ -272,11 +272,10 @@ class DepTools(object):
             version = u[1]
             p_v = "{0}_{1}".format(package, version.replace('.', '_'))
 
-            if not PyPIHelper.check_package_version_on_pypi(package, version):
-                uc_deps[p_v] = None
-                continue
-
             uc_deps[p_v] = {}
+
+            if not PyPIHelper.check_package_version_on_pypi(package, version):
+                continue
 
             uc_deps[p_v]['requirements'] = \
                 DepTools.get_deps_for_package_version(package, version)

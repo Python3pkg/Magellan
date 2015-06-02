@@ -28,21 +28,21 @@ Command line interfaces:
           packages                  Packages to explore.
 
        optional arguments:
-          -h, --help                show this help message and exit
+          -h, --help                Show this help message and exit.
           -s, --show-all-packages   Show all packages by name and exit.
           -p, --show-all-packages-and-versions
                                     Show all packages with versions and exit.
           -n, --venv-name           Specify name for virtual environment, default is
                                     MagEnv0, MagEnv1 etc
           -r, --requirements        requirements file (e.g. requirements.txt) to install.
-          -o, --pip-options        String. Pip options for installation of
+          -o, --pip-options         String. Pip options for installation of
                                     requirements.txt. E.g. '-f
                                     http://my_server.com/deployment_libs/ --trusted-host
                                     my_server.com'
           -v, --verbose             Verbose mode
           --super-verbose           Super verbose mode; also sets VERBOSE as True.
-          --path-to-env-bin         Path to virtual env bin
-          -f, --package-file        File with list of packages
+          --path-to-env-bin         Path to virtual env bin.
+          -f, --package-file        File with list of packages.
           --skip-generic-analysis   Skip generic analysis - useful for purely package
                                     analysis.
           -c, --check-versions      Just checks the versions of input packages and exits.
@@ -54,7 +54,13 @@ Command line interfaces:
                                     the current environment. NB Can be used multiple times
                                     but must always specify desired version. Usage -U
                                     <package-name> <desired-version>.
+           -A --addition-conflicts  Check whether adding a new package will conflict with
+                                    the current environment. NB Can be used multiple times
+                                    but must always specify desired version. Usage -U
+                                    <package-name> <desired-version>.
           --cache-dir               Cache directory - used for pip installs.
+          --keep-pipdeptree-output  Don't delete the pipdeptree output reports.
+          --keep-env-files          Don't delete the nodes, edges, package_requirements env files.
 
 
 
@@ -88,3 +94,8 @@ Example Usage:
             Highlight conflicts with current environment when upgrading
             PackageToUpdate to VersionToUpdateTo. Note this argument can
             be called multiple times, e.g., "magellan -n MyEnv -U celery 3.0.19 -U celery 3.0.20 -U celery 3.0.21"
+    12. "magellan -n MyEnv -A PackageToAdd VersionToAdd"
+            Highlight conflicts with current environment when adding new package
+            PackageToAdd at VersionToAdd. Note this argument can
+            be called multiple times, e.g., "magellan -n MyEnv -A celery 3.0.19 -A celery 3.0.20"
+            If a version of the package is already in the environment use -U.
