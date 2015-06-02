@@ -456,6 +456,31 @@ class DepTools(object):
             print("Package does not exist in current env")
             return False, {}
 
+    @staticmethod
+    def process_package_conflicts(conflict_list, venv):
+        """
+        :param conflict_list: list of (package, version) tuples passed in
+        from CLI
+        :param venv: magellan.env_utils.Environment
+        :return: addition_conflicts, upgrade_conflicts
+        """
+        upgrade_conflicts = []
+        addition_conflicts = []
+        for p in conflict_list:
+            p_in_env, p_details = venv.package_in_env(p[0])
+            if p_in_env:
+                upgrade_conflicts.append(p)
+            else:
+                addition_conflicts.append(p)
+        if upgrade_conflicts:
+            upgrade_conflicts, uc_deps = DepTools.detect_upgrade_conflicts(
+                upgrade_conflicts, venv)
+        if addition_conflicts:
+            addition_conflicts = DepTools.detect_package_addition_conflicts(
+                addition_conflicts, venv)
+
+        return addition_conflicts, upgrade_conflicts
+
 
 def _return_interrogation_script_json(package, filename=None):
     """Return script to interrogate deps for package inside env.

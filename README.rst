@@ -29,11 +29,11 @@ Command line interfaces:
 
        optional arguments:
           -h, --help                Show this help message and exit.
+          -n, --venv-name           Specify name for virtual environment, default is
+                                    MagEnv0, MagEnv1 etc
           -s, --show-all-packages   Show all packages by name and exit.
           -p, --show-all-packages-and-versions
                                     Show all packages with versions and exit.
-          -n, --venv-name           Specify name for virtual environment, default is
-                                    MagEnv0, MagEnv1 etc
           -r, --requirements        requirements file (e.g. requirements.txt) to install.
           -o, --pip-options         String. Pip options for installation of
                                     requirements.txt. E.g. '-f
@@ -49,18 +49,14 @@ Command line interfaces:
                                     Make sure this is not superseded by '-s or -p'
           --output-dir              Set output directory for package specific reports,
                                     default = 'MagellanReports'
-          -U, --upgrade-conflicts
-                                    Check whether upgrading a package will conflict with
-                                    the current environment. NB Can be used multiple times
-                                    but must always specify desired version. Usage -U
-                                    <package-name> <desired-version>.
-           -A --addition-conflicts  Check whether adding a new package will conflict with
-                                    the current environment. NB Can be used multiple times
-                                    but must always specify desired version. Usage -U
-                                    <package-name> <desired-version>.
+          -P, --package-conflicts   Check whether a package will conflict with the current
+                                    environment, either through addition or change. NB Can
+                                    be used multiple times but must always specify desired
+                                    version. Usage -P <package-name> <desired-version>.
           --cache-dir               Cache directory - used for pip installs.
           --keep-pipdeptree-output  Don't delete the pipdeptree output reports.
           --keep-env-files          Don't delete the nodes, edges, package_requirements env files.
+          --list-all-versions       List all versions of package on PyPI and exit.
 
 
 
@@ -90,12 +86,6 @@ Example Usage:
             Only check versions of everything in myPackageFile.txt
     10. "magellan -n MyEnv -p myPackageFile.txt --check-versions | grep Outdated"
             Same as above but highlight the outdated packages using grep.
-    11. "magellan -n MyEnv -U PackageToUpdate VersionToUpdateTo"
-            Highlight conflicts with current environment when upgrading
-            PackageToUpdate to VersionToUpdateTo. Note this argument can
-            be called multiple times, e.g., "magellan -n MyEnv -U celery 3.0.19 -U celery 3.0.20 -U celery 3.0.21"
-    12. "magellan -n MyEnv -A PackageToAdd VersionToAdd"
-            Highlight conflicts with current environment when adding new package
-            PackageToAdd at VersionToAdd. Note this argument can
-            be called multiple times, e.g., "magellan -n MyEnv -A celery 3.0.19 -A celery 3.0.20"
-            If a version of the package is already in the environment use -U.
+    11. "magellan -n MyEnv -P PackageToCheck Version"
+            Highlight conflicts with current environment when upgrading or adding a new package.
+            Note this argument can be called multiple times, e.g., "magellan -n MyEnv -P Django 1.8.1 -P pbr 1.0.1"

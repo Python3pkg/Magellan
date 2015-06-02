@@ -11,7 +11,7 @@ from pprint import pprint
 from magellan.utils import MagellanConfig
 from magellan.env_utils import Environment
 from magellan.package_utils import Package
-from magellan.deps_utils import DepTools
+from magellan.deps_utils import DepTools, PyPIHelper
 from magellan.analysis import (
     write_dot_graph_to_disk_with_distance_colour, write_dot_graph_subset,)
 from magellan.reports import produce_pdp_package_report
@@ -53,15 +53,19 @@ def _go(venv_name, **kwargs):
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
-    if kwargs['upgrade_conflicts']:
-        conflicts, uc_deps = DepTools.detect_upgrade_conflicts(
-            kwargs['upgrade_conflicts'], venv)
-        pprint(conflicts)
+    if kwargs['list_all_versions']:
+        for p in kwargs['list_all_versions']:
+            print(p[0])
+            pprint(sorted(PyPIHelper.all_package_versions_on_pypi(p[0])))
+        sys.exit()
 
-    if kwargs['addition_conflicts']:
-        addition_conflicts  = DepTools.detect_package_addition_conflicts(
-            kwargs['addition_conflicts'], venv)
-        pprint(addition_conflicts)
+    if kwargs['package_conflicts']:
+        additional_conflicts, upgrade_conflicts = \
+            DepTools.process_package_conflicts(
+                kwargs['package_conflicts'], venv)
+        pprint(additional_conflicts)
+        pprint(upgrade_conflicts)
+
 
     # commented out to keep the syntax that will be applied next wave
     cur_env_conflicts = DepTools.highlight_conflicts_in_current_env(
@@ -147,19 +151,18 @@ def main():
 
     # OPTIONAL ARGUMENTS:
     parser.add_argument(
+        '-n', '--venv-name', default=None,
+        help=("Specify name for virtual environment, "
+              "default is MagEnv0, MagEnv1 etc"))
+    parser.add_argument(
         '-s', '--show-all-packages', action='store_true', default=False,
         help="Show all packages by name and exit.")
     parser.add_argument(
         '-p', '--show-all-packages-and-versions', action='store_true',
         default=False, help="Show all packages with versions and exit.")
     parser.add_argument(
-        '-n', '--venv-name', default=None,
-        help=("Specify name for virtual environment, "
-              "default is MagEnv0, MagEnv1 etc"))
-    parser.add_argument(
         '-r', '--requirements', type=str,
         help="requirements file (e.g. requirements.txt) to install.")
-
     # todo (aj) change this before release
     pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
                    "--trusted-host sw-srv.maplecroft.com ")
@@ -191,18 +194,11 @@ def main():
         help=("Set output directory for package specific reports, "
               "default = 'MagellanReports'"))
     parser.add_argument(
-        '-U', '--upgrade-conflicts', action='append', nargs=2,
-        help=("Check whether upgrading a package will conflict with the "
-              "current environment. NB Can be used multiple times but must "
-              "always specify desired version. "
-              "Usage -U <package-name> <desired-version>."))
-    parser.add_argument(
-        '-A', '--addition-conflicts', action='append', nargs=2,
-        help=("Check whether adding a new package will conflict with the "
-              "current environment. NB Can be used multiple times but must "
-              "always specify desired version. "
-              "Usage -A <package-name> <desired-version>."))
-    
+        '-P', '--package-conflicts', action='append', nargs=2,
+        help=("Check whether a package will conflict with the current "
+              "environment, either through addition or change. NB Can be used "
+              "multiple times but must always specify desired version. "
+              "Usage -P <package-name> <desired-version>."))
     parser.add_argument(
         '--cache-dir', type=str, default=MagellanConfig.cache_dir,
         help="Cache directory - used for pip installs.")
@@ -212,6 +208,9 @@ def main():
     parser.add_argument(
         '--keep-env-files', action='store_true', default=False,
         help="Don't delete the nodes, edges, package_requirements env files.")
+    parser.add_argument(
+        '--list-all-versions', action='append', nargs=1, type=str,
+        help="List all versions of package on PyPI and exit.")
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
