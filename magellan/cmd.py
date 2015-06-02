@@ -17,7 +17,6 @@ from magellan.analysis import (
 from magellan.reports import produce_pdp_package_report
 
 VERBOSE = False
-SUPER_VERBOSE = False  # candidate for deletion.
 
 
 def _go(venv_name, **kwargs):
@@ -35,7 +34,6 @@ def _go(venv_name, **kwargs):
     """
 
     global VERBOSE
-    global SUPER_VERBOSE
 
     skip_generic_analysis = kwargs['skip_generic_analysis']
 
@@ -59,6 +57,8 @@ def _go(venv_name, **kwargs):
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
+    MagellanConfig.setup_output_dir(kwargs, package_list)
+
     if kwargs['package_conflicts']:
         additional_conflicts, upgrade_conflicts = \
             DepTools.process_package_conflicts(
@@ -76,8 +76,6 @@ def _go(venv_name, **kwargs):
         else:
             print("No conflicts detected in environment {}".format(venv.name))
 
-    # todo (aj) NB refactor prox.onda
-    skip_generic_analysis = True
     # Analysis
     if package_list or not skip_generic_analysis:
         # pipdeptree reports are parsed for individual package analysis.
@@ -87,12 +85,11 @@ def _go(venv_name, **kwargs):
             venv.rm_pipdeptree_report_files()
 
     # Generic Analysis - package-agnostic reports
-    output_dir = ''
     if not skip_generic_analysis:
         venv.write_dot_graph_to_disk()
         # Calculate connectedness of graph
         # todo (aj) profile and speed up! ..all nodes as Packages! proxima onda
-        f = output_dir + 'abs_card.gv'
+        f = MagellanConfig.output_dir + 'abs_card.gv'
         write_dot_graph_to_disk_with_distance_colour(
             venv, f, venv.connected_nodes())
 
@@ -109,27 +106,28 @@ def _go(venv_name, **kwargs):
             if VERBOSE:
                 print("Analysing {}".format(p.name))
 
-            f_template = output_dir + "Mag_Report_{}.txt"
+            f_template = MagellanConfig.output_dir + "Mag_Report_{}.txt"
             produce_pdp_package_report(
                 p.name, venv.pdp_tree, venv.pdp_errs, f_template, VERBOSE)
 
-            f = output_dir + '{}.gv'.format(p.name)
+            f = MagellanConfig.output_dir + '{}.gv'.format(p.name)
             write_dot_graph_to_disk_with_distance_colour(
                 venv, f, p.calc_self_node_distances(venv))
 
-            if SUPER_VERBOSE:
+            if VERBOSE:
                 print("\n" + "-" * 50 + "\n" + p.name + "\n")
                 print("Package Descendants - depended on by {}".format(p.name))
                 pprint(p.descendants(venv.edges))
                 print("Package Ancestors - these depend on {}".format(p.name))
                 pprint(p.ancestors(venv.edges))
+                print("\n")
 
             # Ancestor trace of package
-            f = output_dir + '{}_anc_track.gv'
+            f = MagellanConfig.output_dir + '{}_anc_track.gv'
             write_dot_graph_to_disk_with_distance_colour(
                 venv, f.format(p.name), p.ancestor_trace(venv))
 
-            f = output_dir + '{}_anc_track_trunc.gv'
+            f = MagellanConfig.output_dir + '{}_anc_track_trunc.gv'
             write_dot_graph_subset(
                 venv, f.format(p.name), p.ancestor_trace(venv))
 
@@ -212,7 +210,7 @@ def main():
         '--skip-generic-analysis', action='store_true', default=False,
         help="Skip generic analysis - useful for purely package analysis.")
     parser.add_argument(
-        '--output-dir', type=str, default="MagellanReports/",
+        '--output-dir', type=str, default=MagellanConfig.output_dir,
         metavar="<output_dir>",
         help=("Set output directory for package specific reports, "
               "default = 'MagellanReports'"))
