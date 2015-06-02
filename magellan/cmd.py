@@ -201,7 +201,8 @@ def main():
         help=("Check whether adding a new package will conflict with the "
               "current environment. NB Can be used multiple times but must "
               "always specify desired version. "
-              "Usage -U <package-name> <desired-version>."))
+              "Usage -A <package-name> <desired-version>."))
+    
     parser.add_argument(
         '--cache-dir', type=str, default=MagellanConfig.cache_dir,
         help="Cache directory - used for pip installs.")
