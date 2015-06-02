@@ -10,6 +10,7 @@ class MagellanConfig(object):
     caching = True
     cache_dir = '{0}/cache'.format(tmp_dir)
     tmp_env_dir = "MagellanTmp"
+    output_dir = "MagellanReports/"
 
     @staticmethod
     def setup_cache():
@@ -22,6 +23,17 @@ class MagellanConfig(object):
         # NB: mainly useful for debugging
         cmd_to_run = "rm -r {0}".format(MagellanConfig.tmp_dir)
         run_in_subprocess(cmd_to_run)
+
+    @staticmethod
+    def setup_output_dir(kwargs, package_list):
+        """Setup directory for output files if any are to be produced"""
+        if kwargs['output_dir']:
+            MagellanConfig.output_dir = kwargs['output_dir'].rstrip("/") + "/"
+
+        if not kwargs['skip_generic_analysis'] or package_list:
+            print(package_list)
+            print kwargs['skip_generic_analysis']
+            mkdir_p(MagellanConfig.output_dir)
 
 
 def run_in_subprocess(cmds):
