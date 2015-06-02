@@ -109,3 +109,5 @@ Example Usage:
     11. "magellan -n MyEnv -P PackageToCheck Version"
             Highlight conflicts with current environment when upgrading or adding a new package.
             Note this argument can be called multiple times, e.g., "magellan -n MyEnv -P Django 1.8.1 -P pbr 1.0.1"
+    12. "magellan -n MyEnv -d"
+            Detect conflicts in environment "MyEnv"
