@@ -304,6 +304,23 @@ class Environment(object):
         dep_graph_name = "{}DependencyGraph.gv".format(self.name)
         _write_dot_graph_to_disk(self.nodes, self.edges, dep_graph_name)
 
+    def package_in_env(self, package):
+        """Interrogates current environment for existence of package.
+
+        :param package: str package name
+        :rtype bool, (str, str):
+        :returns: True if package exists in env with (project_name, version)
+        False if not with (None, None)
+        """
+
+        p_key = package.lower()
+        if p_key in self.package_requirements.keys():
+            return True, (
+                self.package_requirements[p_key]['project_name'],
+                self.package_requirements[p_key]['version'], )
+        else:
+            return False, (None, None)
+
     # todo (aj) refactor out repetition on connected nodes
     def connected_nodes(self, include_root=False):
         """
