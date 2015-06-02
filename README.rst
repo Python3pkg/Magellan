@@ -22,42 +22,62 @@ Installation:
 Command line interfaces:
     magellan
 
-        Options:
+Options:
 
-        positional arguments:
+    Positional Arguments:
           packages                  Packages to explore.
 
-       optional arguments:
-          -h, --help                Show this help message and exit.
-          -n, --venv-name           Specify name for virtual environment, default is
-                                    MagEnv0, MagEnv1 etc
-          -s, --show-all-packages   Show all packages by name and exit.
+    Optional Arguments:
+        Fundamental:
+          -h, --help            show this help message and exit
+          -n <venv_name>, --venv-name <venv_name>
+                                Specify name for virtual environment, default is
+                                MagEnv0, MagEnv1 etc
+          -r <requirements_file>, --requirements <requirements_file>
+                                requirements file (e.g. requirements.txt) to install.
+        Functional with output:
+          -l <package>, --list-all-versions <package>
+                                List all versions of package on PyPI and exit. NB Can
+                                be used multiple times; supersedes -s/-p.
+          -s, --show-all-packages
+                                Show all packages by name and exit.
           -p, --show-all-packages-and-versions
-                                    Show all packages with versions and exit.
-          -r, --requirements        requirements file (e.g. requirements.txt) to install.
-          -o, --pip-options         String. Pip options for installation of
-                                    requirements.txt. E.g. '-f
-                                    http://my_server.com/deployment_libs/ --trusted-host
-                                    my_server.com'
-          -v, --verbose             Verbose mode
-          --super-verbose           Super verbose mode; also sets VERBOSE as True.
-          --path-to-env-bin         Path to virtual env bin.
-          -f, --package-file        File with list of packages.
-          --skip-generic-analysis   Skip generic analysis - useful for purely package
-                                    analysis.
-          -c, --check-versions      Just checks the versions of input packages and exits.
-                                    Make sure this is not superseded by '-s or -p'
-          --output-dir              Set output directory for package specific reports,
-                                    default = 'MagellanReports'
-          -P, --package-conflicts   Check whether a package will conflict with the current
-                                    environment, either through addition or change. NB Can
-                                    be used multiple times but must always specify desired
-                                    version. Usage -P <package-name> <desired-version>.
-          --cache-dir               Cache directory - used for pip installs.
-          --keep-pipdeptree-output  Don't delete the pipdeptree output reports.
-          --keep-env-files          Don't delete the nodes, edges, package_requirements env files.
-          --list-all-versions       List all versions of package on PyPI and exit.
+                                Show all packages with versions and exit.
+          -c, --check-versions  Just checks the versions of input packages and exits.
+                                Make sure this is not superseded by '-s'
+          -P <package-name> <version>, --package-conflicts <package-name> <version>
+                                Check whether a package will conflict with the current
+                                environment, either through addition or change. NB Can
+                                be used multiple times but must always specify desired
+                                version. Usage -P <package-name> <version>.
+          -d, --detect-env-conflicts
+                                Runs through installed packages in specified
+                                environment to detect if there are any conflicts
+                                between dependencies and versions.
 
+        Configuration Arguments:
+          -v, --verbose         Verbose mode
+          -o pip_string, --pip-options pip_string
+                                String. Pip options for installation of
+                                requirements.txt. E.g. '-f
+                                http://my_server.com/deployment_libs/ --trusted-host
+                                my_server.com'
+          --path-to-env-bin PATH_TO_ENV_BIN
+                                Path to virtual env bin
+          -f <package_file>, --package-file <package_file>
+                                File with list of packages
+          --skip-generic-analysis
+                                Skip generic analysis - useful for purely package
+                                analysis.
+          --output-dir <output_dir>
+                                Set output directory for package specific reports,
+                                default = 'MagellanReports'
+          --cache-dir <cache-dir>
+                                Cache directory - used for pip installs.
+          --keep-pipdeptree-output
+                                Don't delete the pipdeptree output reports.
+          --keep-env-files      Don't delete the nodes, edges, package_requirements
+                                env files.
 
 
 Example Usage:

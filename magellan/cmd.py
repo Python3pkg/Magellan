@@ -17,7 +17,7 @@ from magellan.analysis import (
 from magellan.reports import produce_pdp_package_report
 
 VERBOSE = False
-SUPER_VERBOSE = False
+SUPER_VERBOSE = False  # candidate for deletion.
 
 
 def _go(venv_name, **kwargs):
@@ -43,6 +43,12 @@ def _go(venv_name, **kwargs):
     if check_versions:
         skip_generic_analysis = True
 
+    if kwargs['list_all_versions']:
+        for p in kwargs['list_all_versions']:
+            print(p[0])
+            pprint(sorted(PyPIHelper.all_package_versions_on_pypi(p[0])))
+        sys.exit()
+
     # Environment Setup
     if not os.path.exists(MagellanConfig.cache_dir) and MagellanConfig.caching:
         MagellanConfig.setup_cache()
@@ -53,12 +59,6 @@ def _go(venv_name, **kwargs):
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
-    if kwargs['list_all_versions']:
-        for p in kwargs['list_all_versions']:
-            print(p[0])
-            pprint(sorted(PyPIHelper.all_package_versions_on_pypi(p[0])))
-        sys.exit()
-
     if kwargs['package_conflicts']:
         additional_conflicts, upgrade_conflicts = \
             DepTools.process_package_conflicts(
@@ -66,14 +66,15 @@ def _go(venv_name, **kwargs):
         pprint(additional_conflicts)
         pprint(upgrade_conflicts)
 
-
-    # commented out to keep the syntax that will be applied next wave
-    cur_env_conflicts = DepTools.highlight_conflicts_in_current_env(
-        venv.nodes, venv.package_requirements)
-    # if cur_env_conflicts:
-    #     print("Conflicts in current environment:")
-    #     for c in cur_env_conflicts:
-    #         print(c)
+    if kwargs['detect_env_conflicts']:
+        cur_env_conflicts = DepTools.highlight_conflicts_in_current_env(
+            venv.nodes, venv.package_requirements)
+        if cur_env_conflicts:
+            print("Conflicts in current environment:")
+            for c in cur_env_conflicts:
+                print(c)
+        else:
+            print("No conflicts detected in environment {}".format(venv.name))
 
     # todo (aj) NB refactor prox.onda
     skip_generic_analysis = True
@@ -145,15 +146,26 @@ def main():
                      "like your name is Fernando!"),
     )
 
-    # POSITIONAL ARGUMENTS:
+    # Positional Arguments
     parser.add_argument('packages', nargs='*', type=str,
                         help="Packages to explore.")
 
-    # OPTIONAL ARGUMENTS:
+    # Optional Arguments
+    # Fundamental:
     parser.add_argument(
-        '-n', '--venv-name', default=None,
+        '-n', '--venv-name', default=None, metavar="<venv_name>",
         help=("Specify name for virtual environment, "
               "default is MagEnv0, MagEnv1 etc"))
+    parser.add_argument(
+        '-r', '--requirements', type=str, metavar="<requirements_file>",
+        help="requirements file (e.g. requirements.txt) to install.")
+
+    # Functional with output
+    parser.add_argument(
+        '-l', '--list-all-versions', action='append', nargs=1, type=str,
+        metavar="<package>",
+        help="List all versions of package on PyPI and exit. NB Can be used "
+             "multiple times")
     parser.add_argument(
         '-s', '--show-all-packages', action='store_true', default=False,
         help="Show all packages by name and exit.")
@@ -161,46 +173,52 @@ def main():
         '-p', '--show-all-packages-and-versions', action='store_true',
         default=False, help="Show all packages with versions and exit.")
     parser.add_argument(
-        '-r', '--requirements', type=str,
-        help="requirements file (e.g. requirements.txt) to install.")
-    # todo (aj) change this before release
-    pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
-                   "--trusted-host sw-srv.maplecroft.com ")
-
-    parser.add_argument(
-        '-o', '--pip-options', type=str, default=pip_options,
-        help=("String. Pip options for installation of requirements.txt. "
-              "E.g. '-f http://my_server.com/deployment_libs/ "
-              "--trusted-host my_server.com'"))
-    parser.add_argument(
-        '-v', '--verbose', action='store_true', default=False,
-        help="Verbose mode")
-    parser.add_argument(
-        '--super-verbose', action='store_true', default=False,
-        help="Super verbose mode; also sets VERBOSE as True.")
-    parser.add_argument(
-        '--path-to-env-bin', default=None, help="Path to virtual env bin")
-    parser.add_argument(
-        '-f', '--package-file', type=str, help="File with list of packages")
-    parser.add_argument(
-        '--skip-generic-analysis', action='store_true', default=False,
-        help="Skip generic analysis - useful for purely package analysis.")
-    parser.add_argument(
         '-c', '--check-versions', action='store_true', default=False,
         help=("Just checks the versions of input packages and exits. "
               "Make sure this is not superseded by '-s'"))
     parser.add_argument(
-        '--output-dir', type=str, default="MagellanReports/",
-        help=("Set output directory for package specific reports, "
-              "default = 'MagellanReports'"))
-    parser.add_argument(
         '-P', '--package-conflicts', action='append', nargs=2,
+        metavar=("<package-name>","<version>"),
         help=("Check whether a package will conflict with the current "
               "environment, either through addition or change. NB Can be used "
               "multiple times but must always specify desired version. "
-              "Usage -P <package-name> <desired-version>."))
+              "Usage -P <package-name> <version>."))
+    parser.add_argument(
+        '-d', '--detect-env-conflicts', action='store_true', default=False,
+        help="Runs through installed packages in specified environment to "
+             "detect if there are any conflicts between dependencies and "
+             "versions.")
+
+    # Configuration
+    parser.add_argument(
+        '-v', '--verbose', action='store_true', default=False,
+        help="Verbose mode")
+
+    # todo (aj) change this before release
+    pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
+                   "--trusted-host sw-srv.maplecroft.com ")
+    parser.add_argument(
+        '-o', '--pip-options', type=str, default=pip_options,
+        metavar="pip_string",
+        help=("String. Pip options for installation of requirements.txt. "
+              "E.g. '-f http://my_server.com/deployment_libs/ "
+              "--trusted-host my_server.com'"))
+    parser.add_argument(
+        '--path-to-env-bin', default=None, help="Path to virtual env bin")
+    parser.add_argument(
+        '-f', '--package-file', type=str, metavar="<package_file>",
+        help="File with list of packages")
+    parser.add_argument(
+        '--skip-generic-analysis', action='store_true', default=False,
+        help="Skip generic analysis - useful for purely package analysis.")
+    parser.add_argument(
+        '--output-dir', type=str, default="MagellanReports/",
+        metavar="<output_dir>",
+        help=("Set output directory for package specific reports, "
+              "default = 'MagellanReports'"))
     parser.add_argument(
         '--cache-dir', type=str, default=MagellanConfig.cache_dir,
+        metavar="<cache-dir>",
         help="Cache directory - used for pip installs.")
     parser.add_argument(
         '--keep-pipdeptree-output', action='store_true', default=False,
@@ -208,9 +226,6 @@ def main():
     parser.add_argument(
         '--keep-env-files', action='store_true', default=False,
         help="Don't delete the nodes, edges, package_requirements env files.")
-    parser.add_argument(
-        '--list-all-versions', action='append', nargs=1, type=str,
-        help="List all versions of package on PyPI and exit.")
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
@@ -226,12 +241,9 @@ def main():
         kwargs['pip_options'] += " --cache-dir {}".format(kwargs['cache_dir'])
 
     global VERBOSE
-    global SUPER_VERBOSE
     VERBOSE = kwargs['verbose']
-    SUPER_VERBOSE = kwargs['super_verbose']
-    if SUPER_VERBOSE:
-        VERBOSE = True
 
+    # run main script:
     _go(**kwargs)
 
 
