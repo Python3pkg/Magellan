@@ -31,8 +31,6 @@ class MagellanConfig(object):
             MagellanConfig.output_dir = kwargs['output_dir'].rstrip("/") + "/"
 
         if not kwargs['skip_generic_analysis'] or package_list:
-            print(package_list)
-            print kwargs['skip_generic_analysis']
             mkdir_p(MagellanConfig.output_dir)
 
 
