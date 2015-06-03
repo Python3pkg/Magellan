@@ -41,8 +41,14 @@ class Environment(object):
         req_file = kwargs['requirements']
         if req_file:
             self.create_vex_new_virtual_env()
-            self.vex_install_requirements(self.name, req_file,
-                                          kwargs['pip_options'])
+
+            pip_update_cmd = ("vex {} pip install pip --upgrade"
+                              .format(self.name))
+
+            if not kwargs['no_pip_update']:  # update pip
+                run_in_subprocess(pip_update_cmd)
+                self.vex_install_requirements(self.name, req_file,
+                                              kwargs['pip_options'])
 
             self.vex_install_requirement(self.name, "pipdeptree", "")
         else:
@@ -168,15 +174,16 @@ class Environment(object):
         :return: nodes, edges
         """
 
-        venv_bin = '' if self.bin is None else self.bin
-
         interrogation_file = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             'interrogation_scripts',  'env_interrogation.py')
 
         # execute
-        run_in_subprocess("vex {0} python {1}"
-                          .format(self.name, interrogation_file))
+        if self.name == "":
+            run_in_subprocess("python {}".format(interrogation_file))
+        else:
+            run_in_subprocess("vex {0} python {1}"
+                              .format(self.name, interrogation_file))
 
         # Load in nodes and edges pickles
         self.nodes = pickle.load(open('nodes.p', 'rb'))

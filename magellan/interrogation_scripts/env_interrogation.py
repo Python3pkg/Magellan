@@ -23,7 +23,7 @@ for p in pkgs:
             if r.key in installed_versions:
                 r_tup = (r.key, installed_versions[r.key])
             else:
-                r_tup = (r.key)
+                r_tup = tuple(r.key)
             edges.append([p_tup, r_tup, r.specs])
 
 # Record nodes and edges to disk to be read in  by main program if needed.
@@ -41,4 +41,5 @@ for p in pkgs:
         pkgs_out[p.key]['requires'][r.key] = {}
         pkgs_out[p.key]['requires'][r.key]['project_name'] = r.project_name
         pkgs_out[p.key]['requires'][r.key]['specs'] = r.specs
+
 pickle.dump(pkgs_out, open('package_requirements.p', 'wb'), protocol=2)

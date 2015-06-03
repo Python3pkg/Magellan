@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 # todo (security) remove default pip options before making repo public!!
+
+from __future__ import print_function
 
 import argparse
 import os
 import sys
 from pprint import pprint
+
 
 from magellan.utils import MagellanConfig
 from magellan.env_utils import Environment
@@ -33,9 +35,9 @@ def _go(venv_name, **kwargs):
     Otherwise perform general analysis on environment.
     """
 
-    global VERBOSE
-
-    check_versions = kwargs['check_versions']
+    # todo (aj) will implement python logging after some research.
+    # global VERBOSE
+    # verboseprint = print if VERBOSE else lambda *a, **k: None
 
     if kwargs['list_all_versions']:
         for p in kwargs['list_all_versions']:
@@ -52,6 +54,13 @@ def _go(venv_name, **kwargs):
 
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
+
+    check_versions = kwargs['check_versions']
+    if check_versions and not package_list:
+        for p_k, p in venv.all_packages.items():
+            print("Analysing {}".format(p.name))
+            minor_outdated, major_outdated = p.check_versions()
+        sys.exit()
 
     MagellanConfig.setup_output_dir(kwargs, package_list)
 
@@ -74,18 +83,17 @@ def _go(venv_name, **kwargs):
 
     # Analysis
     if package_list:
-
         # pipdeptree reports are parsed for individual package analysis.
         venv.gen_pipdeptree_reports(VERBOSE)
         venv.parse_pipdeptree_reports()
         if not kwargs['keep_pipdeptree_output']:
             venv.rm_pipdeptree_report_files()
-        
+
+        # todo (aj) add this capability into report.
         if check_versions:
             for p_k, p in packages.items():
                 print("Analysing {}".format(p.name))
                 _, _ = p.check_versions()
-            sys.exit(0)
 
         for p_k, p in packages.items():
             if VERBOSE:
@@ -212,6 +220,11 @@ def main():
     parser.add_argument(
         '--keep-env-files', action='store_true', default=False,
         help="Don't delete the nodes, edges, package_requirements env files.")
+    parser.add_argument(
+        '--no-pip-update', action='store_true', default=False,
+        help="If invoked will not update to latest version of pip when"
+             "creating new virtual env."
+    )
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
