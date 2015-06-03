@@ -354,13 +354,6 @@ class Environment(object):
         self.connectedness['conn_nodes'] = conn_nodes
 
 
-def _get_random_string_of_length_n(n):
-    """Returns random string of length n"""
-    import random
-    import string
-    return "".join(random.choice(string.ascii_letters) for _ in range(n))
-
-
 def _parse_pipdeptree_output_file(f):
     """
     Takes a file object as input and parses that into a tree.
@@ -444,7 +437,10 @@ def _write_dot_graph_to_disk(nodes, edges, filename):
         for e in edges:
             from_e = (e[0][0].lower(), e[0][1])
             to_e = (e[1][0].lower(), e[1][1])
-            f.write("    {0} -> {1};\n"
-                    .format(node_index[from_e], node_index[to_e]))
+            try:
+                f.write("    {0} -> {1};\n"
+                        .format(node_index[from_e], node_index[to_e]))
+            except KeyError:
+                pass  # don't write node if key error.
 
         f.write('}')
