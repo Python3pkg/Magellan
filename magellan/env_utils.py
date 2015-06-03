@@ -41,8 +41,14 @@ class Environment(object):
         req_file = kwargs['requirements']
         if req_file:
             self.create_vex_new_virtual_env()
-            self.vex_install_requirements(self.name, req_file,
-                                          kwargs['pip_options'])
+
+            pip_update_cmd = ("vex {} pip install pip --upgrade"
+                              .format(self.name))
+
+            if not kwargs['no_pip_update']:  # update pip
+                run_in_subprocess(pip_update_cmd)
+                self.vex_install_requirements(self.name, req_file,
+                                              kwargs['pip_options'])
 
             self.vex_install_requirement(self.name, "pipdeptree", "")
         else:
@@ -168,23 +174,16 @@ class Environment(object):
         :return: nodes, edges
         """
 
-        venv_bin = '' if self.bin is None else self.bin
-
-        # Get super_unique_name for temporary file
-        super_unique_name = 'super_unique_name.py'
-        while True:
-            if not os.path.exists(super_unique_name):
-                break
-            super_unique_name = "{}.py"\
-                .format(_get_random_string_of_length_n(16))
-
-        # write script
-        with open(super_unique_name, 'w') as f:
-            f.write(_return_node_edge_script_string())
+        interrogation_file = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            'interrogation_scripts',  'env_interrogation.py')
 
         # execute
-        run_in_subprocess('{0}python {1}'.format(venv_bin, super_unique_name))
-        run_in_subprocess('rm {}'.format(super_unique_name))
+        if self.name == "":
+            run_in_subprocess("python {}".format(interrogation_file))
+        else:
+            run_in_subprocess("vex {0} python {1}"
+                              .format(self.name, interrogation_file))
 
         # Load in nodes and edges pickles
         self.nodes = pickle.load(open('nodes.p', 'rb'))
@@ -360,62 +359,6 @@ def _get_random_string_of_length_n(n):
     import random
     import string
     return "".join(random.choice(string.ascii_letters) for _ in range(n))
-
-
-def _return_node_edge_script_string():
-    """Returns a script to write into local dir; execute under virtualenv"""
-
-    script = """
-from pprint import pprint
-import pickle
-import pip
-
-default_skip = ['pip', 'python', 'distribute']
-skip = ['pipdeptree', 'virtualenv', 'magellan', 'vex']
-local_only = True
-pkgs = pip.get_installed_distributions(local_only=local_only,
-                                        skip=skip+default_skip)
-
-# FORM NODES
-nodes = [(x.project_name, x.version) for x in pkgs]
-
-# FORM EDGES
-installed_vers = {x.key: x.version for x in pkgs}
-edges = []
-for p in pkgs:
-    p_tup = (p.project_name, p.version)
-    edges.append([('root','0.0.0'), p_tup])
-    reqs = p.requires()
-    if reqs:
-        for r in reqs:
-            if r.key in installed_vers:
-                r_tup = (r.key, installed_vers[r.key])
-            else:
-                r_tup = (r.key)
-            edges.append([p_tup, r_tup, r.specs])
-
-
-# Record nodes and edges to disk to be read in  by main program if needed.
-pickle.dump(nodes, open('nodes.p','wb'))
-pickle.dump(edges, open('edges.p','wb'))
-
-# To the brave souls who venture herein:
-# Doing it this long-winded way due to a cryptic pickle bug that occurs when
-# you try to pickle 'pkgs' as-is when executed in a different env.
-pkgs_out = {}
-for p in pkgs:
-#    print((p.key, p.project_name, p.version, p.requires()))
-    pkgs_out[p.key] = {}
-    pkgs_out[p.key]['project_name'] = p.project_name
-    pkgs_out[p.key]['version'] = p.version
-    pkgs_out[p.key]['requires'] = {}
-    for r in p.requires():
-        pkgs_out[p.key]['requires'][r.key] = {}
-        pkgs_out[p.key]['requires'][r.key]['project_name'] = r.project_name
-        pkgs_out[p.key]['requires'][r.key]['specs']  = r.specs
-pickle.dump(pkgs_out, open('package_requirements.p','wb'))
-    """
-    return script
 
 
 def _parse_pipdeptree_output_file(f):

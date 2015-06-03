@@ -4,8 +4,9 @@ Module containing Package class.
 This is a collection of methods concerning packages and their analysis.
 """
 
+from __future__ import print_function
+
 import re
-import requests
 
 class PackageException(Exception):
     pass
@@ -21,6 +22,7 @@ class InvalidNodes(PackageException):
 
 class Package(object):
     """ Package type to hold analysis of packages."""
+
 
     def __init__(self, name="", version=None):
         self.name = name
@@ -352,7 +354,6 @@ class Package(object):
         """
         Compare 'version' to latest major and minor versions on PyPI.
         """
-
         from pkg_resources import parse_version
 
         versions = Package.get_package_versions_from_pypi(package)
@@ -369,7 +370,7 @@ class Package(object):
         beyond_up_to_date = (parse_version(version) >
                              parse_version(latest_major_version))
         if beyond_up_to_date:
-            print("{0} version {1} is beyond latest version {2}"
+            print("{0} version {1} is beyond latest PyPI version {2}"
                   .format(package, version, latest_major_version))
             return [False, version], [False, version]
 

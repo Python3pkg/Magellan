@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 # todo (security) remove default pip options before making repo public!!
+
+from __future__ import print_function
 
 import argparse
 import os
 import sys
 from pprint import pprint
+
 
 from magellan.utils import MagellanConfig
 from magellan.env_utils import Environment
@@ -33,13 +35,9 @@ def _go(venv_name, **kwargs):
     Otherwise perform general analysis on environment.
     """
 
-    global VERBOSE
-
-    skip_generic_analysis = kwargs['skip_generic_analysis']
-
-    check_versions = kwargs['check_versions']
-    if check_versions:
-        skip_generic_analysis = True
+    # todo (aj) will implement python logging after some research.
+    # global VERBOSE
+    # verboseprint = print if VERBOSE else lambda *a, **k: None
 
     if kwargs['list_all_versions']:
         for p in kwargs['list_all_versions']:
@@ -57,6 +55,13 @@ def _go(venv_name, **kwargs):
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
+    check_versions = kwargs['check_versions']
+    if check_versions and not package_list:
+        for p_k, p in venv.all_packages.items():
+            print("Analysing {}".format(p.name))
+            minor_outdated, major_outdated = p.check_versions()
+        sys.exit()
+
     MagellanConfig.setup_output_dir(kwargs, package_list)
 
     if kwargs['package_conflicts']:
@@ -71,48 +76,34 @@ def _go(venv_name, **kwargs):
             venv.nodes, venv.package_requirements)
         if cur_env_conflicts:
             print("Conflicts in current environment:")
-            for c in cur_env_conflicts:
-                print(c)
+            for conflict in cur_env_conflicts:
+                print(conflict)
         else:
             print("No conflicts detected in environment {}".format(venv.name))
 
     # Analysis
-    if package_list or not skip_generic_analysis:
+    if package_list:
         # pipdeptree reports are parsed for individual package analysis.
         venv.gen_pipdeptree_reports(VERBOSE)
         venv.parse_pipdeptree_reports()
         if not kwargs['keep_pipdeptree_output']:
             venv.rm_pipdeptree_report_files()
 
-    # Generic Analysis - package-agnostic reports
-    if not skip_generic_analysis:
-        venv.write_dot_graph_to_disk()
-        # Calculate connectedness of graph
-        # todo (aj) profile and speed up! ..all nodes as Packages! proxima onda
-        f = MagellanConfig.output_dir + 'abs_card.gv'
-        write_dot_graph_to_disk_with_distance_colour(
-            venv, f, venv.connected_nodes())
-
-    # Package Specific Analysis
-    if package_list:
-        
+        # todo (aj) add this capability into report.
         if check_versions:
             for p_k, p in packages.items():
                 print("Analysing {}".format(p.name))
                 _, _ = p.check_versions()
-            sys.exit(0)
 
         for p_k, p in packages.items():
             if VERBOSE:
                 print("Analysing {}".format(p.name))
 
-            f_template = MagellanConfig.output_dir + "Mag_Report_{}.txt"
+            # todo (aj) Improve output Mag Report with conflict & outdated info
+            f_template = os.path.join(
+                MagellanConfig.output_dir, "Mag_Report_{}.txt")
             produce_pdp_package_report(
                 p.name, venv.pdp_tree, venv.pdp_errs, f_template, VERBOSE)
-
-            f = MagellanConfig.output_dir + '{}.gv'.format(p.name)
-            write_dot_graph_to_disk_with_distance_colour(
-                venv, f, p.calc_self_node_distances(venv))
 
             if VERBOSE:
                 print("\n" + "-" * 50 + "\n" + p.name + "\n")
@@ -122,14 +113,22 @@ def _go(venv_name, **kwargs):
                 pprint(p.ancestors(venv.edges))
                 print("\n")
 
-            # Ancestor trace of package
-            f = MagellanConfig.output_dir + '{}_anc_track.gv'
-            write_dot_graph_to_disk_with_distance_colour(
-                venv, f.format(p.name), p.ancestor_trace(venv))
-
-            f = MagellanConfig.output_dir + '{}_anc_track_trunc.gv'
-            write_dot_graph_subset(
-                venv, f.format(p.name), p.ancestor_trace(venv))
+            # # todo (aj) change to --get-ancestor-trace & make fn with pdf out.
+            # f = os.path.join(MagellanConfig.output_dir, '{}.gv'.format(p.name))
+            # write_dot_graph_to_disk_with_distance_colour(
+            #     venv, f, p.calc_self_node_distances(venv))
+            #
+            # # Ancestor trace of package
+            # f = os.path.join(MagellanConfig.output_dir,
+            #                  '{}_anc_track.gv'.format(p.name))
+            # write_dot_graph_to_disk_with_distance_colour(
+            #     venv, f, p.ancestor_trace(venv))
+            #
+            # # todo (aj) specifically request dot graph file
+            # f = MagellanConfig.output_dir + '{}_anc_track_trunc.gv'
+            # f = os.path.join(MagellanConfig.output_dir,
+            #                  '{}_anc_track_trunc.gv'.format(p.name))
+            # write_dot_graph_subset(venv, f, p.ancestor_trace(venv))
 
 
 #######################
@@ -207,9 +206,6 @@ def main():
         '-f', '--package-file', type=str, metavar="<package_file>",
         help="File with list of packages")
     parser.add_argument(
-        '--skip-generic-analysis', action='store_true', default=False,
-        help="Skip generic analysis - useful for purely package analysis.")
-    parser.add_argument(
         '--output-dir', type=str, default=MagellanConfig.output_dir,
         metavar="<output_dir>",
         help=("Set output directory for package specific reports, "
@@ -224,6 +220,11 @@ def main():
     parser.add_argument(
         '--keep-env-files', action='store_true', default=False,
         help="Don't delete the nodes, edges, package_requirements env files.")
+    parser.add_argument(
+        '--no-pip-update', action='store_true', default=False,
+        help="If invoked will not update to latest version of pip when"
+             "creating new virtual env."
+    )
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
