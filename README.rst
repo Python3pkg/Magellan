@@ -66,9 +66,6 @@ Options:
                                 Path to virtual env bin
           -f <package_file>, --package-file <package_file>
                                 File with list of packages
-          --skip-generic-analysis
-                                Skip generic analysis - useful for purely package
-                                analysis.
           --output-dir <output_dir>
                                 Set output directory for package specific reports,
                                 default = 'MagellanReports'

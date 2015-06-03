@@ -148,7 +148,8 @@ class DepTools(object):
                         .format(package.lower(), version.replace(".", "_")))
 
         # 0. Check if this has already been done and cached & return that.
-        cached_file = MagellanConfig.cache_dir + "/" + req_out_file
+        cached_file = os.path.join(MagellanConfig.cache_dir, req_out_file)
+
         if os.path.exists(cached_file):
             print("Using previously cached result at {0}".format(cached_file))
             return json.load(open(cached_file, 'rb'))
@@ -547,11 +548,12 @@ class PyPIHelper(object):
         verbose = True
 
         package = str(package)
+        p_json = package + '.json'
 
         if not localcache:
-            f = MagellanConfig.cache_dir + '/' + package + '.json'
+            f = os.path.join(MagellanConfig.cache_dir, p_json)
         else:
-            f = localcache + '/' + package + '.json'
+            f = os.path.join(localcache, p_json)
 
         if os.path.exists(f):
             if verbose:
