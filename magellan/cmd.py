@@ -59,7 +59,7 @@ def _go(venv_name, **kwargs):
     if check_versions and not package_list:
         for p_k, p in venv.all_packages.items():
             print("Analysing {}".format(p.name))
-            minor_outdated, major_outdated = p.check_versions()
+            _, _ = p.check_versions()
         sys.exit()
 
     MagellanConfig.setup_output_dir(kwargs, package_list)
@@ -174,7 +174,7 @@ def main():
               "Make sure this is not superseded by '-s'"))
     parser.add_argument(
         '-P', '--package-conflicts', action='append', nargs=2,
-        metavar=("<package-name>","<version>"),
+        metavar=("<package-name>", "<version>"),
         help=("Check whether a package will conflict with the current "
               "environment, either through addition or change. NB Can be used "
               "multiple times but must always specify desired version. "

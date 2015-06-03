@@ -8,6 +8,7 @@ from __future__ import print_function
 
 import re
 
+
 class PackageException(Exception):
     pass
 
@@ -22,7 +23,6 @@ class InvalidNodes(PackageException):
 
 class Package(object):
     """ Package type to hold analysis of packages."""
-
 
     def __init__(self, name="", version=None):
         self.name = name
@@ -210,7 +210,7 @@ class Package(object):
         """
         Calculates the distance to a node on an acyclic directed graph.
 
-        :param package: package to calculate distances from
+        :param package_in: package to calculate distances from
         :param nodes: list of nodes
         :param edges: list of edges (node links)
         :param include_root=False: whether to include the environment root
@@ -335,7 +335,7 @@ class Package(object):
         try:
             yp = yarg.get(package)
             rels = yp.release_ids
-        except yarg.HTTPError as e:
+        except yarg.HTTPError:
             print("{0} not found at PyPI; "
                   "no version information available.".format(package))
             # log e

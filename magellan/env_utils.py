@@ -196,38 +196,38 @@ class Environment(object):
             open('package_requirements.p', 'rb'))
         self.add_file_to_extant_env_files('package_requirements.p')
 
-    def add_file_to_extant_env_files(self, file):
+    def add_file_to_extant_env_files(self, file_to_add):
         """
         Add file to list of existing environment files, to keep track for
         deletion.
-        :param file: str, filename to add to self.extant_env_files list
+        :param file_to_add: str, filename to add to self.extant_env_files list
         """
-        self.extant_env_files.append(file)
+        self.extant_env_files.append(file_to_add)
 
     @staticmethod
     def remove_env_file_from_disk(file_to_remove):
         """
         Delete file from disk.
-        :param file: str, file to delete.
+        :param file_to_remove: str, file to delete.
         """
         if os.path.exists(file_to_remove):
             run_in_subprocess('rm {}'.format(file_to_remove))
 
-    def remove_extant_env_files_from_disk(self, to_remove=[]):
+    def remove_extant_env_files_from_disk(self, to_remove=None):
         """
         Removes all files in self.extant_env_files
         :param list to_remove: list of files to remove, empty list remove
         all files.
         """
-        if not to_remove:  # remove all files if no list given
-            for f in self.extant_env_files:
-                self.remove_env_file_from_disk(f)
-            self.extant_env_files = []
-        else:
+        if to_remove:  # remove all files if no list given
             for f in to_remove:
                 self.remove_env_file_from_disk(f)
             self.extant_env_files = [x for x in self.extant_env_files
                                      if x not in to_remove]
+        else:
+            for f in self.extant_env_files:
+                self.remove_env_file_from_disk(f)
+            self.extant_env_files = []
 
     def show_all_packages_and_exit(self, with_versions=False):
         """ Prints nodes and exits"""
