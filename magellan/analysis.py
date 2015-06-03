@@ -60,8 +60,11 @@ def write_dot_graph_to_disk_with_distance_colour(
             from_e = (e[0][0].lower(), e[0][1])
             to_e = (e[1][0].lower(), e[1][1])
             # print(from_e, to_e, node_index[from_e], node_index[to_e])
-            f.write("    {0} -> {1};\n"
-                    .format(node_index[from_e], node_index[to_e]))
+            try:
+                f.write("    {0} -> {1};\n"
+                        .format(node_index[from_e], node_index[to_e]))
+            except KeyError:
+                pass  # don't write node if key error.
 
         f.write('}')
 
@@ -122,8 +125,11 @@ def write_dot_graph_subset(
         for e in edge_index:
             from_e = (e[0][0].lower(), e[0][1])
             to_e = (e[1][0].lower(), e[1][1])
-            f.write("    {0} -> {1};\n"
-                    .format(node_index[from_e], node_index[to_e]))
+            try:
+                f.write("    {0} -> {1};\n"
+                        .format(node_index[from_e], node_index[to_e]))
+            except KeyError:
+                pass  # don't write node if key error.
 
         f.write('}')
 

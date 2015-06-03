@@ -113,22 +113,21 @@ def _go(venv_name, **kwargs):
                 pprint(p.ancestors(venv.edges))
                 print("\n")
 
-            # # todo (aj) change to --get-ancestor-trace & make fn with pdf out.
-            # f = os.path.join(MagellanConfig.output_dir, '{}.gv'.format(p.name))
-            # write_dot_graph_to_disk_with_distance_colour(
-            #     venv, f, p.calc_self_node_distances(venv))
-            #
-            # # Ancestor trace of package
-            # f = os.path.join(MagellanConfig.output_dir,
-            #                  '{}_anc_track.gv'.format(p.name))
-            # write_dot_graph_to_disk_with_distance_colour(
-            #     venv, f, p.ancestor_trace(venv))
-            #
-            # # todo (aj) specifically request dot graph file
-            # f = MagellanConfig.output_dir + '{}_anc_track_trunc.gv'
-            # f = os.path.join(MagellanConfig.output_dir,
-            #                  '{}_anc_track_trunc.gv'.format(p.name))
-            # write_dot_graph_subset(venv, f, p.ancestor_trace(venv))
+            if kwargs['output_dot_file']:
+                f = os.path.join(MagellanConfig.output_dir, '{}.gv'
+                                 .format(p.name))
+                write_dot_graph_to_disk_with_distance_colour(
+                    venv, f, p.calc_self_node_distances(venv))
+
+            if kwargs['get_ancestor_trace']:  # Ancestor trace of package
+                f = os.path.join(MagellanConfig.output_dir,
+                                 '{}_anc_track.gv'.format(p.name))
+                write_dot_graph_to_disk_with_distance_colour(
+                    venv, f, p.ancestor_trace(venv))
+
+                f = os.path.join(MagellanConfig.output_dir,
+                                 '{}_anc_track_trunc.gv'.format(p.name))
+                write_dot_graph_subset(venv, f, p.ancestor_trace(venv))
 
 
 #######################
@@ -185,6 +184,13 @@ def main():
         help="Runs through installed packages in specified environment to "
              "detect if there are any conflicts between dependencies and "
              "versions.")
+    parser.add_argument(
+        '--output-dot-file', action='store_true', default=False,
+        help="Output a .gv file showing connectedness of package.")
+    parser.add_argument(
+        '--get-ancestor-trace', action='store_true', default=False,
+        help="Output .gv files showing ancestor trace of package and a "
+             "truncated version.")
 
     # Configuration
     parser.add_argument(
@@ -201,7 +207,8 @@ def main():
               "E.g. '-f http://my_server.com/deployment_libs/ "
               "--trusted-host my_server.com'"))
     parser.add_argument(
-        '--path-to-env-bin', default=None, help="Path to virtual env bin")
+        '--path-to-env-bin', default=None, metavar="<path-to-env-bin>",
+        help="Path to virtual env bin")
     parser.add_argument(
         '-f', '--package-file', type=str, metavar="<package_file>",
         help="File with list of packages")
@@ -223,8 +230,7 @@ def main():
     parser.add_argument(
         '--no-pip-update', action='store_true', default=False,
         help="If invoked will not update to latest version of pip when"
-             "creating new virtual env."
-    )
+             "creating new virtual env.")
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:

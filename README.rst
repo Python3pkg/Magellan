@@ -54,6 +54,9 @@ Options:
                                 Runs through installed packages in specified
                                 environment to detect if there are any conflicts
                                 between dependencies and versions.
+          --output-dot-file     Output a .gv file showing connectedness of package.
+          --get-ancestor-trace  Output .gv files showing ancestor trace of package and
+                                a truncated version.
 
         Configuration Arguments:
           -v, --verbose         Verbose mode
@@ -62,7 +65,7 @@ Options:
                                 requirements.txt. E.g. '-f
                                 http://my_server.com/deployment_libs/ --trusted-host
                                 my_server.com'
-          --path-to-env-bin PATH_TO_ENV_BIN
+           --path-to-env-bin <path-to-env-bin>
                                 Path to virtual env bin
           -f <package_file>, --package-file <package_file>
                                 File with list of packages
@@ -75,6 +78,8 @@ Options:
                                 Don't delete the pipdeptree output reports.
           --keep-env-files      Don't delete the nodes, edges, package_requirements
                                 env files.
+          --no-pip-update       If invoked will not update to latest version of pip
+                                when creating new virtual env.
 
 
 Example Usage:
