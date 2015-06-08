@@ -5,9 +5,10 @@
 from __future__ import print_function
 
 import argparse
+import logging
 import os
 import sys
-from pprint import pprint
+from pprint import pprint, pformat
 
 
 from magellan.utils import MagellanConfig
@@ -18,8 +19,7 @@ from magellan.analysis import (
     write_dot_graph_to_disk_with_distance_colour, write_dot_graph_subset,)
 from magellan.reports import produce_pdp_package_report
 
-VERBOSE = False
-
+maglog = logging.getLogger('magellan_logger')
 
 def _go(venv_name, **kwargs):
     """Main script of magellan program.
@@ -34,10 +34,6 @@ def _go(venv_name, **kwargs):
     If packages are specified then do package specific analysis.
     Otherwise perform general analysis on environment.
     """
-
-    # todo (aj) will implement python logging after some research.
-    # global VERBOSE
-    # verboseprint = print if VERBOSE else lambda *a, **k: None
 
     if kwargs['list_all_versions']:
         for p in kwargs['list_all_versions']:
@@ -84,7 +80,7 @@ def _go(venv_name, **kwargs):
     # Analysis
     if package_list:
         # pipdeptree reports are parsed for individual package analysis.
-        venv.gen_pipdeptree_reports(VERBOSE)
+        venv.gen_pipdeptree_reports()
         venv.parse_pipdeptree_reports()
         if not kwargs['keep_pipdeptree_output']:
             venv.rm_pipdeptree_report_files()
@@ -96,22 +92,19 @@ def _go(venv_name, **kwargs):
                 _, _ = p.check_versions()
 
         for p_k, p in packages.items():
-            if VERBOSE:
-                print("Analysing {}".format(p.name))
+            print("Analysing {}".format(p.name))
 
             # todo (aj) Improve output Mag Report with conflict & outdated info
             f_template = os.path.join(
                 MagellanConfig.output_dir, "Mag_Report_{}.txt")
             produce_pdp_package_report(
-                p.name, venv.pdp_tree, venv.pdp_errs, f_template, VERBOSE)
+                p.name, venv.pdp_tree, venv.pdp_errs, f_template)
 
-            if VERBOSE:
-                print("\n" + "-" * 50 + "\n" + p.name + "\n")
-                print("Package Descendants - depended on by {}".format(p.name))
-                pprint(p.descendants(venv.edges))
-                print("Package Ancestors - these depend on {}".format(p.name))
-                pprint(p.ancestors(venv.edges))
-                print("\n")
+            maglog.info(p.name)
+            maglog.info("Package Descendants - depended on by {}".format(p.name))
+            maglog.debug(pformat(p.descendants(venv.edges)))
+            maglog.info("Package Ancestors - these depend on {}".format(p.name))
+            maglog.debug(pformat(p.ancestors(venv.edges)))
 
             if kwargs['output_dot_file']:
                 f = os.path.join(MagellanConfig.output_dir, '{}.gv'
@@ -196,6 +189,9 @@ def main():
     parser.add_argument(
         '-v', '--verbose', action='store_true', default=False,
         help="Verbose mode")
+    parser.add_argument(
+        '--super-verbose', action='store_true', default=False,
+        help="Super verbose mode")
 
     # todo (aj) change this before release
     pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
@@ -231,6 +227,10 @@ def main():
         '--no-pip-update', action='store_true', default=False,
         help="If invoked will not update to latest version of pip when"
              "creating new virtual env.")
+    parser.add_argument(
+        '--no-logfile', action='store_true', default=False,
+        help="Set this flag to disable output to magellan.log."
+    )
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
@@ -245,10 +245,32 @@ def main():
     if "--cache-dir" not in kwargs['pip_options']:
         kwargs['pip_options'] += " --cache-dir {}".format(kwargs['cache_dir'])
 
-    global VERBOSE
-    VERBOSE = kwargs['verbose']
+    # Logging depends on verbosity level:
+    ch = logging.StreamHandler()  # Console handler
+    ch.setFormatter(logging.Formatter("MagLog %(levelname)s: %(message)s"))
+    maglog.addHandler(ch)
 
-    # run main script:
+    if not kwargs['no_logfile']:
+        fh = logging.FileHandler("magellan.log")  # file handler
+        fh.setFormatter(logging.Formatter("MagLog %(levelname)s: %(message)s"))
+        fh.setLevel(logging.DEBUG)
+        maglog.addHandler(fh)
+        del fh
+
+    if kwargs['verbose']:
+        maglog.setLevel(logging.INFO)
+        ch.setLevel(logging.INFO)
+        maglog.info("Maglog verbose mode")
+    if kwargs['super_verbose']:
+        maglog.setLevel(logging.DEBUG)
+        ch.setLevel(logging.DEBUG)
+        maglog.debug("Maglog super verbose mode")
+
+    del ch
+
+    # **************** #
+    # run main script: #
+    # **************** #
     _go(**kwargs)
 
 

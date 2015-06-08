@@ -3,11 +3,15 @@ import operator
 from pkg_resources import parse_version
 import requests
 import json
+import logging
 
 from magellan.package_utils import Package
 from magellan.env_utils import Environment
 from magellan.utils import MagellanConfig, run_in_subprocess
 
+# Logging:
+maglog = logging.getLogger("magellan_logger")
+maglog.info("Env imported")
 
 class DepTools(object):
     """Tools for conflict detection."""
@@ -542,8 +546,6 @@ class PyPIHelper(object):
         p is package name
         localCacheDir is a location of local cache
         """
-        verbose = True
-
         package = str(package)
         p_json = package + '.json'
 
@@ -553,8 +555,7 @@ class PyPIHelper(object):
             f = os.path.join(localcache, p_json)
 
         if os.path.exists(f):
-            if verbose:
-                print("retrieving file {0} from local cache".format(f))
+            maglog.info("retrieving file {0} from local cache".format(f))
             with open(f, 'rb') as ff:
                 return json.load(ff)
 
@@ -562,9 +563,8 @@ class PyPIHelper(object):
 
         r = requests.get(pypi_template.format(package))
         if r.status_code == 200:  # if successfully retrieved:
-            if verbose:
-                print("{0} JSON successfully retrieved from PyPI"
-                      .format(package))
+            maglog.info("{0} JSON successfully retrieved from PyPI"
+                        .format(package))
 
             # Save to local cache...
             with open(f, 'w') as outf:
@@ -573,8 +573,7 @@ class PyPIHelper(object):
             return r.json()
 
         else:  # retrieval failed
-            if verbose:
-                print("failed to download {0}".format(package))
+            maglog.info("failed to download {0}".format(package))
             return {}
 
     @staticmethod

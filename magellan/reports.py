@@ -9,17 +9,19 @@ Report code for Magellan here.
 
 from pprint import pprint
 
+# Logging:
+import logging
+maglog = logging.getLogger("magellan_logger")
+maglog.info("Env imported")
 
 def produce_pdp_package_report(
-        package, piptree, piperrs,
-        file_template="Mag_Report_{}.txt", verbose=False):
+        package, piptree, piperrs, file_template="Mag_Report_{}.txt"):
     """
     Generates a report based on a specific package
     
     :param str package: name of the package to produce report for
     :param dict piptree: parsed output from pipdeptree
     :param dict piperrs: parsed error output from pipdeptree
-    :param bool verbose: verbose mode
     """
     
     search_package = package + ' '
@@ -35,8 +37,7 @@ def produce_pdp_package_report(
     no_tree = False
     if not nodes and not deps:
         no_tree = True
-        if verbose:
-            print("No nodes or dependencies found for {}".format(package))
+        maglog.info("No nodes or dependencies found for {}".format(package))
 
     # From errs:
     e_nodes = []
@@ -55,8 +56,7 @@ def produce_pdp_package_report(
     no_errs = False
     if not e_nodes and not e_deps:
         no_errs = True
-        if verbose:
-            print("No conflict information found for {}".format(package))
+        maglog.info("No conflict information found for {}".format(package))
 
     # Exit if nothing to report.
     if no_tree and no_errs:
@@ -64,9 +64,8 @@ def produce_pdp_package_report(
     
     # Actually output to a file:
     write_file = file_template.format(package)
-    if verbose:
-        print("Generating report for: {0} as file: {1}"
-              .format(package, write_file))
+    maglog.info("Generating report for: {0} as file: {1}"
+                .format(package, write_file))
     with open(write_file, 'w') as f:
         # NAME:
         f.write("Package: {}".format(package))

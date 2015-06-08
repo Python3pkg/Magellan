@@ -3,6 +3,7 @@
 Collection of methods concerning analysis of virtual environment.
 """
 
+import logging
 import os
 import pickle
 import re
@@ -13,6 +14,9 @@ import sys
 from magellan.utils import (run_in_subprocess, run_in_subp_ret_stdout,)
 from magellan.package_utils import Package
 
+# Logging:
+maglog = logging.getLogger("magellan_logger")
+maglog.info("Env imported")
 
 class Environment(object):
     """ Environment class."""
@@ -35,6 +39,8 @@ class Environment(object):
 
         # Connectedness:
         self.connectedness = {}
+
+        maglog.info("logging setup in Environment")
 
     def magellan_setup_go_env(self, kwargs):
         """ Set up environment for main script."""
@@ -239,7 +245,7 @@ class Environment(object):
                 print(p.name)  # just show nodes
         sys.exit(0)
 
-    def gen_pipdeptree_reports(self, verbose):
+    def gen_pipdeptree_reports(self,):
         """
         Runs pipdeptree and outputs analysis to disk.
 
@@ -253,8 +259,8 @@ class Environment(object):
         self.pdp_meta['pdp_tree_file'] = pdp_tree_file
         self.pdp_meta['pdp_err_file'] = pdp_err_file
 
-        if verbose:
-            print("Generating pipdeptree report")
+
+        maglog.info("Generating pipdeptree report")
 
         self._gen_pipdeptree_reports(
             out_file=pdp_tree_file, err_file=pdp_err_file)
