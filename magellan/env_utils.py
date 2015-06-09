@@ -18,6 +18,7 @@ from magellan.package_utils import Package
 maglog = logging.getLogger("magellan_logger")
 maglog.info("Env imported")
 
+
 class Environment(object):
     """ Environment class."""
 
@@ -127,14 +128,17 @@ class Environment(object):
         if not then indicate to perform analysis on current environment"""
 
         if venv_name is None:
-            print("No virtual env specified, analysing local env")
+            maglog.info("No virtual env specified, analysing local env")
             venv_name = ''
             name_bit = ''
         else:
             venv_name = venv_name.rstrip('/')
-            print("Attempting analysis of {}".format(venv_name))
+            maglog.info("Attempting analysis of {}".format(venv_name))
             # First check specified environment exists:
             if not Environment.vex_check_venv_exists(venv_name):
+                maglog.critical('Virtual Env "{}" does not exist, '
+                                'please check name and try again'
+                                .format(venv_name))
                 sys.exit('LAPU LAPU! Virtual Env "{}" does not exist, '
                          'please check name and try again'.format(venv_name))
             name_bit = '_'
@@ -237,7 +241,7 @@ class Environment(object):
 
     def show_all_packages_and_exit(self, with_versions=False):
         """ Prints nodes and exits"""
-        print('"Show all packages" selected. Nodes found:')
+        maglog.info('"Show all packages" selected. Nodes found:')
         for _, p in self.all_packages.items():
             if with_versions:
                 print("{0} : {1} ".format(p.name, p.version))
@@ -259,7 +263,6 @@ class Environment(object):
         self.pdp_meta['pdp_tree_file'] = pdp_tree_file
         self.pdp_meta['pdp_err_file'] = pdp_err_file
 
-
         maglog.info("Generating pipdeptree report")
 
         self._gen_pipdeptree_reports(
@@ -278,9 +281,10 @@ class Environment(object):
             with open(err_file, 'w') as efile, open(out_file, 'w') as ofile:
                 _ = subprocess.call(cmd_args, stderr=efile, stdout=ofile)
         except Exception as e:
-            print("LAPU LAPU! Error in analysis.py, gen_pipdeptree_reports "
-                  "when attempting to run: {}".format(cmd_args))
-            sys.exit(e)
+            maglog.exception("LAPU LAPU! Error {0} in analysis.py, "
+                             "gen_pipdeptree_reports when attempting to run: "
+                             "{1}".format(e, cmd_args))
+            sys.exit()
 
     def parse_pipdeptree_reports(self):
         """Takes output from pipdeptree and returns dictionaries."""
@@ -420,7 +424,12 @@ def _parse_pipdeptree_error_file(f):
 
 
 def _write_dot_graph_to_disk(nodes, edges, filename):
-    """Write dot graph to disk."""
+    """
+    Write dot graph to disk.
+    :param nodes: list of nodes to write (package, version) tuple
+    :param edges: list of connected nodes and optionally specs
+    :param filename: string of output filename
+    """
 
     node_template = 'n{}'
     node_index = {(nodes[x][0].lower(), nodes[x][1]): node_template.format(x+1)

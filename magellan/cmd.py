@@ -51,11 +51,11 @@ def _go(venv_name, **kwargs):
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
-    check_versions = kwargs['check_versions']
-    if check_versions and not package_list:
-        for p_k, p in venv.all_packages.items():
-            print("Analysing {}".format(p.name))
-            _, _ = p.check_versions()
+    if kwargs['check_versions']:
+        if package_list:
+            Package.check_outdated_packages(packages)
+        else:
+            Package.check_outdated_packages(venv.all_packages)
         sys.exit()
 
     MagellanConfig.setup_output_dir(kwargs, package_list)
@@ -85,12 +85,6 @@ def _go(venv_name, **kwargs):
         if not kwargs['keep_pipdeptree_output']:
             venv.rm_pipdeptree_report_files()
 
-        # todo (aj) add this capability into report.
-        if check_versions:
-            for p_k, p in packages.items():
-                print("Analysing {}".format(p.name))
-                _, _ = p.check_versions()
-
         for p_k, p in packages.items():
             print("Analysing {}".format(p.name))
 
@@ -101,8 +95,10 @@ def _go(venv_name, **kwargs):
                 p.name, venv.pdp_tree, venv.pdp_errs, f_template)
 
             maglog.info(p.name)
+
             maglog.info("Package Descendants - depended on by {}".format(p.name))
             maglog.debug(pformat(p.descendants(venv.edges)))
+
             maglog.info("Package Ancestors - these depend on {}".format(p.name))
             maglog.debug(pformat(p.ancestors(venv.edges)))
 
@@ -228,8 +224,8 @@ def main():
         help="If invoked will not update to latest version of pip when"
              "creating new virtual env.")
     parser.add_argument(
-        '--no-logfile', action='store_true', default=False,
-        help="Set this flag to disable output to magellan.log."
+        '--logfile', action='store_true', default=False,
+        help="Set this flag to enable output to magellan.log."
     )
 
     # If no args, just display help and exit
@@ -250,7 +246,7 @@ def main():
     ch.setFormatter(logging.Formatter("MagLog %(levelname)s: %(message)s"))
     maglog.addHandler(ch)
 
-    if not kwargs['no_logfile']:
+    if kwargs['logfile']:
         fh = logging.FileHandler("magellan.log")  # file handler
         fh.setFormatter(logging.Formatter("MagLog %(levelname)s: %(message)s"))
         fh.setLevel(logging.DEBUG)
