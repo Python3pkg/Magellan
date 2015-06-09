@@ -43,7 +43,7 @@ magellan <options>
 ``-n <venv_name>, --venv-name <venv_name>``
     Specify name for virtual environment, default isMagEnv0, MagEnv1 etc
 
-``-r <requirements_file>, --requirements <requirements_file>``
+``-r <requirements_file>, --install-requirements <requirements_file>``
     Requirements file (e.g. requirements.txt) to install.
 
 *Functional with output*
@@ -130,6 +130,8 @@ magellan <options>
         file containing a list of packages (csv, space or newline delimited.)
 - ``magellan -n MyEnv --package-file myPackageFile.txt --super-verbose``
         Analyse packages in myPackageFile.txt, using "super verbose" (i.e. debug) mode.
+- ``magellan -l <package>``
+        List all versions of <package> available on PyPI.
 - ``magellan -s | magellan -p``
         Shows all packages in current environment (-p with versions). Performs no further analysis.
 - ``magellan -s -n MyEnv``

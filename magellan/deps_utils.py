@@ -1,6 +1,7 @@
 import os
 import operator
 from pkg_resources import parse_version
+from pprint import pformat
 import requests
 import json
 import logging
@@ -85,8 +86,8 @@ class DepTools(object):
             checks[project_name] = []
 
             if key not in node_keys.keys():
-                print("Requirement {0}{1} not in current environment"
-                      .format(project_name, specs))
+                maglog.info("Requirement {0}{1} not in current environment"
+                            .format(project_name, specs))
                 checks[project_name].append(None)
                 missing.append(project_name)
             else:
@@ -155,7 +156,8 @@ class DepTools(object):
         cached_file = os.path.join(MagellanConfig.cache_dir, req_out_file)
 
         if os.path.exists(cached_file):
-            print("Using previously cached result at {0}".format(cached_file))
+            maglog.info("Using previously cached result at {0}"
+                        .format(cached_file))
             return json.load(open(cached_file, 'rb'))
 
         # 1. Set up temporary virtualenv
@@ -297,6 +299,8 @@ class DepTools(object):
             conflicts[p_v]['dep_set'] = uc_deps[p_v]['dependency_set']
             conflicts[p_v]['req_ver'] = \
                 uc_deps[p_v]['required_versions']['conflicts']
+            conflicts[p_v]['missing_packages'] = \
+                uc_deps[p_v]['required_versions']['missing']
             conflicts[p_v]['anc_dep'] = \
                 uc_deps[p_v]['ancestor_dependencies']['conflicts']
 
@@ -402,7 +406,7 @@ class DepTools(object):
 
             if not requirements:
                 deps[p_v] = "NO DATA returned from function."
-                return deps
+                continue
 
             for r in requirements['requires']:
                 r_key = r.lower()
@@ -426,7 +430,7 @@ class DepTools(object):
                         else:
                             deps[p_v]['may_be_okay'].append((r, deets))
 
-            return deps
+        return deps
 
     @staticmethod
     def package_in_environment(package, version, nodes):
@@ -446,16 +450,17 @@ class DepTools(object):
         if ver_info:
             current_version = ver_info[key]
             if version == current_version:
-                print("Package {0} exists with specified version {1}"
+                maglog.info("Package {0} exists with specified version {1}"
                       .format(package, version))
             else:
-                print("Package {0} exists with version {1} that differs from "
-                      "{2}. Try running with Upgrade Package flag -U."
-                      .format(package, current_version, version))
+                maglog.info("Package {0} exists with version {1} that differs "
+                            "from {2}. Try running with Upgrade Package flag"
+                            " -U.".format(package, current_version, version))
 
             return True, {'name': package, 'env_version': current_version}
         else:
-            print("Package does not exist in current env")
+            maglog.info("Package {} does not exist in current env"
+                        .format(package))
             return False, {}
 
     @staticmethod
@@ -474,14 +479,118 @@ class DepTools(object):
                 upgrade_conflicts.append(p)
             else:
                 addition_conflicts.append(p)
+
         if upgrade_conflicts:
+            maglog.info(upgrade_conflicts)
             upgrade_conflicts, uc_deps = DepTools.detect_upgrade_conflicts(
                 upgrade_conflicts, venv)
+
+            DepTools.pprint_upgrade_conflicts(upgrade_conflicts, uc_deps)
+            maglog.info(pformat(upgrade_conflicts))
+            maglog.debug(pformat(uc_deps))
+
         if addition_conflicts:
+            maglog.info(addition_conflicts)
             addition_conflicts = DepTools.detect_package_addition_conflicts(
                 addition_conflicts, venv)
 
+            DepTools.pprint_additional_package_conflicts(addition_conflicts)
+            maglog.info(pformat(addition_conflicts))
+
         return addition_conflicts, upgrade_conflicts
+
+    @staticmethod
+    def pprint_upgrade_conflicts(conflicts, dep_info):
+        """
+        Prints the upgrade conflicts to stdout in format easily digestible
+        for people.
+
+        :param conflicts: dict of upgrade conflicts
+        """
+        s = "Upgrade Conflicts:"
+        print("\n{}".format(s))
+        print("=" * len(s))
+
+        for p_k, p in conflicts.items():
+            p_name = dep_info[p_k]['requirements']['project_name']
+            ver = dep_info[p_k]['requirements']['version']
+
+            print("{0} {1}:".format(p_name, ver))
+            print("-" * (len(p_name) + len(ver) + 2))
+
+            missing_from_env = p['missing_packages']
+            new_dependencies = p['dep_set']['new_deps']
+            removed_dependencies = p['dep_set']['removed_deps']
+            broken_reqs = ["{0}: {1}".format(x, v)
+                           for x, v in p['anc_dep'].items()]
+
+            if not (missing_from_env, new_dependencies,
+                    removed_dependencies, broken_reqs,):
+                print("  No conflicts detected for upgrade of {}."
+                      .format(p_name))
+
+            _print_if(missing_from_env,
+                      "Packages not currently in environment:")
+            _print_if(new_dependencies,
+                      "New dependencies of {}:".format(p_name))
+            _print_if(removed_dependencies,
+                      "{} will no longer depend on:".format(p_name))
+            _print_if(broken_reqs,
+                      "These packages will have their requirements broken:")
+
+            print("\n")
+
+    @staticmethod
+    def pprint_additional_package_conflicts(conflicts):
+        """
+        Prints the upgrade conflicts to stdout in format easily digestible
+        for people.
+
+        :param conflicts: dict of upgrade conflicts
+        """
+        s = "Package Addition Conflicts:"
+        print("\n{}".format(s))
+        print("=" * len(s))
+        for p_k, p in conflicts.items():
+            p_name = p['requirements']['project_name']
+            ver = p['requirements']['version']
+
+            print("{0} {1}:".format(p_name, ver))
+            print("-" * (len(p_name) + len(ver) + 2))
+
+            okay = p['may_be_okay']
+            up = p['may_try_upgrade']
+            new_ps = p['new_packages']
+
+            if not (okay or up or new_ps):
+                print("  No conflicts detected for the addition of {}."
+                      .format(p_name))
+
+            _print_if(okay, "Should be okay:")
+            _print_if(up, "May try to upgrade:")
+            _print_if(new_ps, "New packages to add:")
+
+            print("\n")
+
+
+def _print_if(list_in, lead_in_text=None, tab_space=2, lead_nl=False):
+    """
+    prints the list if it has items.
+    :param list list_in: list of input items
+    :param str lead_in_text: what to print before list print.
+    :param int tab_space: indentation for prettiness.
+    :param bool lead_nl: lead print with newline
+    """
+    if list_in:
+
+        if lead_nl:
+            print("\n")
+
+        if lead_in_text:
+            print(" "*tab_space + lead_in_text)
+
+        for item in list_in:
+            print("  "*tab_space + item)
 
 
 def _return_interrogation_script_json(package, filename=None):

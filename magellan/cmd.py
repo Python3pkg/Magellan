@@ -61,11 +61,11 @@ def _go(venv_name, **kwargs):
     MagellanConfig.setup_output_dir(kwargs, package_list)
 
     if kwargs['package_conflicts']:
-        additional_conflicts, upgrade_conflicts = \
+        maglog.info(kwargs['package_conflicts'])
+
+        addition_conflicts, upgrade_conflicts = \
             DepTools.process_package_conflicts(
                 kwargs['package_conflicts'], venv)
-        pprint(additional_conflicts)
-        pprint(upgrade_conflicts)
 
     if kwargs['detect_env_conflicts']:
         cur_env_conflicts = DepTools.highlight_conflicts_in_current_env(
@@ -142,7 +142,7 @@ def main():
         help=("Specify name for virtual environment, "
               "default is MagEnv0, MagEnv1 etc"))
     parser.add_argument(
-        '-r', '--requirements', type=str, metavar="<requirements_file>",
+        '-r', '--install-requirements', type=str, metavar="<requirements_file>",
         help="requirements file (e.g. requirements.txt) to install.")
 
     # Functional with output
