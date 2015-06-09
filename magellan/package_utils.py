@@ -4,8 +4,14 @@ Module containing Package class.
 This is a collection of methods concerning packages and their analysis.
 """
 
+from __future__ import print_function
+
+import logging
 import re
-import requests
+
+# Logging:
+maglog = logging.getLogger("magellan_logger")
+maglog.info("Env imported")
 
 class PackageException(Exception):
     pass
@@ -208,7 +214,7 @@ class Package(object):
         """
         Calculates the distance to a node on an acyclic directed graph.
 
-        :param package: package to calculate distances from
+        :param package_in: package to calculate distances from
         :param nodes: list of nodes
         :param edges: list of edges (node links)
         :param include_root=False: whether to include the environment root
@@ -333,7 +339,7 @@ class Package(object):
         try:
             yp = yarg.get(package)
             rels = yp.release_ids
-        except yarg.HTTPError as e:
+        except yarg.HTTPError:
             print("{0} not found at PyPI; "
                   "no version information available.".format(package))
             # log e
@@ -348,11 +354,22 @@ class Package(object):
         return rels
 
     @staticmethod
+    def check_outdated_packages(package_list):
+        """
+        Convenience function to print major/minor versions based on filtered
+        input.
+
+        :param package_list: dict of magellan.package_utils.Package objects
+        """
+        for p_k, p in package_list.items():
+            maglog.info("Analysing {}".format(p.name))
+            _, _ = p.check_versions()
+
+    @staticmethod
     def check_latest_major_minor_versions(package, version=None):
         """
         Compare 'version' to latest major and minor versions on PyPI.
         """
-
         from pkg_resources import parse_version
 
         versions = Package.get_package_versions_from_pypi(package)
@@ -369,7 +386,7 @@ class Package(object):
         beyond_up_to_date = (parse_version(version) >
                              parse_version(latest_major_version))
         if beyond_up_to_date:
-            print("{0} version {1} is beyond latest version {2}"
+            print("{0} version {1} is beyond latest PyPI version {2}"
                   .format(package, version, latest_major_version))
             return [False, version], [False, version]
 

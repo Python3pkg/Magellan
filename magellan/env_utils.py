@@ -3,6 +3,7 @@
 Collection of methods concerning analysis of virtual environment.
 """
 
+import logging
 import os
 import pickle
 import re
@@ -12,6 +13,10 @@ import sys
 
 from magellan.utils import (run_in_subprocess, run_in_subp_ret_stdout,)
 from magellan.package_utils import Package
+
+# Logging:
+maglog = logging.getLogger("magellan_logger")
+maglog.info("Env imported")
 
 
 class Environment(object):
@@ -36,13 +41,21 @@ class Environment(object):
         # Connectedness:
         self.connectedness = {}
 
+        maglog.info("logging setup in Environment")
+
     def magellan_setup_go_env(self, kwargs):
         """ Set up environment for main script."""
         req_file = kwargs['requirements']
         if req_file:
             self.create_vex_new_virtual_env()
-            self.vex_install_requirements(self.name, req_file,
-                                          kwargs['pip_options'])
+
+            pip_update_cmd = ("vex {} pip install pip --upgrade"
+                              .format(self.name))
+
+            if not kwargs['no_pip_update']:  # update pip
+                run_in_subprocess(pip_update_cmd)
+                self.vex_install_requirements(self.name, req_file,
+                                              kwargs['pip_options'])
 
             self.vex_install_requirement(self.name, "pipdeptree", "")
         else:
@@ -115,14 +128,17 @@ class Environment(object):
         if not then indicate to perform analysis on current environment"""
 
         if venv_name is None:
-            print("No virtual env specified, analysing local env")
+            maglog.info("No virtual env specified, analysing local env")
             venv_name = ''
             name_bit = ''
         else:
             venv_name = venv_name.rstrip('/')
-            print("Attempting analysis of {}".format(venv_name))
+            maglog.info("Attempting analysis of {}".format(venv_name))
             # First check specified environment exists:
             if not Environment.vex_check_venv_exists(venv_name):
+                maglog.critical('Virtual Env "{}" does not exist, '
+                                'please check name and try again'
+                                .format(venv_name))
                 sys.exit('LAPU LAPU! Virtual Env "{}" does not exist, '
                          'please check name and try again'.format(venv_name))
             name_bit = '_'
@@ -168,23 +184,16 @@ class Environment(object):
         :return: nodes, edges
         """
 
-        venv_bin = '' if self.bin is None else self.bin
-
-        # Get super_unique_name for temporary file
-        super_unique_name = 'super_unique_name.py'
-        while True:
-            if not os.path.exists(super_unique_name):
-                break
-            super_unique_name = "{}.py"\
-                .format(_get_random_string_of_length_n(16))
-
-        # write script
-        with open(super_unique_name, 'w') as f:
-            f.write(_return_node_edge_script_string())
+        interrogation_file = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            'interrogation_scripts',  'env_interrogation.py')
 
         # execute
-        run_in_subprocess('{0}python {1}'.format(venv_bin, super_unique_name))
-        run_in_subprocess('rm {}'.format(super_unique_name))
+        if self.name == "":
+            run_in_subprocess("python {}".format(interrogation_file))
+        else:
+            run_in_subprocess("vex {0} python {1}"
+                              .format(self.name, interrogation_file))
 
         # Load in nodes and edges pickles
         self.nodes = pickle.load(open('nodes.p', 'rb'))
@@ -197,42 +206,42 @@ class Environment(object):
             open('package_requirements.p', 'rb'))
         self.add_file_to_extant_env_files('package_requirements.p')
 
-    def add_file_to_extant_env_files(self, file):
+    def add_file_to_extant_env_files(self, file_to_add):
         """
         Add file to list of existing environment files, to keep track for
         deletion.
-        :param file: str, filename to add to self.extant_env_files list
+        :param file_to_add: str, filename to add to self.extant_env_files list
         """
-        self.extant_env_files.append(file)
+        self.extant_env_files.append(file_to_add)
 
     @staticmethod
     def remove_env_file_from_disk(file_to_remove):
         """
         Delete file from disk.
-        :param file: str, file to delete.
+        :param file_to_remove: str, file to delete.
         """
         if os.path.exists(file_to_remove):
             run_in_subprocess('rm {}'.format(file_to_remove))
 
-    def remove_extant_env_files_from_disk(self, to_remove=[]):
+    def remove_extant_env_files_from_disk(self, to_remove=None):
         """
         Removes all files in self.extant_env_files
         :param list to_remove: list of files to remove, empty list remove
         all files.
         """
-        if not to_remove:  # remove all files if no list given
-            for f in self.extant_env_files:
-                self.remove_env_file_from_disk(f)
-            self.extant_env_files = []
-        else:
+        if to_remove:  # remove all files if no list given
             for f in to_remove:
                 self.remove_env_file_from_disk(f)
             self.extant_env_files = [x for x in self.extant_env_files
                                      if x not in to_remove]
+        else:
+            for f in self.extant_env_files:
+                self.remove_env_file_from_disk(f)
+            self.extant_env_files = []
 
     def show_all_packages_and_exit(self, with_versions=False):
         """ Prints nodes and exits"""
-        print('"Show all packages" selected. Nodes found:')
+        maglog.info('"Show all packages" selected. Nodes found:')
         for _, p in self.all_packages.items():
             if with_versions:
                 print("{0} : {1} ".format(p.name, p.version))
@@ -240,7 +249,7 @@ class Environment(object):
                 print(p.name)  # just show nodes
         sys.exit(0)
 
-    def gen_pipdeptree_reports(self, verbose):
+    def gen_pipdeptree_reports(self,):
         """
         Runs pipdeptree and outputs analysis to disk.
 
@@ -254,8 +263,7 @@ class Environment(object):
         self.pdp_meta['pdp_tree_file'] = pdp_tree_file
         self.pdp_meta['pdp_err_file'] = pdp_err_file
 
-        if verbose:
-            print("Generating pipdeptree report")
+        maglog.info("Generating pipdeptree report")
 
         self._gen_pipdeptree_reports(
             out_file=pdp_tree_file, err_file=pdp_err_file)
@@ -273,9 +281,10 @@ class Environment(object):
             with open(err_file, 'w') as efile, open(out_file, 'w') as ofile:
                 _ = subprocess.call(cmd_args, stderr=efile, stdout=ofile)
         except Exception as e:
-            print("LAPU LAPU! Error in analysis.py, gen_pipdeptree_reports "
-                  "when attempting to run: {}".format(cmd_args))
-            sys.exit(e)
+            maglog.exception("LAPU LAPU! Error {0} in analysis.py, "
+                             "gen_pipdeptree_reports when attempting to run: "
+                             "{1}".format(e, cmd_args))
+            sys.exit()
 
     def parse_pipdeptree_reports(self):
         """Takes output from pipdeptree and returns dictionaries."""
@@ -355,69 +364,6 @@ class Environment(object):
         self.connectedness['conn_nodes'] = conn_nodes
 
 
-def _get_random_string_of_length_n(n):
-    """Returns random string of length n"""
-    import random
-    import string
-    return "".join(random.choice(string.ascii_letters) for _ in range(n))
-
-
-def _return_node_edge_script_string():
-    """Returns a script to write into local dir; execute under virtualenv"""
-
-    script = """
-from pprint import pprint
-import pickle
-import pip
-
-default_skip = ['pip', 'python', 'distribute']
-skip = ['pipdeptree', 'virtualenv', 'magellan', 'vex']
-local_only = True
-pkgs = pip.get_installed_distributions(local_only=local_only,
-                                        skip=skip+default_skip)
-
-# FORM NODES
-nodes = [(x.project_name, x.version) for x in pkgs]
-
-# FORM EDGES
-installed_vers = {x.key: x.version for x in pkgs}
-edges = []
-for p in pkgs:
-    p_tup = (p.project_name, p.version)
-    edges.append([('root','0.0.0'), p_tup])
-    reqs = p.requires()
-    if reqs:
-        for r in reqs:
-            if r.key in installed_vers:
-                r_tup = (r.key, installed_vers[r.key])
-            else:
-                r_tup = (r.key)
-            edges.append([p_tup, r_tup, r.specs])
-
-
-# Record nodes and edges to disk to be read in  by main program if needed.
-pickle.dump(nodes, open('nodes.p','wb'))
-pickle.dump(edges, open('edges.p','wb'))
-
-# To the brave souls who venture herein:
-# Doing it this long-winded way due to a cryptic pickle bug that occurs when
-# you try to pickle 'pkgs' as-is when executed in a different env.
-pkgs_out = {}
-for p in pkgs:
-#    print((p.key, p.project_name, p.version, p.requires()))
-    pkgs_out[p.key] = {}
-    pkgs_out[p.key]['project_name'] = p.project_name
-    pkgs_out[p.key]['version'] = p.version
-    pkgs_out[p.key]['requires'] = {}
-    for r in p.requires():
-        pkgs_out[p.key]['requires'][r.key] = {}
-        pkgs_out[p.key]['requires'][r.key]['project_name'] = r.project_name
-        pkgs_out[p.key]['requires'][r.key]['specs']  = r.specs
-pickle.dump(pkgs_out, open('package_requirements.p','wb'))
-    """
-    return script
-
-
 def _parse_pipdeptree_output_file(f):
     """
     Takes a file object as input and parses that into a tree.
@@ -478,7 +424,12 @@ def _parse_pipdeptree_error_file(f):
 
 
 def _write_dot_graph_to_disk(nodes, edges, filename):
-    """Write dot graph to disk."""
+    """
+    Write dot graph to disk.
+    :param nodes: list of nodes to write (package, version) tuple
+    :param edges: list of connected nodes and optionally specs
+    :param filename: string of output filename
+    """
 
     node_template = 'n{}'
     node_index = {(nodes[x][0].lower(), nodes[x][1]): node_template.format(x+1)
@@ -501,7 +452,10 @@ def _write_dot_graph_to_disk(nodes, edges, filename):
         for e in edges:
             from_e = (e[0][0].lower(), e[0][1])
             to_e = (e[1][0].lower(), e[1][1])
-            f.write("    {0} -> {1};\n"
-                    .format(node_index[from_e], node_index[to_e]))
+            try:
+                f.write("    {0} -> {1};\n"
+                        .format(node_index[from_e], node_index[to_e]))
+            except KeyError:
+                pass  # don't write node if key error.
 
         f.write('}')

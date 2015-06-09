@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 # todo (security) remove default pip options before making repo public!!
 
+from __future__ import print_function
+
 import argparse
+import logging
 import os
 import sys
-from pprint import pprint
+from pprint import pprint, pformat
+
 
 from magellan.utils import MagellanConfig
 from magellan.env_utils import Environment
@@ -16,8 +19,7 @@ from magellan.analysis import (
     write_dot_graph_to_disk_with_distance_colour, write_dot_graph_subset,)
 from magellan.reports import produce_pdp_package_report
 
-VERBOSE = False
-
+maglog = logging.getLogger('magellan_logger')
 
 def _go(venv_name, **kwargs):
     """Main script of magellan program.
@@ -32,14 +34,6 @@ def _go(venv_name, **kwargs):
     If packages are specified then do package specific analysis.
     Otherwise perform general analysis on environment.
     """
-
-    global VERBOSE
-
-    skip_generic_analysis = kwargs['skip_generic_analysis']
-
-    check_versions = kwargs['check_versions']
-    if check_versions:
-        skip_generic_analysis = True
 
     if kwargs['list_all_versions']:
         for p in kwargs['list_all_versions']:
@@ -57,6 +51,13 @@ def _go(venv_name, **kwargs):
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
+    if kwargs['check_versions']:
+        if package_list:
+            Package.check_outdated_packages(packages)
+        else:
+            Package.check_outdated_packages(venv.all_packages)
+        sys.exit()
+
     MagellanConfig.setup_output_dir(kwargs, package_list)
 
     if kwargs['package_conflicts']:
@@ -71,65 +72,51 @@ def _go(venv_name, **kwargs):
             venv.nodes, venv.package_requirements)
         if cur_env_conflicts:
             print("Conflicts in current environment:")
-            for c in cur_env_conflicts:
-                print(c)
+            for conflict in cur_env_conflicts:
+                print(conflict)
         else:
             print("No conflicts detected in environment {}".format(venv.name))
 
     # Analysis
-    if package_list or not skip_generic_analysis:
+    if package_list:
         # pipdeptree reports are parsed for individual package analysis.
-        venv.gen_pipdeptree_reports(VERBOSE)
+        venv.gen_pipdeptree_reports()
         venv.parse_pipdeptree_reports()
         if not kwargs['keep_pipdeptree_output']:
             venv.rm_pipdeptree_report_files()
 
-    # Generic Analysis - package-agnostic reports
-    if not skip_generic_analysis:
-        venv.write_dot_graph_to_disk()
-        # Calculate connectedness of graph
-        # todo (aj) profile and speed up! ..all nodes as Packages! proxima onda
-        f = MagellanConfig.output_dir + 'abs_card.gv'
-        write_dot_graph_to_disk_with_distance_colour(
-            venv, f, venv.connected_nodes())
-
-    # Package Specific Analysis
-    if package_list:
-        
-        if check_versions:
-            for p_k, p in packages.items():
-                print("Analysing {}".format(p.name))
-                _, _ = p.check_versions()
-            sys.exit(0)
-
         for p_k, p in packages.items():
-            if VERBOSE:
-                print("Analysing {}".format(p.name))
+            print("Analysing {}".format(p.name))
 
-            f_template = MagellanConfig.output_dir + "Mag_Report_{}.txt"
+            # todo (aj) Improve output Mag Report with conflict & outdated info
+            f_template = os.path.join(
+                MagellanConfig.output_dir, "Mag_Report_{}.txt")
             produce_pdp_package_report(
-                p.name, venv.pdp_tree, venv.pdp_errs, f_template, VERBOSE)
+                p.name, venv.pdp_tree, venv.pdp_errs, f_template)
 
-            f = MagellanConfig.output_dir + '{}.gv'.format(p.name)
-            write_dot_graph_to_disk_with_distance_colour(
-                venv, f, p.calc_self_node_distances(venv))
+            maglog.info(p.name)
 
-            if VERBOSE:
-                print("\n" + "-" * 50 + "\n" + p.name + "\n")
-                print("Package Descendants - depended on by {}".format(p.name))
-                pprint(p.descendants(venv.edges))
-                print("Package Ancestors - these depend on {}".format(p.name))
-                pprint(p.ancestors(venv.edges))
-                print("\n")
+            maglog.info("Package Descendants - depended on by {}".format(p.name))
+            maglog.debug(pformat(p.descendants(venv.edges)))
 
-            # Ancestor trace of package
-            f = MagellanConfig.output_dir + '{}_anc_track.gv'
-            write_dot_graph_to_disk_with_distance_colour(
-                venv, f.format(p.name), p.ancestor_trace(venv))
+            maglog.info("Package Ancestors - these depend on {}".format(p.name))
+            maglog.debug(pformat(p.ancestors(venv.edges)))
 
-            f = MagellanConfig.output_dir + '{}_anc_track_trunc.gv'
-            write_dot_graph_subset(
-                venv, f.format(p.name), p.ancestor_trace(venv))
+            if kwargs['output_dot_file']:
+                f = os.path.join(MagellanConfig.output_dir, '{}.gv'
+                                 .format(p.name))
+                write_dot_graph_to_disk_with_distance_colour(
+                    venv, f, p.calc_self_node_distances(venv))
+
+            if kwargs['get_ancestor_trace']:  # Ancestor trace of package
+                f = os.path.join(MagellanConfig.output_dir,
+                                 '{}_anc_track.gv'.format(p.name))
+                write_dot_graph_to_disk_with_distance_colour(
+                    venv, f, p.ancestor_trace(venv))
+
+                f = os.path.join(MagellanConfig.output_dir,
+                                 '{}_anc_track_trunc.gv'.format(p.name))
+                write_dot_graph_subset(venv, f, p.ancestor_trace(venv))
 
 
 #######################
@@ -176,7 +163,7 @@ def main():
               "Make sure this is not superseded by '-s'"))
     parser.add_argument(
         '-P', '--package-conflicts', action='append', nargs=2,
-        metavar=("<package-name>","<version>"),
+        metavar=("<package-name>", "<version>"),
         help=("Check whether a package will conflict with the current "
               "environment, either through addition or change. NB Can be used "
               "multiple times but must always specify desired version. "
@@ -186,11 +173,21 @@ def main():
         help="Runs through installed packages in specified environment to "
              "detect if there are any conflicts between dependencies and "
              "versions.")
+    parser.add_argument(
+        '--output-dot-file', action='store_true', default=False,
+        help="Output a .gv file showing connectedness of package.")
+    parser.add_argument(
+        '--get-ancestor-trace', action='store_true', default=False,
+        help="Output .gv files showing ancestor trace of package and a "
+             "truncated version.")
 
     # Configuration
     parser.add_argument(
         '-v', '--verbose', action='store_true', default=False,
         help="Verbose mode")
+    parser.add_argument(
+        '--super-verbose', action='store_true', default=False,
+        help="Super verbose mode")
 
     # todo (aj) change this before release
     pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
@@ -202,13 +199,11 @@ def main():
               "E.g. '-f http://my_server.com/deployment_libs/ "
               "--trusted-host my_server.com'"))
     parser.add_argument(
-        '--path-to-env-bin', default=None, help="Path to virtual env bin")
+        '--path-to-env-bin', default=None, metavar="<path-to-env-bin>",
+        help="Path to virtual env bin")
     parser.add_argument(
         '-f', '--package-file', type=str, metavar="<package_file>",
         help="File with list of packages")
-    parser.add_argument(
-        '--skip-generic-analysis', action='store_true', default=False,
-        help="Skip generic analysis - useful for purely package analysis.")
     parser.add_argument(
         '--output-dir', type=str, default=MagellanConfig.output_dir,
         metavar="<output_dir>",
@@ -224,6 +219,14 @@ def main():
     parser.add_argument(
         '--keep-env-files', action='store_true', default=False,
         help="Don't delete the nodes, edges, package_requirements env files.")
+    parser.add_argument(
+        '--no-pip-update', action='store_true', default=False,
+        help="If invoked will not update to latest version of pip when"
+             "creating new virtual env.")
+    parser.add_argument(
+        '--logfile', action='store_true', default=False,
+        help="Set this flag to enable output to magellan.log."
+    )
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
@@ -238,10 +241,32 @@ def main():
     if "--cache-dir" not in kwargs['pip_options']:
         kwargs['pip_options'] += " --cache-dir {}".format(kwargs['cache_dir'])
 
-    global VERBOSE
-    VERBOSE = kwargs['verbose']
+    # Logging depends on verbosity level:
+    ch = logging.StreamHandler()  # Console handler
+    ch.setFormatter(logging.Formatter("MagLog %(levelname)s: %(message)s"))
+    maglog.addHandler(ch)
 
-    # run main script:
+    if kwargs['logfile']:
+        fh = logging.FileHandler("magellan.log")  # file handler
+        fh.setFormatter(logging.Formatter("MagLog %(levelname)s: %(message)s"))
+        fh.setLevel(logging.DEBUG)
+        maglog.addHandler(fh)
+        del fh
+
+    if kwargs['verbose']:
+        maglog.setLevel(logging.INFO)
+        ch.setLevel(logging.INFO)
+        maglog.info("Maglog verbose mode")
+    if kwargs['super_verbose']:
+        maglog.setLevel(logging.DEBUG)
+        ch.setLevel(logging.DEBUG)
+        maglog.debug("Maglog super verbose mode")
+
+    del ch
+
+    # **************** #
+    # run main script: #
+    # **************** #
     _go(**kwargs)
 
 

@@ -3,11 +3,15 @@ import operator
 from pkg_resources import parse_version
 import requests
 import json
+import logging
 
 from magellan.package_utils import Package
 from magellan.env_utils import Environment
 from magellan.utils import MagellanConfig, run_in_subprocess
 
+# Logging:
+maglog = logging.getLogger("magellan_logger")
+maglog.info("Env imported")
 
 class DepTools(object):
     """Tools for conflict detection."""
@@ -148,7 +152,8 @@ class DepTools(object):
                         .format(package.lower(), version.replace(".", "_")))
 
         # 0. Check if this has already been done and cached & return that.
-        cached_file = MagellanConfig.cache_dir + "/" + req_out_file
+        cached_file = os.path.join(MagellanConfig.cache_dir, req_out_file)
+
         if os.path.exists(cached_file):
             print("Using previously cached result at {0}".format(cached_file))
             return json.load(open(cached_file, 'rb'))
@@ -165,31 +170,21 @@ class DepTools(object):
         tmp_env.vex_install_requirement(
             tmp_env.name, pip_package_str, tmp_pip_options)
 
-        # 3. Write file to interrogate through virtual env using
-        # vex/pip/setuptool combo
-        tmp_out_file = 'mag_temp_file.py'
-        with open(tmp_out_file, 'wb') as outfile:
-            outfile.write(_return_interrogation_script_json(
-                package, req_out_file))
+        # 3. File to interrogate through virtual env for package
+        interrogation_file = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            'interrogation_scripts',  'package_interrogation.py')
 
         # 4. Run file, which pickles results to temp file
-        run_in_subprocess("vex {0} python {1}"
-                          .format(tmp_env.name, tmp_out_file))
+        run_in_subprocess("vex {0} python {1} {2} {3}".format(
+            tmp_env.name, interrogation_file,
+            package, MagellanConfig.cache_dir))
 
         # 5. reads that file from current program
-        result = json.load(open(req_out_file, 'rb'))
-
-        # 6. Move file to cache dir or delete file and return info
-        if MagellanConfig.caching:
-            cmd_to_run = "mv {0} {1}/"\
-                .format(req_out_file, MagellanConfig.cache_dir)
-            run_in_subprocess(cmd_to_run)
-        else:
-            run_in_subprocess("rm {0}".format(req_out_file))
-        run_in_subprocess("rm {0}".format(tmp_out_file))
-
-        # 7. Delete tmp virtual env - not necessary as it's always overwritten?
-        # tmp_env.vex_delete_env_self()
+        try:
+            result = json.load(open(cached_file, 'rb'))
+        except IOError:
+            result = {}
 
         return result
 
@@ -339,7 +334,10 @@ class DepTools(object):
 
             node_requirements = package_requirements[n_key]['requires']
             for r in node_requirements:
-                cur_ver = ver_info[r.lower()]
+                try:
+                    cur_ver = ver_info[r.lower()]
+                except KeyError:
+                    cur_ver = '0.0.0'
                 for s in node_requirements[r]['specs']:
                     req_met, req_details = \
                         DepTools.check_requirement_satisfied(cur_ver, s)
@@ -401,6 +399,10 @@ class DepTools(object):
             deps[p_v]['new_packages'] = []
             deps[p_v]['may_try_upgrade'] = []
             deps[p_v]['may_be_okay'] = []
+
+            if not requirements:
+                deps[p_v] = "NO DATA returned from function."
+                return deps
 
             for r in requirements['requires']:
                 r_key = r.lower()
@@ -544,18 +546,16 @@ class PyPIHelper(object):
         p is package name
         localCacheDir is a location of local cache
         """
-        verbose = True
-
         package = str(package)
+        p_json = package + '.json'
 
         if not localcache:
-            f = MagellanConfig.cache_dir + '/' + package + '.json'
+            f = os.path.join(MagellanConfig.cache_dir, p_json)
         else:
-            f = localcache + '/' + package + '.json'
+            f = os.path.join(localcache, p_json)
 
         if os.path.exists(f):
-            if verbose:
-                print("retrieving file {0} from local cache".format(f))
+            maglog.info("retrieving file {0} from local cache".format(f))
             with open(f, 'rb') as ff:
                 return json.load(ff)
 
@@ -563,9 +563,8 @@ class PyPIHelper(object):
 
         r = requests.get(pypi_template.format(package))
         if r.status_code == 200:  # if successfully retrieved:
-            if verbose:
-                print("{0} JSON successfully retrieved from PyPI"
-                      .format(package))
+            maglog.info("{0} JSON successfully retrieved from PyPI"
+                        .format(package))
 
             # Save to local cache...
             with open(f, 'w') as outf:
@@ -574,8 +573,7 @@ class PyPIHelper(object):
             return r.json()
 
         else:  # retrieval failed
-            if verbose:
-                print("failed to download {0}".format(package))
+            maglog.info("failed to download {0}".format(package))
             return {}
 
     @staticmethod

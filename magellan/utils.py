@@ -8,7 +8,7 @@ class MagellanConfig(object):
     """Holds magellan config info"""
     tmp_dir = '/tmp/magellan'
     caching = True
-    cache_dir = '{0}/cache'.format(tmp_dir)
+    cache_dir = os.path.join(tmp_dir, 'cache')
     tmp_env_dir = "MagellanTmp"
     output_dir = "MagellanReports/"
 
@@ -28,11 +28,9 @@ class MagellanConfig(object):
     def setup_output_dir(kwargs, package_list):
         """Setup directory for output files if any are to be produced"""
         if kwargs['output_dir']:
-            MagellanConfig.output_dir = kwargs['output_dir'].rstrip("/") + "/"
+            MagellanConfig.output_dir = kwargs['output_dir']
 
-        if not kwargs['skip_generic_analysis'] or package_list:
-            print(package_list)
-            print kwargs['skip_generic_analysis']
+        if package_list:
             mkdir_p(MagellanConfig.output_dir)
 
 
@@ -57,10 +55,8 @@ def mkdir_p(path):
     """
     try:
         os.makedirs(path)
-    except OSError as exc: # Python >2.5
+    except OSError as exc:  # Python >2.5
         if exc.errno == errno.EEXIST and os.path.isdir(path):
             pass
         else:
             raise
-
-
