@@ -16,7 +16,7 @@ installed_versions = {x.key: x.version for x in pkgs}
 edges = []
 for p in pkgs:
     p_tup = (p.project_name, p.version)
-    edges.append([('root','0.0.0'), p_tup])
+    edges.append([('root', '0.0.0'), p_tup])
     reqs = p.requires()
     if reqs:
         for r in reqs:

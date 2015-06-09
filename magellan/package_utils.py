@@ -6,7 +6,12 @@ This is a collection of methods concerning packages and their analysis.
 
 from __future__ import print_function
 
+import logging
 import re
+
+# Logging:
+maglog = logging.getLogger("magellan_logger")
+maglog.info("Env imported")
 
 class PackageException(Exception):
     pass
@@ -22,7 +27,6 @@ class InvalidNodes(PackageException):
 
 class Package(object):
     """ Package type to hold analysis of packages."""
-
 
     def __init__(self, name="", version=None):
         self.name = name
@@ -210,7 +214,7 @@ class Package(object):
         """
         Calculates the distance to a node on an acyclic directed graph.
 
-        :param package: package to calculate distances from
+        :param package_in: package to calculate distances from
         :param nodes: list of nodes
         :param edges: list of edges (node links)
         :param include_root=False: whether to include the environment root
@@ -335,7 +339,7 @@ class Package(object):
         try:
             yp = yarg.get(package)
             rels = yp.release_ids
-        except yarg.HTTPError as e:
+        except yarg.HTTPError:
             print("{0} not found at PyPI; "
                   "no version information available.".format(package))
             # log e
@@ -348,6 +352,18 @@ class Package(object):
             return None
 
         return rels
+
+    @staticmethod
+    def check_outdated_packages(package_list):
+        """
+        Convenience function to print major/minor versions based on filtered
+        input.
+
+        :param package_list: dict of magellan.package_utils.Package objects
+        """
+        for p_k, p in package_list.items():
+            maglog.info("Analysing {}".format(p.name))
+            _, _ = p.check_versions()
 
     @staticmethod
     def check_latest_major_minor_versions(package, version=None):

@@ -3,6 +3,7 @@
 Collection of methods concerning analysis of virtual environment.
 """
 
+import logging
 import os
 import pickle
 import re
@@ -12,6 +13,10 @@ import sys
 
 from magellan.utils import (run_in_subprocess, run_in_subp_ret_stdout,)
 from magellan.package_utils import Package
+
+# Logging:
+maglog = logging.getLogger("magellan_logger")
+maglog.info("Env imported")
 
 
 class Environment(object):
@@ -35,6 +40,8 @@ class Environment(object):
 
         # Connectedness:
         self.connectedness = {}
+
+        maglog.info("logging setup in Environment")
 
     def magellan_setup_go_env(self, kwargs):
         """ Set up environment for main script."""
@@ -121,14 +128,17 @@ class Environment(object):
         if not then indicate to perform analysis on current environment"""
 
         if venv_name is None:
-            print("No virtual env specified, analysing local env")
+            maglog.info("No virtual env specified, analysing local env")
             venv_name = ''
             name_bit = ''
         else:
             venv_name = venv_name.rstrip('/')
-            print("Attempting analysis of {}".format(venv_name))
+            maglog.info("Attempting analysis of {}".format(venv_name))
             # First check specified environment exists:
             if not Environment.vex_check_venv_exists(venv_name):
+                maglog.critical('Virtual Env "{}" does not exist, '
+                                'please check name and try again'
+                                .format(venv_name))
                 sys.exit('LAPU LAPU! Virtual Env "{}" does not exist, '
                          'please check name and try again'.format(venv_name))
             name_bit = '_'
@@ -196,42 +206,42 @@ class Environment(object):
             open('package_requirements.p', 'rb'))
         self.add_file_to_extant_env_files('package_requirements.p')
 
-    def add_file_to_extant_env_files(self, file):
+    def add_file_to_extant_env_files(self, file_to_add):
         """
         Add file to list of existing environment files, to keep track for
         deletion.
-        :param file: str, filename to add to self.extant_env_files list
+        :param file_to_add: str, filename to add to self.extant_env_files list
         """
-        self.extant_env_files.append(file)
+        self.extant_env_files.append(file_to_add)
 
     @staticmethod
     def remove_env_file_from_disk(file_to_remove):
         """
         Delete file from disk.
-        :param file: str, file to delete.
+        :param file_to_remove: str, file to delete.
         """
         if os.path.exists(file_to_remove):
             run_in_subprocess('rm {}'.format(file_to_remove))
 
-    def remove_extant_env_files_from_disk(self, to_remove=[]):
+    def remove_extant_env_files_from_disk(self, to_remove=None):
         """
         Removes all files in self.extant_env_files
         :param list to_remove: list of files to remove, empty list remove
         all files.
         """
-        if not to_remove:  # remove all files if no list given
-            for f in self.extant_env_files:
-                self.remove_env_file_from_disk(f)
-            self.extant_env_files = []
-        else:
+        if to_remove:  # remove all files if no list given
             for f in to_remove:
                 self.remove_env_file_from_disk(f)
             self.extant_env_files = [x for x in self.extant_env_files
                                      if x not in to_remove]
+        else:
+            for f in self.extant_env_files:
+                self.remove_env_file_from_disk(f)
+            self.extant_env_files = []
 
     def show_all_packages_and_exit(self, with_versions=False):
         """ Prints nodes and exits"""
-        print('"Show all packages" selected. Nodes found:')
+        maglog.info('"Show all packages" selected. Nodes found:')
         for _, p in self.all_packages.items():
             if with_versions:
                 print("{0} : {1} ".format(p.name, p.version))
@@ -239,7 +249,7 @@ class Environment(object):
                 print(p.name)  # just show nodes
         sys.exit(0)
 
-    def gen_pipdeptree_reports(self, verbose):
+    def gen_pipdeptree_reports(self,):
         """
         Runs pipdeptree and outputs analysis to disk.
 
@@ -253,8 +263,7 @@ class Environment(object):
         self.pdp_meta['pdp_tree_file'] = pdp_tree_file
         self.pdp_meta['pdp_err_file'] = pdp_err_file
 
-        if verbose:
-            print("Generating pipdeptree report")
+        maglog.info("Generating pipdeptree report")
 
         self._gen_pipdeptree_reports(
             out_file=pdp_tree_file, err_file=pdp_err_file)
@@ -272,9 +281,10 @@ class Environment(object):
             with open(err_file, 'w') as efile, open(out_file, 'w') as ofile:
                 _ = subprocess.call(cmd_args, stderr=efile, stdout=ofile)
         except Exception as e:
-            print("LAPU LAPU! Error in analysis.py, gen_pipdeptree_reports "
-                  "when attempting to run: {}".format(cmd_args))
-            sys.exit(e)
+            maglog.exception("LAPU LAPU! Error {0} in analysis.py, "
+                             "gen_pipdeptree_reports when attempting to run: "
+                             "{1}".format(e, cmd_args))
+            sys.exit()
 
     def parse_pipdeptree_reports(self):
         """Takes output from pipdeptree and returns dictionaries."""
@@ -414,7 +424,12 @@ def _parse_pipdeptree_error_file(f):
 
 
 def _write_dot_graph_to_disk(nodes, edges, filename):
-    """Write dot graph to disk."""
+    """
+    Write dot graph to disk.
+    :param nodes: list of nodes to write (package, version) tuple
+    :param edges: list of connected nodes and optionally specs
+    :param filename: string of output filename
+    """
 
     node_template = 'n{}'
     node_index = {(nodes[x][0].lower(), nodes[x][1]): node_template.format(x+1)
