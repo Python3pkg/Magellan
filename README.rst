@@ -110,29 +110,29 @@ magellan <options>
 
 **Example Usage:**
 
-    - ``magellan  |  magellan -h``
-            Prints out help file.
-    - ``magellan -r requirements.txt -n MyEnv``
-            Sets up virtual environment "MyEnv", installs the requirements file using pip and runs generic analysis.
-    - ``magellan <packages> -c  |  magellan -c  |  magellan -c -f myPackageFile.txt``
-            Checks packages to see if they are outdated on major/minor versions. If no packages or files are specified it checks all within the environment.
-    - ``magellan -n MyEnv -f myPackageFile.txt -c``
-            Only check versions of everything in myPackageFile.txt that is in MyEnv.
-    - ``magellan -n MyEnv -P PackageToCheck Version``
-            Highlight conflicts with current environment when upgrading or adding a new package.
-            Note this argument can be called multiple times, e.g., "magellan -n MyEnv -P Django 1.8.1 -P pbr 1.0.1"
-    - ``magellan -n MyEnv -d``
-            Detect conflicts in environment "MyEnv"
-    - ``magellan Package1 Package2 -n MyEnv -v``
-            Searches MyEnv for the packages "Package1" and "Package2" in verbose mode. Will produce a report for MyEnv as well as reports for the specified package.
-    - ``magellan Package1 Package2 -n MyEnv --package-file myPackageFile.txt``
-            Same as above but will also take, in addition to Package[s]1/2 a
-            file containing a list of packages (csv, space or newline delimited.)
-    - ``magellan -n MyEnv --package-file myPackageFile.txt --super-verbose``
-            Analyse packages in myPackageFile.txt, using "super verbose" (i.e. debug) mode.
-    - ``magellan -s | magellan -p``
-            Shows all packages in current environment (-p with versions). Performs no further analysis.
-    - ``magellan -s -n MyEnv``
-            Shows all packages in MyEnv environment.
-    - ``magellan -s > myPackageFile.txt``
-            Output all packages in current environment and direct into myPackageFile.txt.
+- ``magellan  |  magellan -h``
+        Prints out help file.
+- ``magellan -r requirements.txt -n MyEnv``
+        Sets up virtual environment "MyEnv", installs the requirements file using pip and runs generic analysis.
+- ``magellan <packages> -c  |  magellan -c  |  magellan -c -f myPackageFile.txt``
+        Checks packages to see if they are outdated on major/minor versions. If no packages or files are specified it checks all within the environment.
+- ``magellan -n MyEnv -f myPackageFile.txt -c``
+        Only check versions of everything in myPackageFile.txt that is in MyEnv.
+- ``magellan -n MyEnv -P PackageToCheck Version``
+        Highlight conflicts with current environment when upgrading or adding a new package.
+        Note this argument can be called multiple times, e.g., "magellan -n MyEnv -P Django 1.8.1 -P pbr 1.0.1"
+- ``magellan -n MyEnv -d``
+        Detect conflicts in environment "MyEnv"
+- ``magellan Package1 Package2 -n MyEnv -v``
+        Searches MyEnv for the packages "Package1" and "Package2" in verbose mode. Will produce a report for MyEnv as well as reports for the specified package.
+- ``magellan Package1 Package2 -n MyEnv --package-file myPackageFile.txt``
+        Same as above but will also take, in addition to Package[s]1/2 a
+        file containing a list of packages (csv, space or newline delimited.)
+- ``magellan -n MyEnv --package-file myPackageFile.txt --super-verbose``
+        Analyse packages in myPackageFile.txt, using "super verbose" (i.e. debug) mode.
+- ``magellan -s | magellan -p``
+        Shows all packages in current environment (-p with versions). Performs no further analysis.
+- ``magellan -s -n MyEnv``
+        Shows all packages in MyEnv environment.
+- ``magellan -s > myPackageFile.txt``
+        Output all packages in current environment and direct into myPackageFile.txt.
