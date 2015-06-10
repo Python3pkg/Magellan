@@ -47,7 +47,7 @@ class DepTools(object):
 
         removed_deps = [dec_keys[x] for x in (dset - rset)]
         new_deps = [rec_keys[x] for x in (rset - dset)]
-
+        
         # return new_deps, removed_deps  # as list
         out = {'removed_deps': removed_deps, 'new_deps': new_deps}
         return out
