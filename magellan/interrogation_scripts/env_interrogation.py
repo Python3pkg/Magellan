@@ -23,7 +23,7 @@ for p in pkgs:
             if r.key in installed_versions:
                 r_tup = (r.key, installed_versions[r.key])
             else:
-                r_tup = tuple(r.key)
+                r_tup = (r.key, '')
             edges.append([p_tup, r_tup, r.specs])
 
 # Record nodes and edges to disk to be read in  by main program if needed.

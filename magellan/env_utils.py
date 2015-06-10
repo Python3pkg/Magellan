@@ -45,7 +45,7 @@ class Environment(object):
 
     def magellan_setup_go_env(self, kwargs):
         """ Set up environment for main script."""
-        req_file = kwargs['requirements']
+        req_file = kwargs['install_requirements']
         if req_file:
             self.create_vex_new_virtual_env()
 
@@ -189,18 +189,24 @@ class Environment(object):
             'interrogation_scripts',  'env_interrogation.py')
 
         # execute
-        if self.name == "":
-            run_in_subprocess("python {}".format(interrogation_file))
-        else:
-            run_in_subprocess("vex {0} python {1}"
-                              .format(self.name, interrogation_file))
+        self.add_file_to_extant_env_files('nodes.p')
+        self.add_file_to_extant_env_files('edges.p')
+        try:
+            if self.name == "":
+                run_in_subprocess("python {}".format(interrogation_file))
+            else:
+                run_in_subprocess("vex {0} python {1}"
+                                  .format(self.name, interrogation_file))
+        except Exception as e:
+            maglog.exception(e)
+            # Cleanup:
+            self.remove_extant_env_files_from_disk()
+            sys.exit("Error {} when trying to interrogate environment."
+                     .format(e))
 
         # Load in nodes and edges pickles
         self.nodes = pickle.load(open('nodes.p', 'rb'))
-        self.add_file_to_extant_env_files('nodes.p')
-
         self.edges = pickle.load(open('edges.p', 'rb'))
-        self.add_file_to_extant_env_files('edges.p')
 
         self.package_requirements = pickle.load(
             open('package_requirements.p', 'rb'))
