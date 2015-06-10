@@ -45,7 +45,7 @@ class Environment(object):
 
     def magellan_setup_go_env(self, kwargs):
         """ Set up environment for main script."""
-        req_file = kwargs['requirements']
+        req_file = kwargs['install_requirements']
         if req_file:
             self.create_vex_new_virtual_env()
 
