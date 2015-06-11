@@ -63,6 +63,10 @@ def _go(venv_name, **kwargs):
     if kwargs['get_dependencies']:
         DepTools.acquire_and_display_dependencies(kwargs['get_dependencies'])
 
+    if kwargs['get_ancestors']:
+        ancestor_dictionary = \
+            DepTools.get_ancestors_of_packages(kwargs['get_ancestors'], venv)
+
     if kwargs['package_conflicts']:
         addition_conflicts, upgrade_conflicts = \
             DepTools.process_package_conflicts(
@@ -169,6 +173,10 @@ def main():
         help=("Get dependencies of package, version combo, from PyPI. "
               "NB Can be used multiple times but must always specify desired "
               "version.  Usage -D <package-name> <version>."))
+    parser.add_argument(
+        '-A', '--get-ancestors', action='append', nargs=1,
+        metavar=("<package-name>"),
+        help=("Show which packages in environment depend on <package-name>"))
     parser.add_argument(
         '-d', '--detect-env-conflicts', action='store_true', default=False,
         help="Runs through installed packages in specified environment to "

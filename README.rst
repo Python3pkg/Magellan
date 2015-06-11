@@ -51,6 +51,15 @@ magellan <options>
 ``-l <package>, --list-all-versions <package>``
     List all versions of package on PyPI and exit. NB Can be used multiple times; supersedes -s/-p.
 
+``-P <package> <version>, --package-conflicts <package> <version>``
+    Check whether a package will conflict with the current environment, either through addition or change. NB Can be used multiple times but must always specify desired version.
+
+``-D <package-name> <version>, --get-dependencies <package-name> <version>``
+    Get dependencies of package, version combo, from PyPI. NB Can be used multiple times but must always specify desired version. Usage -D <package-name> <version>.
+
+``-A <package-name>, --get-ancestors <package-name>``
+     Show which packages in environment depend on <package-name>
+
 ``-s, --show-all-packages``
     Show all packages by name and exit.
 
@@ -59,9 +68,6 @@ magellan <options>
 
 ``-c, --check-versions``
     Just checks the versions of input packages and exits. Make sure this is not superseded by '-s'
-
-``-P <package> <version>, --package-conflicts <package> <version>``
-    Check whether a package will conflict with the current environment, either through addition or change. NB Can be used multiple times but must always specify desired version.
 
 ``-d, --detect-env-conflicts``
     Runs through installed packages in specified environment to detect if there are any conflicts between dependencies and versions.

@@ -626,6 +626,51 @@ class DepTools(object):
             maglog.debug(pformat(requirements))
             _pprint_requirements(requirements)
 
+    @staticmethod
+    def get_ancestors_of_packages(package_list, venv):
+        """
+        Prints a list of ancestors of package to indicate what brought a
+        package into the environment.
+
+        :param package_list: list of names of package to query
+        :param venv: magellan.env_utils.Environment
+
+        :rtype dict:
+        :returns: dictionary with list of ancestors.
+        """
+        from pprint import pprint
+
+        anc_dict = {}
+        for p in package_list:
+            p_key = p[0].lower()  # [0] as list of lists from argparse
+            if p_key not in venv.all_packages:
+                anc_dict[p_key] = None
+                maglog.info("{} not found in env".format(p_key))
+                continue
+            ancs = venv.all_packages[p_key].ancestors(venv.edges)
+            anc_dict[p_key] = [x[0] for x in ancs if x[0][0] != "root"]
+
+        DepTools().pprint_anc_dict(anc_dict, venv)
+        return anc_dict
+
+    @staticmethod
+    def pprint_anc_dict(ancestor_dictionary, venv):
+        """
+        Pretty prints ancestors dictionary to standard out.
+
+        :param ancestor_dictionary:
+        :param venv: magellan.env_utils.Environment
+        """
+        for pk, p in ancestor_dictionary.items():
+            if p:
+                s = "Ancestors of {}".format(venv.all_packages[pk].name)
+                _print_ul(s)
+                for a in p:
+                    try:
+                        print("{} {}".format(a[0], a[1]))
+                    except Exception as e:
+                        maglog.exception(e)
+
 
 def _pprint_requirements(requirements):
     """
