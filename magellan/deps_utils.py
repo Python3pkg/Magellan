@@ -267,9 +267,17 @@ class DepTools(object):
         for u in packages:
             package = u[0]
             version = u[1]
+
             p_v = "{0}_{1}".format(package, version.replace('.', '_'))
 
             uc_deps[p_v] = {}
+
+            p_key = package.lower()
+            cur_ver = venv.all_packages[p_key].version
+            if parse_version(cur_ver) == parse_version(version):
+                _print_ul("{} version {} is same as current!"
+                          .format(package, version), ul="#")
+                continue
 
             if not PyPIHelper.check_package_version_on_pypi(package, version):
                 continue
@@ -510,6 +518,10 @@ class DepTools(object):
         :param dict dep_info: dependency information
         :param Environment venv: virtual environment
         """
+
+        if not conflicts:
+            return
+
         print("\n")
         s = "Upgrade Conflicts:"
         _print_ul(s, ul="=")
@@ -540,7 +552,7 @@ class DepTools(object):
                       .format(direction, p_name, cur_ver, ver))
 
             _print_if(missing_from_env,
-                      "Packages not currently in environment:")
+                      "Packages not in environment (to be installed):")
             _print_if(new_dependencies,
                       "New dependencies of {}:".format(p_name))
             _print_if(removed_dependencies,
