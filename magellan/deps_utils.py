@@ -696,10 +696,12 @@ class DepTools(object):
         """
         t = Terminal()
 
+        env_name = "current environment" if not venv.name else venv.name
+
         for pk, p in ancestor_dictionary.items():
             if p:
                 s = "These packages depend on {} in {}:"\
-                    .format(venv.all_packages[pk].name, venv.name)
+                    .format(venv.all_packages[pk].name, env_name)
                 print(t.black_on_yellow(s))
                 for a in p:
                     try:
