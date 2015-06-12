@@ -60,17 +60,17 @@ magellan <options>
 ``-A <package-name>, --get-ancestors <package-name>``
      Show which packages in environment depend on <package-name>
 
-``-s, --show-all-packages``
-    Show all packages by name and exit.
-
-``-p, --show-all-packages-and-versions``
-    Show all packages with versions and exit.
-
 ``-c, --check-versions``
     Just checks the versions of input packages and exits. Make sure this is not superseded by '-s'
 
 ``-d, --detect-env-conflicts``
     Runs through installed packages in specified environment to detect if there are any conflicts between dependencies and versions.
+
+``-s, --show-all-packages``
+    Show all packages by name and exit.
+
+``-p, --show-all-packages-and-versions``
+    Show all packages with versions and exit.
 
 ``--output-dot-file``
     Output a .gv file showing connectedness of package.

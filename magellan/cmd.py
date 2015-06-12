@@ -151,12 +151,6 @@ def main():
         help="List all versions of package on PyPI and exit. NB Can be used "
              "multiple times")
     parser.add_argument(
-        '-s', '--show-all-packages', action='store_true', default=False,
-        help="Show all packages by name and exit.")
-    parser.add_argument(
-        '-p', '--show-all-packages-and-versions', action='store_true',
-        default=False, help="Show all packages with versions and exit.")
-    parser.add_argument(
         '-c', '--check-versions', action='store_true', default=False,
         help=("Just checks the versions of input packages and exits. "
               "Make sure this is not superseded by '-s'"))
@@ -182,6 +176,12 @@ def main():
         help="Runs through installed packages in specified environment to "
              "detect if there are any conflicts between dependencies and "
              "versions.")
+    parser.add_argument(
+        '-s', '--show-all-packages', action='store_true', default=False,
+        help="Show all packages by name and exit.")
+    parser.add_argument(
+        '-p', '--show-all-packages-and-versions', action='store_true',
+        default=False, help="Show all packages with versions and exit.")
     parser.add_argument(
         '--output-dot-file', action='store_true', default=False,
         help="Output a .gv file showing connectedness of package.")
