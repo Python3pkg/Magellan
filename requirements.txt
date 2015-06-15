@@ -4,4 +4,4 @@ vex
 pipdeptree
 argparse
 terminaltables
-blessings
+colorclass

@@ -35,6 +35,8 @@ def _go(venv_name, **kwargs):
     Otherwise perform general analysis on environment.
     """
 
+    print_col = kwargs.get('colour')  # print in colour
+
     if kwargs['list_all_versions']:
         for p in kwargs['list_all_versions']:
             print(p[0])
@@ -60,21 +62,23 @@ def _go(venv_name, **kwargs):
 
     MagellanConfig.setup_output_dir(kwargs, package_list)
 
-    if kwargs['get_dependencies']:
-        DepTools.acquire_and_display_dependencies(kwargs['get_dependencies'])
+    if kwargs['get_dependencies']:  # -D
+        DepTools.acquire_and_display_dependencies(
+            kwargs['get_dependencies'], print_col)
 
     if kwargs['get_ancestors']:
         ancestor_dictionary = \
-            DepTools.get_ancestors_of_packages(kwargs['get_ancestors'], venv)
+            DepTools.get_ancestors_of_packages(
+                kwargs['get_ancestors'], venv, print_col)
 
     if kwargs['package_conflicts']:
         addition_conflicts, upgrade_conflicts = \
             DepTools.process_package_conflicts(
-                kwargs['package_conflicts'], venv)
+                kwargs['package_conflicts'], venv, print_col)
 
     if kwargs['detect_env_conflicts']:
         cur_env_conflicts = DepTools.highlight_conflicts_in_current_env(
-            venv.nodes, venv.package_requirements)
+            venv.nodes, venv.package_requirements, print_col)
 
     # Analysis
     if package_list:
@@ -95,10 +99,12 @@ def _go(venv_name, **kwargs):
 
             maglog.info(p.name)
 
-            maglog.info("Package Descendants - depended on by {}".format(p.name))
+            maglog.info("Package Descendants - depended on by {}"
+                        .format(p.name))
             maglog.debug(pformat(p.descendants(venv.edges)))
 
-            maglog.info("Package Ancestors - these depend on {}".format(p.name))
+            maglog.info("Package Ancestors - these depend on {}"
+                        .format(p.name))
             maglog.debug(pformat(p.ancestors(venv.edges)))
 
             if kwargs['output_dot_file']:
@@ -236,6 +242,9 @@ def main():
         '--logfile', action='store_true', default=False,
         help="Set this flag to enable output to magellan.log."
     )
+    parser.add_argument(
+        '--colour', '--color', action='store_true', default=False,
+        help="Prints output to console with pretty colours.")
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
