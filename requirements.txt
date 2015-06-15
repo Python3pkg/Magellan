@@ -3,3 +3,5 @@ virtualenv
 vex
 pipdeptree
 argparse
+terminaltables
+colorclass
