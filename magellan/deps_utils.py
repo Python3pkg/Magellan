@@ -182,10 +182,17 @@ class DepTools(object):
         tmp_env = Environment(MagellanConfig.tmp_env_dir)
         tmp_env.create_vex_new_virtual_env()  # NB: delete if extant!!
 
+        # 1.5 Upgrade pip
+        run_in_subprocess("vex {} pip install pip --upgrade"
+                          .format(tmp_env.name))
+        # todo (aj) urgent. Yank this out
+        run_in_subprocess("vex {} pip install numpy==1.9.2"
+                          .format(tmp_env.name))
+
         # 2. installs package/version into there using pip
-        # tmp_pip_options = "--cache-dir {}".format(MagellanConfig.cache_dir)
-        tmp_pip_options = ("--cache-dir {} --no-deps"
-                           .format(MagellanConfig.cache_dir))
+        tmp_pip_options = "--cache-dir {}".format(MagellanConfig.cache_dir)
+        # tmp_pip_options = ("--cache-dir {} --no-deps"
+        #                    .format(MagellanConfig.cache_dir))
         pip_package_str = '{0}=={1}'.format(package, version)
         tmp_env.vex_install_requirement(
             tmp_env.name, pip_package_str, tmp_pip_options)
@@ -439,7 +446,7 @@ class DepTools(object):
             deps[p_v]['may_be_okay'] = []
 
             if not requirements:
-                deps[p_v] = "NO DATA returned from function."
+                deps[p_v] = {"status": "NO DATA returned from function."}
                 continue
 
             for r in requirements['requires']:
@@ -511,7 +518,7 @@ class DepTools(object):
             p_in_env, p_details = venv.package_in_env(p[0])
             if p_in_env:
                 upgrade_conflicts.append(p)
-            else:
+            else:  # NB: may also be non-existent package
                 addition_conflicts.append(p)
 
         if upgrade_conflicts:
@@ -553,6 +560,14 @@ class DepTools(object):
         _print_col(s,  'white', 'blue', pretty)
 
         for p_k, p in conflicts.items():
+
+            has_recs = dep_info.get(p_k).get('requirements')
+            if not has_recs:
+                _print_col("Requirements not found for {}, possible failure "
+                           "when installating package into temporary "
+                           "directory?".format(p_k), 'white', 'blue', pretty)
+                continue
+
             p_name = dep_info[p_k]['requirements']['project_name']
             ver = dep_info[p_k]['requirements']['version']
             cur_ver = venv.all_packages[p_name.lower()].version
@@ -601,8 +616,15 @@ class DepTools(object):
         _print_col("Package Addition Conflicts:", 'white', 'blue', pretty)
 
         for p_k, p in conflicts.items():
-            p_name = p['requirements']['project_name']
-            ver = p['requirements']['version']
+            has_recs = p.get('requirements')
+            if not has_recs:
+                _print_col("Requirements not found for {}, possible failure "
+                           "when installating package into temporary "
+                           "directory?".format(p_k), 'white', 'blue', pretty)
+                continue
+
+            p_name = p.get('requirements').get('project_name')
+            ver = p.get('requirements').get('version')
 
             _print_col("{0} {1}:".format(p_name, ver), 'white', 'blue', pretty)
 
