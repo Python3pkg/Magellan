@@ -144,3 +144,8 @@ magellan <options>
         Shows all packages in MyEnv environment.
 - ``magellan -s > myPackageFile.txt``
         Output all packages in current environment and direct into myPackageFile.txt.
+
+
+**Known Issues:**
+- finding requirements of scipy falls over as it has some prerequisites on system packages (BLAS etc).
+Have fixed it so magellan doesn't crash on the failed install/pip crash.
