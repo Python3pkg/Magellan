@@ -55,9 +55,9 @@ def _go(venv_name, **kwargs):
 
     if kwargs['check_versions']:
         if package_list:
-            Package.check_outdated_packages(packages)
+            Package.check_outdated_packages(packages, print_col)
         else:
-            Package.check_outdated_packages(venv.all_packages)
+            Package.check_outdated_packages(venv.all_packages, print_col)
         sys.exit()
 
     MagellanConfig.setup_output_dir(kwargs, package_list)

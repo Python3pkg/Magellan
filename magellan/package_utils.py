@@ -13,6 +13,7 @@ import re
 maglog = logging.getLogger("magellan_logger")
 maglog.info("Env imported")
 
+
 class PackageException(Exception):
     pass
 
@@ -340,63 +341,117 @@ class Package(object):
             yp = yarg.get(package)
             rels = yp.release_ids
         except yarg.HTTPError:
-            print("{0} not found at PyPI; "
-                  "no version information available.".format(package))
+            maglog.exception("{0} not found at PyPI; "
+                             "no version information available."
+                             .format(package))
             # log e
             return None
 
         rels.sort(key=LooseVersion)
         if not rels:
-            print('No version info available for "{}" at CheeseShop (PyPI)'
-                  .format(package))
+            maglog.info('No version info available for "{}" '
+                        'at CheeseShop (PyPI)'.format(package))
             return None
 
         return rels
 
     @staticmethod
-    def check_outdated_packages(package_list):
+    def check_outdated_packages(package_list, pretty=False):
         """
         Convenience function to print major/minor versions based on filtered
         input.
 
         :param package_list: dict of magellan.package_utils.Package objects
         """
+        from magellan.utils import _print_col
+
         for p_k, p in package_list.items():
-            maglog.info("Analysing {}".format(p.name))
-            _, _ = p.check_versions()
+            version_info = p.check_versions()
+            maglog.debug(version_info)
+            status = version_info.get("code")
+
+            _print_col("Analysing {} {}".format(p.name, p.version),
+                       "white", "blue", pretty)
+
+            if status == -1:  # Error
+                _print_col("There was an error, see verbose output "
+                           "for details", "blue", "white", pretty)
+            elif status == 0:  # Up to date
+                _print_col("Up to date.", "blue", "white", pretty)
+            elif status == 999:  # beyond
+                _print_col("{} is BEYOND latest PyPI version {}".format(
+                    p.version,
+                    version_info.get("minor_version").get("latest")),
+                    "blue", "white", pretty)
+            else:
+                maj_out = version_info.get("major_version").get("outdated")
+                min_out = version_info.get("minor_version").get("outdated")
+                if maj_out:
+                    _print_col("Major version outdated {} > {}".format(
+                        version_info.get("major_version").get("latest"),
+                        p.version), "blue", "white", pretty)
+                if min_out:
+                    _print_col("Minor version outdated {} > {}".format(
+                        version_info.get("minor_version").get("latest"),
+                        p.version), "blue", "white", pretty)
 
     @staticmethod
     def check_latest_major_minor_versions(package, version=None):
         """
         Compare 'version' to latest major and minor versions on PyPI.
+
+        Status codes:
+        -1 : error
+        0 : fine, up to date
+        1 : minor or major outdated
+        999: beyond latest version
         """
         from pkg_resources import parse_version
 
+        return_info = {"major_version": {"outdated": None,
+                                         'latest': None},
+                       "minor_version": {"outdated": None,
+                                         'latest': None},
+                       "code": -1,
+                       }
+
         versions = Package.get_package_versions_from_pypi(package)
         if versions is None:
-            # Something went wrong when looking for versions:
-            return [None, None], [None, None]
+            maglog.debug("Something went wrong when looking for versions.")
+            return return_info
 
         latest_major_version = versions[-1]
 
-        if not version:
+        if version is None:
             # If not given a version, cannot do comparison; return latest.
-            return [True, latest_major_version], [True, latest_major_version]
+            return_info['major_version'] = {
+                "outdated": True, "latest": latest_major_version}
+            return_info['minor_version'] = {
+                "outdated": True, "latest": latest_major_version}
+            return return_info
 
         beyond_up_to_date = (parse_version(version) >
                              parse_version(latest_major_version))
         if beyond_up_to_date:
-            print("{0} version {1} is beyond latest PyPI version {2}"
-                  .format(package, version, latest_major_version))
-            return [False, version], [False, version]
+            maglog.info("{0} version {1} is beyond latest PyPI version {2}"
+                        .format(package, version, latest_major_version))
+            return_info['code'] = 999
+            return_info['major_version'] = {
+                "outdated": False, "latest": version}
+            return_info['minor_version'] = {
+                "outdated": False, "latest": version}
+            return return_info
 
+        # Now normal checks:
+        return_info['code'] = 0
         minor_outdated = None
         major_outdated = (parse_version(version)
                           < parse_version(latest_major_version))
 
         if major_outdated:
-            print("{0} Major Outdated: {1} > {2}"
-                  .format(package, versions[-1], version))
+            return_info['code'] = 1
+            maglog.info("{0} Major Outdated: {1} > {2}"
+                        .format(package, versions[-1], version))
             major_v = version.split('.')[0]
             minor_v = version.split('.')[1]
 
@@ -405,26 +460,29 @@ class Package(object):
                               and x.split('.')[1] == minor_v]
 
             if not minor_versions:
-                print("Unable to check minor_versions for {0}"
-                      .format(package))
+                maglog.info("Unable to check minor_versions for {0}"
+                            .format(package))
                 latest_minor_version = None
             else:
                 latest_minor_version = minor_versions[-1]
                 minor_outdated = (parse_version(version)
                                   < parse_version(latest_minor_version))
                 if minor_outdated:
-                    print("{0} Minor Outdated: {1} > {2}"
-                          .format(package, minor_versions[-1], version))
+                    return_info['code'] = 1
+                    maglog.info("{0} Minor Outdated: {1} > {2}"
+                                .format(package, minor_versions[-1], version))
                     minor_outdated = True
                 else:
-                    print("{0} Minor up to date: {1} <= {2}"
-                          .format(package, minor_versions[-1], version))
+                    maglog.info("{0} Minor up to date: {1} <= {2}"
+                                .format(package, minor_versions[-1], version))
         else:
             minor_outdated = False
             latest_minor_version = latest_major_version
-            print("{0} up to date, current: {1}, latest: {2}"
-                  .format(package, version, versions[-1]))
+            maglog.info("{0} up to date, current: {1}, latest: {2}"
+                        .format(package, version, versions[-1]))
 
-        min_ret = [minor_outdated, latest_minor_version]
-        maj_ret = [major_outdated, latest_major_version]
-        return min_ret, maj_ret
+        return_info['major_version'] = {
+            "outdated": major_outdated, "latest": latest_major_version}
+        return_info['minor_version'] = {
+            "outdated": minor_outdated, "latest": latest_minor_version}
+        return return_info

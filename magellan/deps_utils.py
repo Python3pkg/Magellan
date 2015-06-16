@@ -6,14 +6,13 @@ import requests
 import json
 import logging
 
-
-#from terminaltables import AsciiTable as OutputTableType
+# from terminaltables import AsciiTable as OutputTableType
 from terminaltables import SingleTable as OutputTableType
 
 
 from magellan.package_utils import Package
 from magellan.env_utils import Environment
-from magellan.utils import MagellanConfig, run_in_subprocess
+from magellan.utils import MagellanConfig, run_in_subprocess, _print_col
 
 # Logging:
 maglog = logging.getLogger("magellan_logger")
@@ -648,7 +647,6 @@ class DepTools(object):
         """
         Print current conflicts in environment using terminaltables.
         """
-        from colorclass import Color
 
         ts = "No conflicts detected in environment"
 
@@ -747,27 +745,6 @@ class DepTools(object):
                                    'blue', 'white', pretty)
                     except Exception as e:
                         maglog.exception(e)
-
-
-def _print_col(s, bg="white", fg="black", pretty=False):
-    """
-    Save some boilerplate with Colour class.
-
-    May fall down if supplied invalid colours - up to user.
-
-    :param s: string to print
-    :param bg: background colour
-    :param fg:  text colour
-    """
-    from colorclass import Color  # better at top?
-
-    # This looks dense because of escaping; essentially it's to get something
-    # that looks like: {bgcolor}{fgcolor}#string_to_print#{/bgcolor}{/fgcolor}
-    if pretty:
-        full_s = r'{{bg{0}}}{{{1}}}{2}{{/bg{0}}}{{/{1}}}'.format(bg, fg, s)
-        print(Color(full_s))
-    else:
-        print(s)
 
 
 def _table_print_requirements(requirements, pretty=False):

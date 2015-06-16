@@ -60,3 +60,24 @@ def mkdir_p(path):
             pass
         else:
             raise
+
+
+def _print_col(s, bg="white", fg="black", pretty=False):
+    """
+    Save some boilerplate with Colour class.
+
+    May fall down if supplied invalid colours - up to user.
+
+    :param s: string to print
+    :param bg: background colour
+    :param fg:  text colour
+    """
+    from colorclass import Color  # better at top?
+
+    # This looks dense because of escaping; essentially it's to get something
+    # that looks like: {bgcolor}{fgcolor}#string_to_print#{/bgcolor}{/fgcolor}
+    if pretty:
+        full_s = r'{{bg{0}}}{{{1}}}{2}{{/bg{0}}}{{/{1}}}'.format(bg, fg, s)
+        print(Color(full_s))
+    else:
+        print(s)
