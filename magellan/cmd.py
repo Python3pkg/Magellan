@@ -157,10 +157,6 @@ def main():
         help="List all versions of package on PyPI and exit. NB Can be used "
              "multiple times")
     parser.add_argument(
-        '-c', '--check-versions', action='store_true', default=False,
-        help=("Just checks the versions of input packages and exits. "
-              "Make sure this is not superseded by '-s'"))
-    parser.add_argument(
         '-P', '--package-conflicts', action='append', nargs=2,
         metavar=("<package-name>", "<version>"),
         help=("Check whether a package will conflict with the current "
@@ -177,6 +173,10 @@ def main():
         '-A', '--get-ancestors', action='append', nargs=1,
         metavar=("<package-name>"),
         help=("Show which packages in environment depend on <package-name>"))
+    parser.add_argument(
+        '-c', '--check-versions', action='store_true', default=False,
+        help=("Just checks the versions of input packages and exits. "
+              "Make sure this is not superseded by '-s'"))
     parser.add_argument(
         '-d', '--detect-env-conflicts', action='store_true', default=False,
         help="Runs through installed packages in specified environment to "
