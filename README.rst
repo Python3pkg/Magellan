@@ -149,9 +149,3 @@ magellan <options>
 **Known Issues:**
 - finding requirements of scipy falls over as it has some prerequisites on system packages (BLAS etc).
 Have fixed it so magellan doesn't crash on the failed install/pip crash.
-
-scipy requires system packages which is slightly above the scope of this version of magellan.
-
-Will add 2 tickets:
-1. Low priority - pre-install package-version into Env and
-2. Check environment against specific manual requirement
