@@ -98,18 +98,18 @@ class TestPackageCheckVersion(TestPackageClass):
         test_p = "Django"
         n = [x for x in self.nodes if x[0].lower() == test_p.lower()][0]
         p = Package(n[0], n[1])
-        min_ret, maj_ret = p.check_versions()
-        self.assertEqual(min_ret[0], True)
-        self.assertEqual(maj_ret[0], True)
+        return_info = p.check_versions()
+        self.assertEqual(return_info['major_version']['outdated'], True)
+        self.assertEqual(return_info['minor_version']['outdated'], True)
 
     def test_false_package_returns_None(self):
         """Given nonsense package, return None"""
         p = Package("abcde12345GGGGGG", '0.0.0')
-        min_ret, maj_ret = p.check_versions()
-        self.assertEqual(min_ret[0], None)
-        self.assertEqual(min_ret[1], None)
-        self.assertEqual(maj_ret[0], None)
-        self.assertEqual(maj_ret[1], None)
+        info = p.check_versions()
+        self.assertEqual(info['minor_version']['outdated'], None)
+        self.assertEqual(info['minor_version']['latest'], None)
+        self.assertEqual(info['major_version']['outdated'], None)
+        self.assertEqual(info['major_version']['latest'], None)
 
     def run_as_pypi_patched(self, vers, curv=None):
         """helper fn to run and get mocked pypi responses"""
@@ -119,9 +119,9 @@ class TestPackageCheckVersion(TestPackageClass):
         to_patch = "magellan.package_utils.Package"
         with patch(to_patch) as MockClass:
             MockClass.get_package_versions_from_pypi.return_value = vers
-            min_ret, maj_ret = Package.check_latest_major_minor_versions(
+            return_info = Package.check_latest_major_minor_versions(
                 self.curp, curv)
-        return min_ret, maj_ret
+        return return_info
 
     def test_up_to_date_maj_out_min_none(self):
         """
@@ -130,11 +130,12 @@ class TestPackageCheckVersion(TestPackageClass):
         Maj outdated
         """
         version_list = ['2.0.0']
-        min_ret, maj_ret = self.run_as_pypi_patched(version_list)
-        self.assertEqual(min_ret[0], None)
-        self.assertEqual(min_ret[1], None)
-        self.assertEqual(maj_ret[0], True)
-        self.assertEqual(maj_ret[1], '2.0.0')
+        info = self.run_as_pypi_patched(version_list)
+
+        self.assertEqual(info['minor_version']['outdated'], None)
+        self.assertEqual(info['minor_version']['latest'], None)
+        self.assertEqual(info['major_version']['outdated'], True)
+        self.assertEqual(info['major_version']['latest'], '2.0.0')
 
     def test_up_to_date_min_in_maj_out(self):
         """
@@ -143,11 +144,12 @@ class TestPackageCheckVersion(TestPackageClass):
         Major outdated.
         """
         version_list = ['1.9.9', '2.0.0']
-        min_ret, maj_ret = self.run_as_pypi_patched(version_list)
-        self.assertEqual(min_ret[0], False)
-        self.assertEqual(min_ret[1], '1.9.9')
-        self.assertEqual(maj_ret[0], True)
-        self.assertEqual(maj_ret[1], '2.0.0')
+        info = self.run_as_pypi_patched(version_list)
+
+        self.assertEqual(info['minor_version']['outdated'], False)
+        self.assertEqual(info['minor_version']['latest'], '1.9.9')
+        self.assertEqual(info['major_version']['outdated'], True)
+        self.assertEqual(info['major_version']['latest'], '2.0.0')
 
     def test_up_to_date_fully(self):
         """
@@ -156,27 +158,27 @@ class TestPackageCheckVersion(TestPackageClass):
         Major outdated.
         """
         version_list = ['1.9.9']
-        min_ret, maj_ret = self.run_as_pypi_patched(version_list)
-        self.assertEqual(min_ret[0], False)
-        self.assertEqual(min_ret[1], '1.9.9')
-        self.assertEqual(maj_ret[0], False)
-        self.assertEqual(maj_ret[1], '1.9.9')
+        info = self.run_as_pypi_patched(version_list)
+        self.assertEqual(info['minor_version']['outdated'], False)
+        self.assertEqual(info['minor_version']['latest'], '1.9.9')
+        self.assertEqual(info['major_version']['outdated'], False)
+        self.assertEqual(info['major_version']['latest'], '1.9.9')
 
     def test_check_vers_with_no_ver(self):
         """Pass name but not versions"""
         p = Package("Django")  # no version
-        min_ret, maj_ret = p.check_versions()
-        self.assertEqual(min_ret[0], True)
-        self.assertEqual(maj_ret[0], True)
+        info = p.check_versions()
+        self.assertEqual(info['minor_version']['outdated'], True)
+        self.assertEqual(info['major_version']['outdated'], True)
 
     def test_check_beyond_up_to_date(self):
         """current version > latest on pypi is "up to date" """
         version_list = ['1.8.1']
-        min_ret, maj_ret = self.run_as_pypi_patched(version_list)
-        self.assertEqual(min_ret[0], False)
-        self.assertEqual(min_ret[1], '1.9.9')
-        self.assertEqual(maj_ret[0], False)
-        self.assertEqual(maj_ret[1], '1.9.9')
+        info = self.run_as_pypi_patched(version_list)
+        self.assertEqual(info['minor_version']['outdated'], False)
+        self.assertEqual(info['minor_version']['latest'], '1.9.9')
+        self.assertEqual(info['major_version']['outdated'], False)
+        self.assertEqual(info['major_version']['latest'], '1.9.9')
 
 
 class TestPackageDescendantsAncestors(TestPackageClass):

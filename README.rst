@@ -112,6 +112,8 @@ magellan <options>
 
 ``--logfile``
     Set this flag to enable output to magellan.log.
+``--colour  |  --color``
+    Prints output to console with pretty colours.
 
 
 **Example Usage:**
