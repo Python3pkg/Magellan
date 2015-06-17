@@ -12,7 +12,7 @@ from terminaltables import SingleTable as OutputTableType
 
 from magellan.package_utils import Package
 from magellan.env_utils import Environment
-from magellan.utils import MagellanConfig, run_in_subprocess, _print_col
+from magellan.utils import MagellanConfig, run_in_subprocess, print_col
 
 # Logging:
 maglog = logging.getLogger("magellan_logger")
@@ -184,14 +184,11 @@ class DepTools(object):
         # 1.5 Upgrade pip
         run_in_subprocess("vex {} pip install pip --upgrade"
                           .format(tmp_env.name))
-        # todo (aj) urgent. Yank this out
-        run_in_subprocess("vex {} pip install numpy==1.9.2"
-                          .format(tmp_env.name))
 
         # 2. installs package/version into there using pip
-        tmp_pip_options = "--cache-dir {}".format(MagellanConfig.cache_dir)
-        # tmp_pip_options = ("--cache-dir {} --no-deps"
-        #                    .format(MagellanConfig.cache_dir))
+        # tmp_pip_options = "--cache-dir {}".format(MagellanConfig.cache_dir)
+        tmp_pip_options = ("--cache-dir {} --no-deps"
+                           .format(MagellanConfig.cache_dir))
         pip_package_str = '{0}=={1}'.format(package, version)
         tmp_env.vex_install_requirement(
             tmp_env.name, pip_package_str, tmp_pip_options)
@@ -301,7 +298,7 @@ class DepTools(object):
             if parse_version(cur_ver) == parse_version(version):
                 s = ("{} version {} is same as current!"
                      .format(package, version))
-                _print_col(s, 'red', 'black', pretty)
+                print_col(s, 'red', 'black', pretty)
 
                 continue
 
@@ -523,7 +520,7 @@ class DepTools(object):
         if upgrade_conflicts:
             maglog.info(upgrade_conflicts)
             upgrade_conflicts, uc_deps = DepTools.detect_upgrade_conflicts(
-                upgrade_conflicts, venv)
+                upgrade_conflicts, venv, pretty)
 
             DepTools.table_print_upgrade_conflicts(
                 upgrade_conflicts, uc_deps, venv, pretty)
@@ -556,15 +553,15 @@ class DepTools(object):
             return
         print("\n")
         s = "Upgrade Conflicts:"
-        _print_col(s,  'white', 'blue', pretty)
+        print_col(s, pretty=pretty, header=True)
 
         for p_k, p in conflicts.items():
 
             has_recs = dep_info.get(p_k).get('requirements')
             if not has_recs:
-                _print_col("Requirements not found for {}, possible failure "
+                print_col("Requirements not found for {}, possible failure "
                            "when installating package into temporary "
-                           "directory?".format(p_k), 'white', 'blue', pretty)
+                           "directory?".format(p_k), pretty=pretty)
                 continue
 
             p_name = dep_info[p_k]['requirements']['project_name']
@@ -578,7 +575,7 @@ class DepTools(object):
 
             s = ("{} {}: {} from {} to {}.".format(
                 p_name, ver, direction, cur_ver, ver))
-            _print_col(s, 'white', 'blue', pretty)
+            print_col(s, pretty=pretty)
 
             missing_from_env = p['missing_packages']
             new_dependencies = p['dep_set']['new_deps']
@@ -588,7 +585,7 @@ class DepTools(object):
 
             if not (missing_from_env or new_dependencies
                     or removed_dependencies or broken_reqs):
-                _print_col("No conflicts detected", 'blue', 'white', pretty)
+                print_col("No conflicts detected", pretty=pretty)
 
             _print_if(missing_from_env,
                       "Packages not in environment (to be installed):",
@@ -612,20 +609,21 @@ class DepTools(object):
 
         :param conflicts: dict of upgrade conflicts
         """
-        _print_col("Package Addition Conflicts:", 'white', 'blue', pretty)
+        print_col("Package Addition Conflicts:", pretty=pretty, header=True)
 
         for p_k, p in conflicts.items():
             has_recs = p.get('requirements')
             if not has_recs:
-                _print_col("Requirements not found for {}, possible failure "
+                print_col("Requirements not found for {}, possible failure "
                            "when installating package into temporary "
-                           "directory?".format(p_k), 'white', 'blue', pretty)
+                           "directory?".format(p_k), pretty=pretty)
                 continue
 
             p_name = p.get('requirements').get('project_name')
             ver = p.get('requirements').get('version')
 
-            _print_col("{0} {1}:".format(p_name, ver), 'white', 'blue', pretty)
+            print_col("{0} {1}:".format(p_name, ver),
+                      pretty=pretty, header=True)
 
             okay = p['may_be_okay']
             up = p['may_try_upgrade']
@@ -634,7 +632,7 @@ class DepTools(object):
             if not (okay or up or new_ps):
                 s = ("  No conflicts detected for the addition of {0} {1}."
                      .format(p_name, ver))
-                _print_col(s, 'blue', 'white', pretty)
+                print_col(s, pretty=pretty)
 
             _print_if(okay, "Should be okay:", pretty=pretty)
             _print_if(up, "May try to upgrade:", pretty=pretty)
@@ -651,7 +649,7 @@ class DepTools(object):
         ts = "No conflicts detected in environment"
 
         if conflicts:
-            _print_col("Conflicts in environment:", 'white', 'blue', pretty)
+            print_col("Conflicts in environment:", pretty=pretty, header=True)
 
             table_data = [['PACKAGE', 'DEPENDENCY', 'CONFLICT']]
 
@@ -675,7 +673,7 @@ class DepTools(object):
 
             ts = OutputTableType(table_data).table
 
-        _print_col(ts, 'blue', 'white', pretty)
+        print_col(ts, pretty=pretty)
 
     @staticmethod
     def acquire_and_display_dependencies(package_version_list, pretty=False):
@@ -688,8 +686,8 @@ class DepTools(object):
             version = p[1]
 
             if not PyPIHelper.check_package_version_on_pypi(package, version):
-                _print_col("{} {} not found on PyPI.".format(package, version),
-                           "white", "blue", pretty)
+                print_col("{} {} not found on PyPI.".format(package, version),
+                          pretty=pretty, header=True)
                 continue
 
             requirements = DepTools.get_deps_for_package_version(
@@ -738,11 +736,10 @@ class DepTools(object):
             if p:
                 s = "These packages depend on {} in {}:"\
                     .format(venv.all_packages[pk].name, env_name)
-                _print_col(s, 'white', 'blue', pretty)
+                print_col(s, pretty=pretty, header=True)
                 for a in p:
                     try:
-                        _print_col("{} {}".format(a[0], a[1]),
-                                   'blue', 'white', pretty)
+                        print_col("{} {}".format(a[0], a[1]), pretty=pretty)
                     except Exception as e:
                         maglog.exception(e)
 
@@ -761,10 +758,10 @@ def _table_print_requirements(requirements, pretty=False):
     if not reqs:
 
         s = "{} {} appears to have no dependencies.".format(package, version)
-        _print_col(s, 'white', 'blue', pretty)
+        print_col(s, pretty=pretty, header=True)
     else:
         s = "Dependencies of {} {}:".format(package, version)
-        _print_col(s, 'white', 'blue', pretty)
+        print_col(s, pretty=pretty, header=True)
 
         table_data = [['PACKAGE', 'SPECS']]
 
@@ -781,7 +778,7 @@ def _table_print_requirements(requirements, pretty=False):
             table_data.append(table_row)
 
         table = OutputTableType(table_data)
-        _print_col(table.table, 'blue', 'white', pretty)
+        print_col(table.table, pretty=pretty)
 
 
 def _print_if(list_in, lead_in_text=None, tab_space=2, pretty=False):
@@ -794,7 +791,7 @@ def _print_if(list_in, lead_in_text=None, tab_space=2, pretty=False):
     """
     if list_in:
         if lead_in_text:
-            _print_col(" "*tab_space + lead_in_text, 'blue', 'white', pretty)
+            print_col(" "*tab_space + lead_in_text, pretty=pretty)
 
         for item in list_in:
             if type(item) == tuple:
@@ -802,8 +799,7 @@ def _print_if(list_in, lead_in_text=None, tab_space=2, pretty=False):
                 _item = item[0] + " as " + _string_requirement_details(item[1])
             else:
                 _item = item
-            _print_col("  "*tab_space + "".join(_item),
-                       'blue', 'white', pretty)
+            print_col("  "*tab_space + "".join(_item), pretty=pretty)
 
 def _string_requirement_details(dets):
     """

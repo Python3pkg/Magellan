@@ -62,7 +62,23 @@ def mkdir_p(path):
             raise
 
 
-def _print_col(s, bg="white", fg="black", pretty=False):
+def print_col(s, bg=None, fg=None, pretty=False, header=False):
+    """Interface for pretty printing in colour"""
+    if not (bg or fg):
+        if header:
+            bg = "white"
+            fg = "blue"
+        else:
+            bg = "blue"
+            fg = "white"
+    if not bg:
+        bg = "white"
+    if not fg:
+        fg = "black"
+    _print_col(s, bg, fg, pretty)
+
+
+def _print_col(s, bg, fg, pretty=False):
     """
     Save some boilerplate with Colour class.
 
@@ -81,3 +97,4 @@ def _print_col(s, bg="white", fg="black", pretty=False):
         print(Color(full_s))
     else:
         print(s)
+

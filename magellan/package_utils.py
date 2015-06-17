@@ -363,37 +363,37 @@ class Package(object):
 
         :param package_list: dict of magellan.package_utils.Package objects
         """
-        from magellan.utils import _print_col
+        from magellan.utils import print_col
 
         for p_k, p in package_list.items():
             version_info = p.check_versions()
             maglog.debug(version_info)
             status = version_info.get("code")
 
-            _print_col("Analysing {} {}".format(p.name, p.version),
-                       "white", "blue", pretty)
+            print_col("Analysing {} {}".format(p.name, p.version),
+                      pretty=pretty, header=True)
 
             if status == -1:  # Error
-                _print_col("There was an error, see verbose output "
-                           "for details", "blue", "white", pretty)
+                print_col("There was an error, see verbose output "
+                          "for details", pretty=pretty)
             elif status == 0:  # Up to date
-                _print_col("Up to date.", "blue", "white", pretty)
+                print_col("Up to date.", pretty=pretty)
             elif status == 999:  # beyond
-                _print_col("{} is BEYOND latest PyPI version {}".format(
+                print_col("{} is BEYOND latest PyPI version {}".format(
                     p.version,
                     version_info.get("minor_version").get("latest")),
-                    "blue", "white", pretty)
+                    pretty=pretty)
             else:
                 maj_out = version_info.get("major_version").get("outdated")
                 min_out = version_info.get("minor_version").get("outdated")
                 if maj_out:
-                    _print_col("Major version outdated {} > {}".format(
+                    print_col("Major version outdated {} > {}".format(
                         version_info.get("major_version").get("latest"),
-                        p.version), "blue", "white", pretty)
+                        p.version), pretty=pretty)
                 if min_out:
-                    _print_col("Minor version outdated {} > {}".format(
+                    print_col("Minor version outdated {} > {}".format(
                         version_info.get("minor_version").get("latest"),
-                        p.version), "blue", "white", pretty)
+                        p.version), pretty=pretty)
 
     @staticmethod
     def check_latest_major_minor_versions(package, version=None):
