@@ -902,19 +902,23 @@ class PyPIHelper(object):
 
         pypi_template = 'https://pypi.python.org/pypi/{0}/json'
 
-        r = requests.get(pypi_template.format(package))
-        if r.status_code == 200:  # if successfully retrieved:
-            maglog.info("{0} JSON successfully retrieved from PyPI"
-                        .format(package))
+        try:
+            r = requests.get(pypi_template.format(package))
+            if r.status_code == 200:  # if successfully retrieved:
+                maglog.info("{0} JSON successfully retrieved from PyPI"
+                            .format(package))
 
-            # Save to local cache...
-            with open(f, 'w') as outf:
-                json.dump(r.json(), outf)
-            # ... and return to caller:
-            return r.json()
+                # Save to local cache...
+                with open(f, 'w') as outf:
+                    json.dump(r.json(), outf)
+                # ... and return to caller:
+                return r.json()
 
-        else:  # retrieval failed
-            maglog.info("failed to download {0}".format(package))
+            else:  # retrieval failed
+                maglog.info("failed to download {0}".format(package))
+                return {}
+        except requests.ConnectionError as e:
+            maglog.warn("Connection to PyPI failed: {}".format(e))
             return {}
 
     @staticmethod

@@ -133,7 +133,7 @@ class Environment(object):
             name_bit = ''
         else:
             venv_name = venv_name.rstrip('/')
-            maglog.info("Attempting analysis of {}".format(venv_name))
+            maglog.info("Locating {} environment".format(venv_name))
             # First check specified environment exists:
             if not Environment.vex_check_venv_exists(venv_name):
                 maglog.critical('Virtual Env "{}" does not exist, '

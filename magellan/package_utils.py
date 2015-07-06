@@ -340,10 +340,9 @@ class Package(object):
         try:
             yp = yarg.get(package)
             rels = yp.release_ids
-        except yarg.HTTPError:
-            maglog.exception("{0} not found at PyPI; "
-                             "no version information available."
-                             .format(package))
+        except Exception as e:
+            maglog.debug("Unable to obtain {0} from PyPI; {1}."
+                         .format(package, e))
             # log e
             return None
 
@@ -374,7 +373,7 @@ class Package(object):
                       pretty=pretty, header=True)
 
             if status == -1:  # Error
-                print_col("There was an error, see verbose output "
+                print_col("There was an error, see [super] verbose output "
                           "for details", pretty=pretty)
             elif status == 0:  # Up to date
                 print_col("Up to date.", pretty=pretty)
@@ -437,9 +436,9 @@ class Package(object):
                         .format(package, version, latest_major_version))
             return_info['code'] = 999
             return_info['major_version'] = {
-                "outdated": False, "latest": version}
+                "outdated": False, "latest": latest_major_version}
             return_info['minor_version'] = {
-                "outdated": False, "latest": version}
+                "outdated": False, "latest": latest_major_version}
             return return_info
 
         # Now normal checks:
