@@ -50,8 +50,9 @@ class DepTools(object):
         try:
             rec_keys = {x['key']: x['project_name']
                         for x in requirements['requires'].values()}
-        except KeyError:
-            maglog.exception("Error in check_changes_in_requirements_vs_env")
+        except KeyError as e:
+            maglog.debug("Error in check_changes_in_requirements_vs_env: {}"
+                         .format(e))
             return {'removed_deps': [], 'new_deps': []}
 
         dset = set(dec_keys.keys())
@@ -327,13 +328,17 @@ class DepTools(object):
                     package, version, ancestors, venv.package_requirements)
 
             conflicts[p_v] = {}
-            conflicts[p_v]['dep_set'] = uc_deps[p_v]['dependency_set']
-            conflicts[p_v]['req_ver'] = \
-                uc_deps[p_v]['required_versions']['conflicts']
-            conflicts[p_v]['missing_packages'] = \
-                uc_deps[p_v]['required_versions']['missing']
-            conflicts[p_v]['anc_dep'] = \
-                uc_deps[p_v]['ancestor_dependencies']['conflicts']
+            try:
+                conflicts[p_v]['dep_set'] = uc_deps[p_v]['dependency_set']
+                conflicts[p_v]['req_ver'] = \
+                    uc_deps[p_v]['required_versions']['conflicts']
+                conflicts[p_v]['missing_packages'] = \
+                    uc_deps[p_v]['required_versions']['missing']
+                conflicts[p_v]['anc_dep'] = \
+                    uc_deps[p_v]['ancestor_dependencies']['conflicts']
+            except TypeError as e:
+                maglog.debug("Error when attempting to assess conflicts {}"
+                             .format(e))
 
         return conflicts, uc_deps
 

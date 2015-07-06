@@ -53,6 +53,7 @@ class Environment(object):
                               .format(self.name))
 
             if not kwargs['no_pip_update']:  # update pip
+                print("RA"*100)
                 run_in_subprocess(pip_update_cmd)
                 self.vex_install_requirements(self.name, req_file,
                                               kwargs['pip_options'])
