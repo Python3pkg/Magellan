@@ -376,7 +376,7 @@ class DepTools(object):
                 try:
                     cur_ver = ver_info[r.lower()]
                 except KeyError:
-                    maglog.exception("KeyError for {}".format(r))
+                    maglog.debug("KeyError for {}".format(r))
                     cur_ver = ''
                 for s in node_requirements[r]['specs']:
                     req_met, req_details = \
