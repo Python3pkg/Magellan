@@ -1,12 +1,15 @@
 import pickle
-import pip
+import pkg_resources
 
 default_skip = ['pip', 'python', 'distribute']
-skip = ['pipdeptree', 'virtualenv', 'magellan', 'vex', 'argparse']
+skip = ['pipdeptree', 'magellan', 'vex'] \
+       + default_skip
 
-local_only = True
-pkgs = pip.get_installed_distributions(local_only=local_only,
-                                       skip=skip+default_skip)
+# local_only = True
+# pkgs = pip.get_installed_distributions(local_only=local_only,
+#                                        skip=skip+default_skip)
+pkgs = [d for d in pkg_resources.working_set if d.key not in skip]
+
 
 # FORM NODES
 nodes = [(x.project_name, x.version) for x in pkgs]
