@@ -10,6 +10,7 @@ import re
 import shlex
 import subprocess
 import sys
+from pkg_resources import resource_filename as pkg_res_resource_filename
 
 from magellan.utils import (run_in_subprocess, run_in_subp_ret_stdout,)
 from magellan.package_utils import Package
@@ -184,9 +185,8 @@ class Environment(object):
         :return: nodes, edges
         """
 
-        interrogation_file = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            'interrogation_scripts',  'env_interrogation.py')
+        interrogation_file = pkg_res_resource_filename(
+            'magellan', 'env_interrogation.py')
 
         # execute
         self.add_file_to_extant_env_files('nodes.p')

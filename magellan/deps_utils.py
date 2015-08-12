@@ -1,6 +1,7 @@
 import os
 import operator
 from pkg_resources import parse_version
+from pkg_resources import resource_filename as pkg_res_resource_filename
 from pprint import pformat
 import requests
 import json
@@ -195,9 +196,8 @@ class DepTools(object):
             tmp_env.name, pip_package_str, tmp_pip_options)
 
         # 3. File to interrogate through virtual env for package
-        interrogation_file = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            'interrogation_scripts',  'package_interrogation.py')
+        interrogation_file = pkg_res_resource_filename(
+            'magellan', 'package_interrogation.py')
 
         # 4. Run file, which pickles results to temp file
         run_in_subprocess("vex {0} python {1} {2} {3}".format(
