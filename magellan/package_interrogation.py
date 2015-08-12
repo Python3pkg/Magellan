@@ -4,7 +4,7 @@ of a specific package within that environment.
 """
 import json
 import os
-import pip
+import pkg_resources
 import sys
 
 if len(sys.argv) != 3:
@@ -15,7 +15,8 @@ package = str(sys.argv[1])
 cache_dir = sys.argv[2]
 
 p_key = '{0}'.format(package.lower())
-pkgs = pip.get_installed_distributions()
+# pkgs = pip.get_installed_distributions()
+pkgs = [d for d in pkg_resources.working_set]
 try:
     p = [x for x in pkgs if x.key == p_key][0]
 except IndexError:

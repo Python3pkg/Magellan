@@ -1,6 +1,7 @@
 import os
 import operator
 from pkg_resources import parse_version
+from pkg_resources import resource_filename as pkg_res_resource_filename
 from pprint import pformat
 import requests
 import json
@@ -50,8 +51,9 @@ class DepTools(object):
         try:
             rec_keys = {x['key']: x['project_name']
                         for x in requirements['requires'].values()}
-        except KeyError:
-            maglog.exception("Error in check_changes_in_requirements_vs_env")
+        except KeyError as e:
+            maglog.debug("Error in check_changes_in_requirements_vs_env: {}"
+                         .format(e))
             return {'removed_deps': [], 'new_deps': []}
 
         dset = set(dec_keys.keys())
@@ -194,9 +196,8 @@ class DepTools(object):
             tmp_env.name, pip_package_str, tmp_pip_options)
 
         # 3. File to interrogate through virtual env for package
-        interrogation_file = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            'interrogation_scripts',  'package_interrogation.py')
+        interrogation_file = pkg_res_resource_filename(
+            'magellan', 'package_interrogation.py')
 
         # 4. Run file, which pickles results to temp file
         run_in_subprocess("vex {0} python {1} {2} {3}".format(
@@ -327,13 +328,17 @@ class DepTools(object):
                     package, version, ancestors, venv.package_requirements)
 
             conflicts[p_v] = {}
-            conflicts[p_v]['dep_set'] = uc_deps[p_v]['dependency_set']
-            conflicts[p_v]['req_ver'] = \
-                uc_deps[p_v]['required_versions']['conflicts']
-            conflicts[p_v]['missing_packages'] = \
-                uc_deps[p_v]['required_versions']['missing']
-            conflicts[p_v]['anc_dep'] = \
-                uc_deps[p_v]['ancestor_dependencies']['conflicts']
+            try:
+                conflicts[p_v]['dep_set'] = uc_deps[p_v]['dependency_set']
+                conflicts[p_v]['req_ver'] = \
+                    uc_deps[p_v]['required_versions']['conflicts']
+                conflicts[p_v]['missing_packages'] = \
+                    uc_deps[p_v]['required_versions']['missing']
+                conflicts[p_v]['anc_dep'] = \
+                    uc_deps[p_v]['ancestor_dependencies']['conflicts']
+            except TypeError as e:
+                maglog.debug("Error when attempting to assess conflicts {}"
+                             .format(e))
 
         return conflicts, uc_deps
 
@@ -376,7 +381,7 @@ class DepTools(object):
                 try:
                     cur_ver = ver_info[r.lower()]
                 except KeyError:
-                    maglog.exception("KeyError for {}".format(r))
+                    maglog.debug("KeyError for {}".format(r))
                     cur_ver = ''
                 for s in node_requirements[r]['specs']:
                     req_met, req_details = \
@@ -751,10 +756,10 @@ def _table_print_requirements(requirements, pretty=False):
     :param dict requirements: dictionary of requirements from PyPI
     """
 
-    package = requirements['project_name']
-    version = requirements['version']
+    package = requirements.get('project_name')
+    version = requirements.get('version')
 
-    reqs = requirements['requires']
+    reqs = requirements.get('requires', [])
     if not reqs:
 
         s = "{} {} appears to have no dependencies.".format(package, version)
