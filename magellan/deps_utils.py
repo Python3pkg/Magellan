@@ -756,10 +756,10 @@ def _table_print_requirements(requirements, pretty=False):
     :param dict requirements: dictionary of requirements from PyPI
     """
 
-    package = requirements['project_name']
-    version = requirements['version']
+    package = requirements.get('project_name')
+    version = requirements.get('version')
 
-    reqs = requirements['requires']
+    reqs = requirements.get('requires', [])
     if not reqs:
 
         s = "{} {} appears to have no dependencies.".format(package, version)
