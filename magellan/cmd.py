@@ -7,6 +7,7 @@ from __future__ import print_function
 import argparse
 import logging
 import os
+import pkg_resources
 import sys
 from pprint import pprint, pformat
 
@@ -20,6 +21,7 @@ from magellan.analysis import (
 from magellan.reports import produce_pdp_package_report
 
 maglog = logging.getLogger('magellan_logger')
+
 
 def _go(venv_name, **kwargs):
     """Main script of magellan program.
@@ -46,14 +48,21 @@ def _go(venv_name, **kwargs):
     venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
 
+    requirements_file = kwargs.get('requirements_file')
+
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
     if kwargs['outdated']:
         if package_list:
             Package.check_outdated_packages(packages, print_col)
+        elif requirements_file:
+            print("Analysing requirements file for outdated packages.")
+            Package.check_outdated_requirements_file(
+                requirements_file, print_col)
         else:
             Package.check_outdated_packages(venv.all_packages, print_col)
+
         sys.exit()
 
     MagellanConfig.setup_output_dir(kwargs, package_list)
@@ -144,8 +153,8 @@ def cmds():
     # Optional Arguments
     parser.add_argument(
         '-n', '--venv-name', default=None, metavar="<venv_name>",
-        help=("Specify name for virtual environment, "
-              "default is MagEnv0, MagEnv1 etc"))
+        help=("Specify name of virtual environment, "
+              "if nothing Magellan will use current environment."))
 
     parser.add_argument(
         '-A', '--get-ancestors', action='append', nargs=1,
@@ -176,8 +185,11 @@ def cmds():
               "Make sure this is not superseded by '-s'"))
 
     parser.add_argument(
+        '-f', '--package-file', type=str, metavar="<package_file>",
+        help="File with list of packages")
+    parser.add_argument(
         '-r', '--requirements-file', type=str, metavar="<requirements_file>",
-        help="requirements file (e.g. requirements.txt) to install.")
+        help="requirements file (e.g. requirements.txt) to check.")
 
     parser.add_argument(
         '-l', '--list-all-versions', action='append', nargs=1, type=str,
