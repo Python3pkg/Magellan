@@ -9,6 +9,9 @@ from __future__ import print_function
 import logging
 import re
 
+import pkg_resources
+
+from magellan.utils import print_col
 # Logging:
 maglog = logging.getLogger("magellan_logger")
 maglog.info("Env imported")
@@ -183,8 +186,8 @@ class Package(object):
         :return: package_list
         """
 
-        p_list = kwargs['packages']
-        p_file = kwargs['package_file']
+        p_list = kwargs.get('packages', [])
+        p_file = kwargs.get('package_file', [])
         f_pkgs = []
         if p_file:
             try:
@@ -362,37 +365,68 @@ class Package(object):
 
         :param package_list: dict of magellan.package_utils.Package objects
         """
-        from magellan.utils import print_col
 
         for p_k, p in package_list.items():
             version_info = p.check_versions()
             maglog.debug(version_info)
-            status = version_info.get("code")
+            Package.detail_version_info(
+                version_info, p.name, p.version, pretty)
 
-            print_col("Analysing {} {}".format(p.name, p.version),
-                      pretty=pretty, header=True)
+    @staticmethod
+    def detail_version_info(version_info, package, version, pretty=False):
+        """
+        Outputs to console the result of
+        Package.check_latest_major_minor_versions
+        """
+        print_col("Analysing {} {}".format(package, version),
+                  pretty=pretty, header=True)
 
-            if status == -1:  # Error
-                print_col("There was an error, see [super] verbose output "
-                          "for details", pretty=pretty)
-            elif status == 0:  # Up to date
-                print_col("Up to date.", pretty=pretty)
-            elif status == 999:  # beyond
-                print_col("{} is BEYOND latest PyPI version {}".format(
-                    p.version,
-                    version_info.get("minor_version").get("latest")),
-                    pretty=pretty)
-            else:
-                maj_out = version_info.get("major_version").get("outdated")
-                min_out = version_info.get("minor_version").get("outdated")
-                if maj_out:
-                    print_col("Major version outdated {} > {}".format(
-                        version_info.get("major_version").get("latest"),
-                        p.version), pretty=pretty)
-                if min_out:
-                    print_col("Minor version outdated {} > {}".format(
-                        version_info.get("minor_version").get("latest"),
-                        p.version), pretty=pretty)
+        status = version_info.get("code")
+
+        if status == -1:  # Error
+            print_col("There was an error, see [super] verbose output "
+                      "for details", pretty=pretty)
+        elif status == 0:  # Up to date
+            print_col("Up to date.", pretty=pretty)
+        elif status == 999:  # beyond
+            print_col("{} is BEYOND latest PyPI version {}".format(
+                version,
+                version_info.get("minor_version").get("latest")),
+                pretty=pretty)
+        else:
+            maj_out = version_info.get("major_version").get("outdated")
+            min_out = version_info.get("minor_version").get("outdated")
+            if maj_out:
+                print_col("Major version outdated {} > {}".format(
+                    version_info.get("major_version").get("latest"),
+                    version), pretty=pretty)
+            if min_out:
+                print_col("Minor version outdated {} > {}".format(
+                    version_info.get("minor_version").get("latest"),
+                    version), pretty=pretty)
+
+
+    @staticmethod
+    def check_outdated_requirements_file(req_file=None, pretty=None):
+        if req_file:
+            with open(req_file, 'rb') as req_file:
+                parsed_req = pkg_resources.parse_requirements(req_file.read())
+
+            for p in parsed_req:
+                package = p.key
+
+                try:
+                    version = p.specs[-1][-1]
+                except IndexError as e:
+                    maglog.debug("No version info for {} in requirements file."
+                                 .format(package))
+                    version = None
+                    continue
+
+                ver_info = Package.check_latest_major_minor_versions(
+                    package, version)
+                Package.detail_version_info(
+                    ver_info, package, version, pretty)
 
     @staticmethod
     def check_latest_major_minor_versions(package, version=None):
@@ -434,6 +468,8 @@ class Package(object):
         if beyond_up_to_date:
             maglog.info("{0} version {1} is beyond latest PyPI version {2}"
                         .format(package, version, latest_major_version))
+            # If beyond up to date then latest version is not the PyPI ver.
+            latest_major_version = version
             return_info['code'] = 999
             return_info['major_version'] = {
                 "outdated": False, "latest": latest_major_version}

@@ -7,6 +7,7 @@ from __future__ import print_function
 import argparse
 import logging
 import os
+import pkg_resources
 import sys
 from pprint import pprint, pformat
 
@@ -21,13 +22,10 @@ from magellan.reports import produce_pdp_package_report
 
 maglog = logging.getLogger('magellan_logger')
 
+
 def _go(venv_name, **kwargs):
     """Main script of magellan program.
     
-    If passed a requirements file it will install those requirements into
-    a fresh virtual environment. If that environment exists, it shall be
-    deleted and a new one setup for installation.
-
     If an environment is passed in but doesn't exist, then exit.
     If no environment is passed in, do analysis on current env.
 
@@ -50,14 +48,21 @@ def _go(venv_name, **kwargs):
     venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
 
+    requirements_file = kwargs.get('requirements_file')
+
     package_list = Package.resolve_package_list(venv, kwargs)
     packages = {p.lower(): venv.all_packages[p.lower()] for p in package_list}
 
-    if kwargs['check_versions']:
+    if kwargs['outdated']:
         if package_list:
             Package.check_outdated_packages(packages, print_col)
+        elif requirements_file:
+            print("Analysing requirements file for outdated packages.")
+            Package.check_outdated_requirements_file(
+                requirements_file, print_col)
         else:
             Package.check_outdated_packages(venv.all_packages, print_col)
+
         sys.exit()
 
     MagellanConfig.setup_output_dir(kwargs, package_list)
@@ -66,7 +71,7 @@ def _go(venv_name, **kwargs):
         DepTools.acquire_and_display_dependencies(
             kwargs['get_dependencies'], print_col)
 
-    if kwargs['get_ancestors']:
+    if kwargs['get_ancestors']:  # -A
         ancestor_dictionary = \
             DepTools.get_ancestors_of_packages(
                 kwargs['get_ancestors'], venv, print_col)
@@ -127,7 +132,7 @@ def _go(venv_name, **kwargs):
 #######################
 # Command Entry Point #
 #######################
-def main():
+def cmds():
     """Command line entry point for magellan."""
 
     parser = argparse.ArgumentParser(
@@ -136,33 +141,25 @@ def main():
                      "like your name is Fernando!"),
     )
 
+    # parser.add_argument(
+    #     'route', type=str, choices=['one', 'two'], nargs=1,
+    #     help="smo"
+    # )
+    # sys.exit()
     # Positional Arguments
     parser.add_argument('packages', nargs='*', type=str,
                         help="Packages to explore.")
 
     # Optional Arguments
-    # Fundamental:
     parser.add_argument(
         '-n', '--venv-name', default=None, metavar="<venv_name>",
-        help=("Specify name for virtual environment, "
-              "default is MagEnv0, MagEnv1 etc"))
-    parser.add_argument(
-        '-r', '--install-requirements', type=str, metavar="<requirements_file>",
-        help="requirements file (e.g. requirements.txt) to install.")
+        help=("Specify name of virtual environment, "
+              "if nothing Magellan will use current environment."))
 
-    # Functional with output
     parser.add_argument(
-        '-l', '--list-all-versions', action='append', nargs=1, type=str,
-        metavar="<package>",
-        help="List all versions of package on PyPI and exit. NB Can be used "
-             "multiple times")
-    parser.add_argument(
-        '-P', '--package-conflicts', action='append', nargs=2,
-        metavar=("<package-name>", "<version>"),
-        help=("Check whether a package will conflict with the current "
-              "environment, either through addition or change. NB Can be used "
-              "multiple times but must always specify desired version. "
-              "Usage -P <package-name> <version>."))
+        '-A', '--get-ancestors', action='append', nargs=1,
+        metavar="<package-name>",
+        help="Show which packages in environment depend on <package-name>")
     parser.add_argument(
         '-D', '--get-dependencies', action='append', nargs=2,
         metavar=("<package-name>", "<version>"),
@@ -170,24 +167,44 @@ def main():
               "NB Can be used multiple times but must always specify desired "
               "version.  Usage -D <package-name> <version>."))
     parser.add_argument(
-        '-A', '--get-ancestors', action='append', nargs=1,
-        metavar=("<package-name>"),
-        help=("Show which packages in environment depend on <package-name>"))
-    parser.add_argument(
-        '-c', '--check-versions', action='store_true', default=False,
-        help=("Just checks the versions of input packages and exits. "
-              "Make sure this is not superseded by '-s'"))
-    parser.add_argument(
-        '-d', '--detect-env-conflicts', action='store_true', default=False,
+        '-C', '--detect-env-conflicts', action='store_true', default=False,
         help="Runs through installed packages in specified environment to "
              "detect if there are any conflicts between dependencies and "
              "versions.")
+    parser.add_argument(
+        '-P', '--package-conflicts', action='append', nargs=2,
+        metavar=("<package-name>", "<version>"),
+        help=("Check whether a package will conflict with the current "
+              "environment, either through addition or change. NB Can be used "
+              "multiple times but must always specify desired version. "
+              "Usage -P <package-name> <version>."))
+
+    parser.add_argument(
+        '-o', '--outdated', action='store_true', default=False,
+        help=("Just checks the versions of input packages and exits. "
+              "Make sure this is not superseded by '-s'"))
+
+    parser.add_argument(
+        '-f', '--package-file', type=str, metavar="<package_file>",
+        help="File with list of packages")
+    parser.add_argument(
+        '-r', '--requirements-file', type=str, metavar="<requirements_file>",
+        help="requirements file (e.g. requirements.txt) to check.")
+
+    parser.add_argument(
+        '-l', '--list-all-versions', action='append', nargs=1, type=str,
+        metavar="<package>",
+        help="List all versions of package on PyPI and exit. NB Can be used "
+             "multiple times")
+
+
     parser.add_argument(
         '-s', '--show-all-packages', action='store_true', default=False,
         help="Show all packages by name and exit.")
     parser.add_argument(
         '-p', '--show-all-packages-and-versions', action='store_true',
         default=False, help="Show all packages with versions and exit.")
+
     parser.add_argument(
         '--output-dot-file', action='store_true', default=False,
         help="Output a .gv file showing connectedness of package.")
@@ -204,21 +221,10 @@ def main():
         '--super-verbose', action='store_true', default=False,
         help="Super verbose mode")
 
-    # todo (aj) change this before release
-    pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
-                   "--trusted-host sw-srv.maplecroft.com ")
-    parser.add_argument(
-        '-o', '--pip-options', type=str, default=pip_options,
-        metavar="pip_string",
-        help=("String. Pip options for installation of requirements.txt. "
-              "E.g. '-f http://my_server.com/deployment_libs/ "
-              "--trusted-host my_server.com'"))
+
     parser.add_argument(
         '--path-to-env-bin', default=None, metavar="<path-to-env-bin>",
         help="Path to virtual env bin")
-    parser.add_argument(
-        '-f', '--package-file', type=str, metavar="<package_file>",
-        help="File with list of packages")
     parser.add_argument(
         '--output-dir', type=str, default=MagellanConfig.output_dir,
         metavar="<output_dir>",
@@ -234,10 +240,21 @@ def main():
     parser.add_argument(
         '--keep-env-files', action='store_true', default=False,
         help="Don't delete the nodes, edges, package_requirements env files.")
+
+    # todo (aj) remove before release
+    # pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
+    #                "--trusted-host sw-srv.maplecroft.com ")
+    # parser.add_argument(
+    #     '-o', '--pip-options', type=str, default=pip_options,
+    #     metavar="pip_string",
+    #     help=("String. Pip options for installation of requirements.txt. "
+    #           "E.g. '-f http://my_server.com/deployment_libs/ "
+    #           "--trusted-host my_server.com'"))
     parser.add_argument(
         '--no-pip-update', action='store_true', default=False,
         help="If invoked will not update to latest version of pip when"
              "creating new virtual env.")
+
     parser.add_argument(
         '--logfile', action='store_true', default=False,
         help="Set this flag to enable output to magellan.log."
@@ -256,8 +273,8 @@ def main():
     kwargs = vars(args)
 
     # Update cache options
-    if "--cache-dir" not in kwargs['pip_options']:
-        kwargs['pip_options'] += " --cache-dir {}".format(kwargs['cache_dir'])
+    # if "--cache-dir" not in kwargs['pip_options']:
+    #     kwargs['pip_options'] += " --cache-dir {}".format(kwargs['cache_dir'])
 
     # Logging depends on verbosity level:
     ch = logging.StreamHandler()  # Console handler
@@ -282,12 +299,13 @@ def main():
 
     del ch
 
-    # **************** #
-    # run main script: #
-    # **************** #
+    return kwargs
+
+
+def main():
+    kwargs = cmds()
     _go(**kwargs)
 
 
 if __name__ == "__main__":
     main()
-    sys.exit()

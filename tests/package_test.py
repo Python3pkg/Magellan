@@ -172,7 +172,11 @@ class TestPackageCheckVersion(TestPackageClass):
         self.assertEqual(info['major_version']['outdated'], True)
 
     def test_check_beyond_up_to_date(self):
-        """current version > latest on pypi is "up to date" """
+        """current version > latest on pypi is "up to date"
+
+        self.curp = 'foo'  # test package
+        self.curv = '1.9.9'  # test version
+        """
         version_list = ['1.8.1']
         info = self.run_as_pypi_patched(version_list)
         self.assertEqual(info['minor_version']['outdated'], False)
