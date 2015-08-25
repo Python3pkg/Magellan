@@ -183,8 +183,8 @@ class Package(object):
         :return: package_list
         """
 
-        p_list = kwargs['packages']
-        p_file = kwargs['package_file']
+        p_list = kwargs.get('packages', [])
+        p_file = kwargs.get('package_file', [])
         f_pkgs = []
         if p_file:
             try:
@@ -434,6 +434,8 @@ class Package(object):
         if beyond_up_to_date:
             maglog.info("{0} version {1} is beyond latest PyPI version {2}"
                         .format(package, version, latest_major_version))
+            # If beyond up to date then latest version is not the PyPI ver.
+            latest_major_version = version
             return_info['code'] = 999
             return_info['major_version'] = {
                 "outdated": False, "latest": latest_major_version}

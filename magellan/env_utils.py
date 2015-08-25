@@ -46,23 +46,11 @@ class Environment(object):
 
     def magellan_setup_go_env(self, kwargs):
         """ Set up environment for main script."""
-        req_file = kwargs['install_requirements']
-        if req_file:
-            self.create_vex_new_virtual_env()
 
-            pip_update_cmd = ("vex {} pip install pip --upgrade"
-                              .format(self.name))
-
-            if not kwargs['no_pip_update']:  # update pip
-                run_in_subprocess(pip_update_cmd)
-                self.vex_install_requirements(self.name, req_file,
-                                              kwargs['pip_options'])
-
-            self.vex_install_requirement(self.name, "pipdeptree", "")
-        else:
-            self.name, self.name_bit = self.vex_resolve_venv_name(self.name)
+        self.name, self.name_bit = self.vex_resolve_venv_name(self.name)
 
         self.resolve_venv_bin(kwargs['path_to_env_bin'])
+
         self.query_nodes_edges_in_venv()
         if not kwargs['keep_env_files']:
             self.remove_extant_env_files_from_disk()
