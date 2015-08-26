@@ -14,7 +14,7 @@ from pprint import pprint, pformat
 
 from magellan.utils import MagellanConfig
 from magellan.env_utils import Environment
-from magellan.package_utils import Package
+from magellan.package_utils import Package, Requirements
 from magellan.deps_utils import DepTools, PyPIHelper
 from magellan.analysis import (
     write_dot_graph_to_disk_with_distance_colour, write_dot_graph_subset,)
@@ -58,9 +58,9 @@ def _go(venv_name, **kwargs):
             Package.check_outdated_packages(packages, print_col)
         elif requirements_file:
             print("Analysing requirements file for outdated packages.")
-            Package.check_outdated_requirements_file(
+            Requirements.check_outdated_requirements_file(
                 requirements_file, print_col)
-        else:
+        else:  # if nothing passed in then check local env.
             Package.check_outdated_packages(venv.all_packages, print_col)
 
         sys.exit()
@@ -76,14 +76,25 @@ def _go(venv_name, **kwargs):
             DepTools.get_ancestors_of_packages(
                 kwargs['get_ancestors'], venv, print_col)
 
-    if kwargs['package_conflicts']:
+    if kwargs['package_conflicts']:  # -P
         addition_conflicts, upgrade_conflicts = \
             DepTools.process_package_conflicts(
                 kwargs['package_conflicts'], venv, print_col)
 
-    if kwargs['detect_env_conflicts']:
+    if kwargs['detect_env_conflicts']:  # -C
         cur_env_conflicts = DepTools.highlight_conflicts_in_current_env(
             venv.nodes, venv.package_requirements, print_col)
+
+    if kwargs['compare_env_to_req_file']:  # -R??
+        if not requirements_file:
+            print("Please specify a requirements file with -r <file>")
+        else:
+            same, verdiff, req_only, env_only = \
+                Requirements.compare_req_file_to_env(
+                    requirements_file, venv, print_col)
+            Requirements.print_req_env_comp_lists(
+                same, verdiff, req_only, env_only, print_col)
+
 
     # Analysis
     if package_list:
@@ -192,11 +203,15 @@ def cmds():
         help="requirements file (e.g. requirements.txt) to check.")
 
     parser.add_argument(
+        '-R', '--compare-env-to-req-file', action='store_true', default=False,
+        help="Compare a requirements file to an environment."
+    )
+
+    parser.add_argument(
         '-l', '--list-all-versions', action='append', nargs=1, type=str,
         metavar="<package>",
         help="List all versions of package on PyPI and exit. NB Can be used "
              "multiple times")
-
 
     parser.add_argument(
         '-s', '--show-all-packages', action='store_true', default=False,

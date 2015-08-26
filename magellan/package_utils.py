@@ -405,29 +405,6 @@ class Package(object):
                     version_info.get("minor_version").get("latest"),
                     version), pretty=pretty)
 
-
-    @staticmethod
-    def check_outdated_requirements_file(req_file=None, pretty=None):
-        if req_file:
-            with open(req_file, 'rb') as req_file:
-                parsed_req = pkg_resources.parse_requirements(req_file.read())
-
-            for p in parsed_req:
-                package = p.key
-
-                try:
-                    version = p.specs[-1][-1]
-                except IndexError as e:
-                    maglog.debug("No version info for {} in requirements file."
-                                 .format(package))
-                    version = None
-                    continue
-
-                ver_info = Package.check_latest_major_minor_versions(
-                    package, version)
-                Package.detail_version_info(
-                    ver_info, package, version, pretty)
-
     @staticmethod
     def check_latest_major_minor_versions(package, version=None):
         """
@@ -521,3 +498,121 @@ class Package(object):
         return_info['minor_version'] = {
             "outdated": minor_outdated, "latest": latest_minor_version}
         return return_info
+
+
+class Requirements(object):
+
+    @staticmethod
+    def parse_req_file(req_file=None):
+        if req_file:
+            with open(req_file, 'rb') as req_file:
+                return pkg_resources.parse_requirements(req_file.read())
+
+
+    @staticmethod
+    def check_outdated_requirements_file(req_file=None, pretty=None):
+        """
+        Reads a requirements file and prints whether the major or minor
+        versions are outdated.
+        """
+
+        parsed_req = Requirements.parse_req_file(req_file)
+        if not parsed_req:
+            return None
+
+        for p in parsed_req:
+            package = p.key
+
+            try:
+                version = p.specs[-1][-1]
+            except IndexError as e:
+                maglog.debug("No version info for {} in requirements file."
+                             .format(package))
+                version = None
+                continue
+
+            ver_info = Package.check_latest_major_minor_versions(
+                package, version)
+            Package.detail_version_info(
+                ver_info, package, version, pretty)
+
+    @staticmethod
+    def compare_req_file_to_env(req_file, venv, pretty=None):
+        """
+        Compares a requirement file to the environment.
+
+        A simple way to do this would just be to use pip freeze and diff
+        the files... but we can do better.
+
+        We create 4 lists:
+        1. same: Same version in requirements file (RF) and env
+        2. verdiff: Package in RF and env with different versions; this will
+        include packages that aren't pegged to specific version (so either
+        not specs or spec range, i.e. >= etc)
+        3. req_only: In RF not env
+        4. env_only: In env not RF
+
+        :param req_file: requirements file.
+        :param venv: virtual environment
+        :param pretty: prints in color.
+        :return: 4 x lists.
+        """
+
+        parsed_req = Requirements.parse_req_file(req_file)
+        if not parsed_req:
+            return None
+
+        all_reqs = {x.key: {'project_name': x.project_name, 'specs': x.specs}
+                    for x in parsed_req}
+
+        req_only = [x for x in all_reqs if x not in venv.all_packages]
+        env_only = [x for x in venv.all_packages if x not in all_reqs]
+
+        # Version comparison:
+        verdiff = []
+        same = []
+        ver_check = [x for x in all_reqs if x not in req_only]
+        req_no_version = '-1'  # value for when no requirements
+        for package in ver_check:
+            env_ver = venv.all_packages[package].version
+
+            specs = all_reqs[package].get('specs')
+            if not specs:
+                req_ver = req_no_version
+            else:
+                req_ver = [x[1] for x in specs if x[0] == '=='][0]
+                if not req_ver:
+                    req_ver = req_no_version
+
+            if req_ver == env_ver:
+                same.append((package, env_ver))
+            else:
+                verdiff.append((package, req_ver, env_ver))
+
+        return same, verdiff, req_only, env_only
+
+    @staticmethod
+    def print_req_env_comp_lists(
+            same, verdiff, req_only, env_only, pretty=False):
+
+        header = 'Only in requirements file:'
+        Requirements._print_req_env_comp_list(header, req_only, pretty=pretty)
+
+        header = 'Only in environment:'
+        Requirements._print_req_env_comp_list(header, env_only, pretty=pretty)
+
+        header = 'Same in requirements file and environment:'
+        Requirements._print_req_env_comp_list(header, same, pretty=pretty)
+
+        header = ("Versions differ (package, req_version, env_version):"
+                  "(NB: '-1' indicates no version information or version "
+                  "not '==' specific)")
+        Requirements._print_req_env_comp_list(header, verdiff, pretty=pretty)
+
+    @staticmethod
+    def _print_req_env_comp_list(header, in_list, pretty=False):
+        print_col(header, header=True, pretty=pretty)
+        for line in in_list:
+            print_col(str(line), pretty=pretty)
+        if not in_list:
+            print_col("None", pretty=pretty)
