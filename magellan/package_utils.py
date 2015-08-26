@@ -589,24 +589,30 @@ class Requirements(object):
             else:
                 verdiff.append((package, req_ver, env_ver))
 
-
-
-        from pprint import pprint
-        print("-"*20 + "\n" + 'Req Only')
-        pprint(req_only)
-        print('\n')
-
-        print("-"*20 + "\n" + 'Env Only')
-        pprint(env_only)
-        print('\n')
-
-        print("-"*20 + "\n" + 'Same in both')
-        pprint(same)
-        print('\n')
-
-        print("-"*20 + "\n" + "Versions differ (NB: '-1' indicates no version"
-                              " information or version not '==' specific).")
-        pprint(verdiff)
-        print('\n')
-
         return same, verdiff, req_only, env_only
+
+    @staticmethod
+    def print_req_env_comp_lists(
+            same, verdiff, req_only, env_only, pretty=False):
+
+        header = 'Only in requirements file:'
+        Requirements._print_req_env_comp_list(header, req_only, pretty=pretty)
+
+        header = 'Only in environment:'
+        Requirements._print_req_env_comp_list(header, env_only, pretty=pretty)
+
+        header = 'Same in requirements file and environment:'
+        Requirements._print_req_env_comp_list(header, same, pretty=pretty)
+
+        header = ("Versions differ (package, req_version, env_version):"
+                  "(NB: '-1' indicates no version information or version "
+                  "not '==' specific)")
+        Requirements._print_req_env_comp_list(header, verdiff, pretty=pretty)
+
+    @staticmethod
+    def _print_req_env_comp_list(header, in_list, pretty=False):
+        print_col(header, header=True, pretty=pretty)
+        for line in in_list:
+            print_col(str(line), pretty=pretty)
+        if not in_list:
+            print_col("None", pretty=pretty)

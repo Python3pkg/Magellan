@@ -89,8 +89,11 @@ def _go(venv_name, **kwargs):
         if not requirements_file:
             print("Please specify a requirements file with -r <file>")
         else:
-            Requirements.compare_req_file_to_env(
-                requirements_file, venv, print_col)
+            same, verdiff, req_only, env_only = \
+                Requirements.compare_req_file_to_env(
+                    requirements_file, venv, print_col)
+            Requirements.print_req_env_comp_lists(
+                same, verdiff, req_only, env_only, print_col)
 
 
     # Analysis
