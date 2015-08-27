@@ -20,5 +20,5 @@ setup(
     long_description=open('README.rst').read(),
     packages=['magellan'],
     install_requires=install_requires+test_requires,
-    entry_points={'console_scripts': ['magellan = magellan.cmd:main']},
+    entry_points={'console_scripts': ['magellan = magellan.main:main']},
 )
