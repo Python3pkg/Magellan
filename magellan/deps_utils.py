@@ -152,7 +152,7 @@ class DepTools(object):
                                  requirement_ver, requirement_met)
 
     @staticmethod
-    def get_deps_for_package_version(package, version):
+    def get_deps_for_package_version(package, version, vex_options=None):
         """Gets dependencies for a specific version of a package.
 
         Specifically:
@@ -168,6 +168,9 @@ class DepTools(object):
         7. Delete tmp env?
         """
 
+        if vex_options is None:
+            vex_options = ''
+
         req_out_file = ("{0}_{1}_req.json"
                         .format(package.lower(), version.replace(".", "_")))
 
@@ -180,12 +183,13 @@ class DepTools(object):
             return json.load(open(cached_file, 'rb'))
 
         # 1. Set up temporary virtualenv
-        tmp_env = Environment(MagellanConfig.tmp_env_dir)
-        tmp_env.create_vex_new_virtual_env()  # NB: delete if extant!!
+        tmp_env = Environment(name=MagellanConfig.tmp_env_dir)
+        tmp_env.create_vex_new_virtual_env(vex_options)  # NB: delete if extant!!
 
+        # todo (aj); by default?
         # 1.5 Upgrade pip
-        run_in_subprocess("vex {} pip install pip --upgrade"
-                          .format(tmp_env.name))
+        run_in_subprocess("vex {} {} pip install pip --upgrade"
+                          .format(vex_options, tmp_env.name))
 
         # 2. installs package/version into there using pip
         # tmp_pip_options = "--cache-dir {}".format(MagellanConfig.cache_dir)
@@ -193,16 +197,16 @@ class DepTools(object):
                            .format(MagellanConfig.cache_dir))
         pip_package_str = '{0}=={1}'.format(package, version)
         tmp_env.vex_install_requirement(
-            tmp_env.name, pip_package_str, tmp_pip_options)
+            tmp_env.name, pip_package_str, tmp_pip_options, vex_options)
 
         # 3. File to interrogate through virtual env for package
         interrogation_file = pkg_res_resource_filename(
             'magellan', 'package_interrogation.py')
 
         # 4. Run file, which pickles results to temp file
-        run_in_subprocess("vex {0} python {1} {2} {3}".format(
-            tmp_env.name, interrogation_file,
-            package, MagellanConfig.cache_dir))
+        run_in_subprocess("vex {} {} python {} {} {}".format(
+            vex_options, tmp_env.name, interrogation_file, package,
+            MagellanConfig.cache_dir))
 
         # 5. reads that file from current program
         try:
@@ -307,7 +311,8 @@ class DepTools(object):
                 continue
 
             uc_deps[p_v]['requirements'] = \
-                DepTools.get_deps_for_package_version(package, version)
+                DepTools.get_deps_for_package_version(
+                    package, version, vex_options=MagellanConfig.vex_options)
 
             ancestors, descendants = Package.get_direct_links_to_any_package(
                 package, venv.edges)
@@ -437,7 +442,7 @@ class DepTools(object):
 
             # Get requirements if it's actually a new package & on PyPI.
             requirements = DepTools.get_deps_for_package_version(
-                package, version)
+                package, version, vex_options=MagellanConfig.vex_options)
 
             deps[p_v]['requirements'] = requirements
             deps[p_v]['new_packages'] = []
@@ -694,7 +699,7 @@ class DepTools(object):
                 continue
 
             requirements = DepTools.get_deps_for_package_version(
-                package, version)
+                package, version, vex_options=MagellanConfig.vex_options)
 
             maglog.debug(pformat(requirements))
             _table_print_requirements(requirements, pretty)

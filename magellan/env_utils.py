@@ -9,7 +9,9 @@ import pickle
 import sys
 from pkg_resources import resource_filename as pkg_res_resource_filename
 
-from magellan.utils import (run_in_subprocess, run_in_subp_ret_stdout,)
+from magellan.utils import (run_in_subprocess,
+                            run_in_subp_ret_stdout,
+                            MagellanConfig,)
 from magellan.package_utils import Package
 
 # Logging:
@@ -29,9 +31,6 @@ class Environment(object):
         self.package_requirements = {}
         self.all_packages = {}
         self.extant_env_files = []
-
-        # Connectedness:
-        self.connectedness = {}
 
         maglog.info("logging setup in Environment")
 
@@ -54,46 +53,60 @@ class Environment(object):
             self.show_all_packages_and_exit(
                 kwargs['show_all_packages_and_versions'])
 
-    def create_vex_new_virtual_env(self):
+    def create_vex_new_virtual_env(self, vex_options=None):
         """Create a virtual env in which to install packages
         :returns : venv_name - name of virtual environment.
         :rtype : str
         """
+
+        if vex_options is None:
+            vex_options = ''
         if self.name is None:
             venv_template = "MagEnv{}"
             # check if name exists and bump repeatedly until new
             i = 0
             while True:
                 self.name = venv_template.format(i)
-                if not self.vex_check_venv_exists(self.name):
-                    run_in_subprocess("vex -m {} true".format(self.name))
+                if not self.vex_check_venv_exists(self.name, vex_options):  # make env
                     break
                 i += 1
         else:
-            if self.vex_check_venv_exists(self.name):
+            if self.vex_check_venv_exists(self.name, vex_options):
                 # vex -r removes virtual env
-                run_in_subprocess("vex -r {} true".format(self.name))
+                run_in_subprocess("vex {} -r {} true".format(
+                    vex_options, self.name))
 
         # vex -m ; makes env
         print("Creating virtual env: {}".format(self.name))
-        run_in_subprocess("vex -m {} true".format(self.name))
+        run_in_subprocess("vex {} -m {} true".format(vex_options, self.name))
 
     @staticmethod
-    def vex_check_venv_exists(venv_name):
+    def vex_check_venv_exists(venv_name, vex_options=None):
         """ Checks whether a virtual env exists using vex.
         :return : Bool if env exists or not."""
-        vex_list = run_in_subp_ret_stdout('vex --list')[0].split("\n")
-        return venv_name in vex_list
+        if vex_options is None:
+            vex_options = ''
+        vex_list = run_in_subp_ret_stdout('vex {} --list'.format(vex_options))
+        return venv_name in vex_list[0].split("\n")
 
     @staticmethod
-    def vex_install_requirement(env_name, requirement, pip_options):
-        """Install SINGLE requirement into env_name using vex."""
-        cmd_to_run = ('vex {0} pip install {1} {2}'
-                      .format(env_name, requirement, pip_options))
+    def vex_install_requirement(install_location, requirement, pip_options,
+                                vex_options=None):
+        """Install SINGLE requirement into env_name using vex.
+
+        install_location is either the NAME of a virtual env or will be
+        the path, specified as "--path /path/to/env"
+
+        """
+        if vex_options is None:
+            vex_options = ''
+
+        cmd_to_run = ('vex {} {} pip install {} {}'.format(
+            vex_options, install_location, requirement, pip_options))
         run_in_subprocess(cmd_to_run)
 
     @staticmethod
-    def vex_resolve_venv_name(venv_name=None):
+    def vex_resolve_venv_name(venv_name=None, vex_options=None):
         """Check whether virtual env exists,
         if not then indicate to perform analysis on current environment"""
 
@@ -105,7 +118,7 @@ class Environment(object):
             venv_name = venv_name.rstrip('/')
             maglog.info("Locating {} environment".format(venv_name))
             # First check specified environment exists:
-            if not Environment.vex_check_venv_exists(venv_name):
+            if not Environment.vex_check_venv_exists(venv_name, vex_options):
                 maglog.critical('Virtual Env "{}" does not exist, '
                                 'please check name and try again'
                                 .format(venv_name))
@@ -116,14 +129,18 @@ class Environment(object):
         return venv_name, name_bit
 
     @staticmethod
-    def vex_remove_virtual_env(venv_name=None):
+    def vex_remove_virtual_env(venv_name=None, vex_options=None):
         """Removes virtual environment"""
+        if vex_options is None:
+            vex_options = ''
         if venv_name is not None:
-            run_in_subprocess("vex -r {} true".format(venv_name))
+            run_in_subprocess("vex {} -r {} true".format(
+                vex_options, venv_name))
 
     def vex_delete_env_self(self):
         """Deletes itself as a virtual environment; be careful!"""
-        self.vex_remove_virtual_env(self.name)
+        self.vex_remove_virtual_env(self.name,
+                                    vex_options=MagellanConfig.vex_options)
 
     def resolve_venv_bin(self, bin_path):
         """ Resolves the bin directory.
@@ -136,8 +153,11 @@ class Environment(object):
         # If not supplied path, derive from v_name.
         if not bin_path and self.name:
             user = os.environ.get('USER')
-            self.bin = ("/home/{0}/.virtualenvs/{1}/bin/"
-                        .format(user, self.name))
+            venv_home = os.environ.get('WORKON_HOME')
+            if not venv_home:
+                venv_home = "/home/{}/.virtualenvs".format(user)
+            specific_venv_dir = "{}/bin/".format(self.name)
+            self.bin = os.path.join(venv_home, specific_venv_dir)
 
         # Check path and/or derived path.
         if bin_path:
