@@ -353,7 +353,6 @@ class DepTools(object):
         :rtype list
         :return: current_env_conflicts
         """
-        # todo (aj) tests.
         if not nodes or not package_requirements:
             print("venv missing required data: nodes or package_requirements.")
             return []
@@ -411,7 +410,6 @@ class DepTools(object):
         1. Check new packages to be installed
         2. Check current environment satisfies requirements.
         """
-        # todo (aj) tests
         ver_info = {x[0].lower(): x[1] for x in venv.nodes}
 
         deps = {}
@@ -759,9 +757,9 @@ def _table_print_requirements(requirements, pretty=False):
     package = requirements.get('project_name')
     version = requirements.get('version')
 
-    reqs = requirements.get('requires', [])
-    if not reqs:
+    reqs = requirements.get('requires', {})
 
+    if not reqs:
         s = "{} {} appears to have no dependencies.".format(package, version)
         print_col(s, pretty=pretty, header=True)
     else:
@@ -800,11 +798,11 @@ def _print_if(list_in, lead_in_text=None, tab_space=2, pretty=False):
 
         for item in list_in:
             if type(item) == tuple:
-                # todo (aj) change this as tied too closely to req details!
                 _item = item[0] + " as " + _string_requirement_details(item[1])
             else:
                 _item = item
             print_col("  "*tab_space + "".join(_item), pretty=pretty)
+
 
 def _string_requirement_details(dets):
     """

@@ -1,24 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# todo (security) remove default pip options before making repo public!!
 
 from __future__ import print_function
 
 import argparse
 import logging
 import os
-import pkg_resources
 import sys
-from pprint import pprint, pformat
-
+from pprint import pprint
 
 from magellan.utils import MagellanConfig
 from magellan.env_utils import Environment
 from magellan.package_utils import Package, Requirements
 from magellan.deps_utils import DepTools, PyPIHelper
-from magellan.analysis import (
-    write_dot_graph_to_disk_with_distance_colour, write_dot_graph_subset,)
-from magellan.reports import produce_pdp_package_report
 
 maglog = logging.getLogger('magellan_logger')
 
@@ -65,8 +59,6 @@ def _go(venv_name, **kwargs):
 
         sys.exit()
 
-    MagellanConfig.setup_output_dir(kwargs, package_list)
-
     if kwargs['get_dependencies']:  # -D
         DepTools.acquire_and_display_dependencies(
             kwargs['get_dependencies'], print_col)
@@ -85,7 +77,7 @@ def _go(venv_name, **kwargs):
         cur_env_conflicts = DepTools.highlight_conflicts_in_current_env(
             venv.nodes, venv.package_requirements, print_col)
 
-    if kwargs['compare_env_to_req_file']:  # -R??
+    if kwargs['compare_env_to_req_file']:  # -R
         if not requirements_file:
             print("Please specify a requirements file with -r <file>")
         else:
@@ -93,49 +85,6 @@ def _go(venv_name, **kwargs):
                 Requirements.compare_req_file_to_env(requirements_file, venv)
             Requirements.print_req_env_comp_lists(
                 same, verdiff, req_only, env_only, print_col)
-
-    # Analysis
-    if package_list:
-        # pipdeptree reports are parsed for individual package analysis.
-        venv.gen_pipdeptree_reports()
-        venv.parse_pipdeptree_reports()
-        if not kwargs['keep_pipdeptree_output']:
-            venv.rm_pipdeptree_report_files()
-
-        for p_k, p in packages.items():
-            print("Analysing {}".format(p.name))
-
-            # todo (aj) Improve output Mag Report with conflict & outdated info
-            f_template = os.path.join(
-                MagellanConfig.output_dir, "Mag_Report_{}.txt")
-            produce_pdp_package_report(
-                p.name, venv.pdp_tree, venv.pdp_errs, f_template)
-
-            maglog.info(p.name)
-
-            maglog.info("Package Descendants - depended on by {}"
-                        .format(p.name))
-            maglog.debug(pformat(p.descendants(venv.edges)))
-
-            maglog.info("Package Ancestors - these depend on {}"
-                        .format(p.name))
-            maglog.debug(pformat(p.ancestors(venv.edges)))
-
-            if kwargs['output_dot_file']:
-                f = os.path.join(MagellanConfig.output_dir, '{}.gv'
-                                 .format(p.name))
-                write_dot_graph_to_disk_with_distance_colour(
-                    venv, f, p.calc_self_node_distances(venv))
-
-            if kwargs['get_ancestor_trace']:  # Ancestor trace of package
-                f = os.path.join(MagellanConfig.output_dir,
-                                 '{}_anc_track.gv'.format(p.name))
-                write_dot_graph_to_disk_with_distance_colour(
-                    venv, f, p.ancestor_trace(venv))
-
-                f = os.path.join(MagellanConfig.output_dir,
-                                 '{}_anc_track_trunc.gv'.format(p.name))
-                write_dot_graph_subset(venv, f, p.ancestor_trace(venv))
 
 
 #######################
@@ -149,13 +98,6 @@ def cmds():
         description=("Explore Python Package Dependencies "
                      "like your name is Fernando!"),
     )
-
-    # parser.add_argument(
-    #     'route', type=str, choices=['one', 'two'], nargs=1,
-    #     help="smo"
-    # )
-    # sys.exit()
-    # Positional Arguments
     parser.add_argument('packages', nargs='*', type=str,
                         help="Packages to explore.")
 
@@ -218,14 +160,6 @@ def cmds():
         '-p', '--show-all-packages-and-versions', action='store_true',
         default=False, help="Show all packages with versions and exit.")
 
-    parser.add_argument(
-        '--output-dot-file', action='store_true', default=False,
-        help="Output a .gv file showing connectedness of package.")
-    parser.add_argument(
-        '--get-ancestor-trace', action='store_true', default=False,
-        help="Output .gv files showing ancestor trace of package and a "
-             "truncated version.")
-
     # Configuration
     parser.add_argument(
         '-v', '--verbose', action='store_true', default=False,
@@ -234,37 +168,17 @@ def cmds():
         '--super-verbose', action='store_true', default=False,
         help="Super verbose mode")
 
-
     parser.add_argument(
         '--path-to-env-bin', default=None, metavar="<path-to-env-bin>",
         help="Path to virtual env bin")
-    parser.add_argument(
-        '--output-dir', type=str, default=MagellanConfig.output_dir,
-        metavar="<output_dir>",
-        help=("Set output directory for package specific reports, "
-              "default = 'MagellanReports'"))
     parser.add_argument(
         '--cache-dir', type=str, default=MagellanConfig.cache_dir,
         metavar="<cache-dir>",
         help="Cache directory - used for pip installs.")
     parser.add_argument(
-        '--keep-pipdeptree-output', action='store_true', default=False,
-        help="Don't delete the pipdeptree output reports.")
-    parser.add_argument(
         '--keep-env-files', action='store_true', default=False,
         help="Don't delete the nodes, edges, package_requirements env files.")
 
-    # todo (aj) remove before release
-    # We're import pip to parse the requirements files; but as pip in a CL tool
-    # this is perhaps not guaranteed to be future proof.
-    # pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
-    #                "--trusted-host sw-srv.maplecroft.com ")
-    # parser.add_argument(
-    #     '-o', '--pip-options', type=str, default=pip_options,
-    #     metavar="pip_string",
-    #     help=("String. Pip options for installation of requirements.txt. "
-    #           "E.g. '-f http://my_server.com/deployment_libs/ "
-    #           "--trusted-host my_server.com'"))
     parser.add_argument(
         '--no-pip-update', action='store_true', default=False,
         help="If invoked will not update to latest version of pip when"
@@ -287,10 +201,6 @@ def cmds():
     args = parser.parse_args()
     kwargs = vars(args)
 
-    # Update cache options
-    # if "--cache-dir" not in kwargs['pip_options']:
-    #     kwargs['pip_options'] += " --cache-dir {}".format(kwargs['cache_dir'])
-
     # Logging depends on verbosity level:
     ch = logging.StreamHandler()  # Console handler
     ch.setFormatter(logging.Formatter("MagLog %(levelname)s: %(message)s"))
@@ -311,8 +221,6 @@ def cmds():
         maglog.setLevel(logging.DEBUG)
         ch.setLevel(logging.DEBUG)
         maglog.debug("Maglog super verbose mode")
-
-    del ch
 
     return kwargs
 
