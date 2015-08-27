@@ -15,7 +15,7 @@ setup(
     description='Explore python packages like your name is Fernando.',
     author='AJ De-Gol',
     author_email='anthony.de-gol@maplecroft.com',
-    version='0.1',
+    version='0.9',
     classifiers=classifiers,
     long_description=open('README.rst').read(),
     packages=['magellan'],

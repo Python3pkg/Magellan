@@ -4,7 +4,7 @@ Test suite for the package_utils module.
 
 import unittest
 from mock import MagicMock, mock_open, patch
-from magellan.package_utils import (Package, InvalidEdges, InvalidNodes)
+from magellan.package_utils import (Package, InvalidEdges)
 import pickle
 
 
@@ -283,29 +283,6 @@ class TestPackageGetDirectLinksToPackage(TestPackageClass):
         self.assertEqual(dec, self.celery_descendants)
 
 
-class TestPackageCalcSelfNodeDistances(TestPackageClass):
-    """
-    Tests for calc_self_node_distances
-
-    This calls calc_node_distances, so checks should almost be the same
-    """
-
-    def test_sanity(self):
-        p = Package("Django")
-        ret = p.calc_self_node_distances(self.venv, list_or_dict="list")
-        self.assertEqual(type(ret), list)
-        self.assertGreaterEqual(len(ret), 1)
-        ret = p.calc_self_node_distances(self.venv, list_or_dict="dict")
-        self.assertEqual(type(ret), dict)
-        # Additional runs are returned from memory...
-        ret = p.calc_self_node_distances(self.venv, list_or_dict="list")
-        self.assertEqual(type(ret), list)
-        self.assertEqual(ret, p._node_distances['list'])
-        ret = p.calc_self_node_distances(self.venv, list_or_dict="dict")
-        self.assertEqual(type(ret), dict)
-        self.assertEqual(ret, p._node_distances['dict'])
-
-
 class TestPackageAncestorTrace(TestPackageClass):
     """test ancestor_trace"""
 
@@ -501,99 +478,6 @@ class TestPackageResolvePackageList(TestPackageClass):
                    mock_open(read_data=data), create=True):
             self.assertEqual(
                 Package.resolve_package_list(self.venv, kwargs), [])
-
-
-# todo (aj) this class might be YAGNI-cleansed; test more if not.
-class TestPackageCalcNodeDistances(TestPackageClass):
-    """
-    test static method calc_node_distances
-
-    def calc_node_distances(
-            package, nodes, edges, include_root=False,
-            keep_untouched_nodes=False, list_or_dict="list"):
-
-    FROM CLASS:
-    --------------------------------------------------------------------------
-        Calculates the distance to a node on an acyclic directed graph.
-
-        package: package to calculate distances from
-        nodes: list of nodes
-        edges: list of edges (node links)
-        include_root=False: whether to include the environment root
-        keep_untouched_nodes=False: whether to return untouched nodes
-        list_or_dict="dict": return type
-        : list | dict
-        return: list or dict of nodes and distance
-
-        NB: package name will be a string of just the name, we are
-        ignoring version and assuming package name is unique!
-
-        NB: 'root' connects everything, so can skip that node optionally
-
-        Other details:
-            Selected package root node (not env 'root') has distance of zero
-            Everything begins at -999
-    --------------------------------------------------------------------------
-
-
-    """
-    def test_sanity(self):
-        """
-        Check runs and returns for all packages
-        """
-        # from random import randrange
-        # N = 10
-        # for n in range(N):
-        #     package = self.nodes[randrange(0, len(self.nodes))][0]
-        #     ret = Package.calc_node_distances(
-        #       package, self.nodes, self.edges)
-        #     self.assertGreaterEqual(len(ret), 1, package)
-        # Or comprehensive:
-        for p in self.nodes:
-            ret = Package.calc_node_distances(
-                p[0].lower(), self.nodes, self.edges)
-            self.assertGreaterEqual(len(ret), 1, p)
-
-    def test_correct_return_types(self):
-        """Check dict and list return"""
-        package = "Django"
-        ret = Package.calc_node_distances(package, self.nodes, self.edges)
-        self.assertEqual(type(ret), list)
-        ret = Package.calc_node_distances(package, self.nodes, self.edges,
-                                          list_or_dict="list")
-        self.assertEqual(type(ret), list)
-        ret = Package.calc_node_distances(package, self.nodes, self.edges,
-                                          list_or_dict="dict")
-        self.assertEqual(type(ret), dict)
-
-    def test_bad_package(self):
-        """Returns None on bad package"""
-        package = "NONSENSE"
-        ret = Package.calc_node_distances(package, self.nodes, self.edges,
-                                          list_or_dict="list")
-        self.assertEqual(ret, [])
-        ret = Package.calc_node_distances(package, self.nodes, self.edges,
-                                          list_or_dict="dict")
-        self.assertEqual(ret, {})
-
-    def test_root_as_package(self):
-        """'root' isn't really a package so should return empty container"""
-        package = "root"
-        ret = Package.calc_node_distances(package, self.nodes, self.edges,
-                                          list_or_dict="list")
-        self.assertEqual(ret, [])
-        ret = Package.calc_node_distances(package, self.nodes, self.edges,
-                                          list_or_dict="dict")
-        self.assertEqual(ret, {})
-
-    def test_bad_edges_or_nodes_raises_error(self):
-        """raise error with bad edge/node input"""
-        package = "Django"
-        args = (package, self.nodes, 23)  # bad edges
-        self.assertRaises(InvalidEdges, Package.calc_node_distances, *args)
-
-        args = (package, 4, self.edges)  # bad edges
-        self.assertRaises(InvalidNodes, Package.calc_node_distances, *args)
 
 
 class TestPackageGetDirectLinksToAnyPackage(TestPackageClass):

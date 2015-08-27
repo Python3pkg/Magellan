@@ -6,9 +6,6 @@ Collection of methods concerning analysis of virtual environment.
 import logging
 import os
 import pickle
-import re
-import shlex
-import subprocess
 import sys
 from pkg_resources import resource_filename as pkg_res_resource_filename
 
@@ -32,12 +29,6 @@ class Environment(object):
         self.package_requirements = {}
         self.all_packages = {}
         self.extant_env_files = []
-
-        # Pipdeptree:
-        self.pdp_meta = {'generated': False, 'parsed': False,
-                         'pdp_tree_file': '', 'pdp_err_file': '', }
-        self.pdp_tree = {}
-        self.pdp_errs = {}
 
         # Connectedness:
         self.connectedness = {}
@@ -93,16 +84,6 @@ class Environment(object):
         :return : Bool if env exists or not."""
         vex_list = run_in_subp_ret_stdout('vex --list')[0].split("\n")
         return venv_name in vex_list
-
-    @staticmethod
-    def vex_install_requirements(env_name, req_file, pip_options):
-        """ Installs requirements into virtual env
-        :param req_file: Requirements to install
-        :param pip_options:
-        """
-        cmd_to_run = ('vex {0} pip install -r {1} {2}'
-                      .format(env_name, req_file, pip_options))
-        run_in_subprocess(cmd_to_run)
 
     @staticmethod
     def vex_install_requirement(env_name, requirement, pip_options):
@@ -243,70 +224,6 @@ class Environment(object):
                 print(p.name)  # just show nodes
         sys.exit(0)
 
-    def gen_pipdeptree_reports(self,):
-        """
-        Runs pipdeptree and outputs analysis to disk.
-
-        These are package agnostic, but need to be done if parsing for specific
-        packages.
-        """
-        file_template = '{0}PDP_Output_{1}.txt'
-        pdp_tree_file = file_template.format(self.name + self.name_bit, "Tree")
-        pdp_err_file = file_template.format(self.name + self.name_bit, "Errs")
-
-        self.pdp_meta['pdp_tree_file'] = pdp_tree_file
-        self.pdp_meta['pdp_err_file'] = pdp_err_file
-
-        maglog.info("Generating pipdeptree report")
-
-        self._gen_pipdeptree_reports(
-            out_file=pdp_tree_file, err_file=pdp_err_file)
-
-        self.pdp_meta['generated'] = True
-
-    def _gen_pipdeptree_reports(self, out_file, err_file):
-        """ Helper function to do work for gen_pipdeptree_reports."""
-
-        if not self.bin:
-            cmd_args = shlex.split('pipdeptree')
-        else:
-            cmd_args = shlex.split('vex {0} pipdeptree'.format(self.name))
-        try:
-            with open(err_file, 'w') as efile, open(out_file, 'w') as ofile:
-                _ = subprocess.call(cmd_args, stderr=efile, stdout=ofile)
-        except Exception as e:
-            maglog.exception("LAPU LAPU! Error {0} in analysis.py, "
-                             "gen_pipdeptree_reports when attempting to run: "
-                             "{1}".format(e, cmd_args))
-            sys.exit()
-
-    def parse_pipdeptree_reports(self):
-        """Takes output from pipdeptree and returns dictionaries."""
-        with open(self.pdp_meta['pdp_tree_file'], 'r') as f:
-            self.pdp_tree = _parse_pipdeptree_output_file(f)
-        with open(self.pdp_meta['pdp_err_file'], 'r') as f:
-            self.pdp_errs = _parse_pipdeptree_error_file(f)
-        self.pdp_meta['parsed'] = True
-
-    def rm_pipdeptree_report_files(self):
-        """
-        Removes the pdp_meta['pdp_tree_file'] and pdp_meta['pdp_err_file']
-        files.
-        """
-        files_to_remove = [
-            self.pdp_meta['pdp_err_file'],
-            self.pdp_meta['pdp_tree_file'],
-        ]
-
-        for f in files_to_remove:
-            if os.path.exists(f):
-                run_in_subprocess("rm {}".format(f))
-
-    def write_dot_graph_to_disk(self):
-        """Writes dependency graph of environment to disk as dot file."""
-        dep_graph_name = "{}DependencyGraph.gv".format(self.name)
-        _write_dot_graph_to_disk(self.nodes, self.edges, dep_graph_name)
-
     def package_in_env(self, package):
         """Interrogates current environment for existence of package.
 
@@ -323,133 +240,3 @@ class Environment(object):
                 self.package_requirements[p_key]['version'], )
         else:
             return False, (None, None)
-
-    # todo (aj) refactor out repetition on connected nodes
-    def connected_nodes(self, include_root=False):
-        """
-        Returns dictionary of how many nodes all nodes are connected to.
-
-        If including root then everything is connected to everything.
-        Root is env root.
-
-        :return: dictionary of how many nodes any other is connected to.
-        """
-        if 'conn_nodes' not in self.connectedness:
-            self._calc_connected_nodes(include_root)
-        return self.connectedness['conn_nodes']
-
-    def _calc_connected_nodes(self, include_root=False):
-        """
-        sets dictionary of how many nodes all nodes are connected to.
-
-        If including root then everything is connected to everything.
-        Root is env root.
-
-        :return: dictionary of how many nodes any other is connected to.
-        """
-        conn_nodes = {}
-        for n in self.nodes:
-            n_key = n[0].lower()
-            dist_dict = Package.calc_node_distances(
-                n_key, self.nodes, self.edges, include_root,
-                list_or_dict='dict')
-            conn_nodes[n] = len(dist_dict)
-
-        self.connectedness['conn_nodes'] = conn_nodes
-
-
-def _parse_pipdeptree_output_file(f):
-    """
-    Takes a file object as input and parses that into a tree.
-
-    Returns a graph as a dictionary
-    """
-
-    output = {'nodes': [], 'dependencies': {}}
-
-    for line in f:
-        level = len(re.search('(\s)+', line).group()) / 2
-        if level < 1:
-            # package_name = re.search('^[(A-Za-z)+\-*]+', line).group()
-            package_name = re.search('.*==', line).group()[0:-2]
-#            package_version = re.search('==[\d*\.*]*', line).group()[2:]
-            package_version = re.search('==.*', line).group()[2:]
-            # Add node if not extant:
-            pv = (package_name, package_version)
-            if pv not in output['nodes']:
-                output['nodes'].append(pv)
-            # update last package-version tuple if next line is dependency
-            last_pv = pv
-        else:  # process dependencies
-            if last_pv not in output['dependencies']:
-                output['dependencies'][last_pv] = []
-            output['dependencies'][last_pv].append(line)
-
-    return output
-
-
-def _parse_pipdeptree_error_file(f):
-    """Takes the output from pipdeptree stderr and parses into dictionary"""
-
-    output = {}
-    curr_node = ''
-
-    f.readline()  # eat the head
-    for line in f:
-        if "-----" in line:  # eat the tail
-            continue
-
-        if "*" in line:  # new node
-            curr_node = re.search('(->\s*).*\[', line).group()[3:-2]
-            ancestor = re.search('.*->', line).group()[2:-3]
-            output[curr_node] = {}
-        else:
-            ancestor = re.search('.*->', line)
-            if ancestor is not None:
-                ancestor = ancestor.group()[:-3]
-
-        anc_name = re.search('.*==', ancestor).group()[0:-2]
-        anc_ver = re.search('==.*', ancestor).group()[2:]
-
-        tmp = re.search('\[.*\]', line).group()
-        output[curr_node][(anc_name, anc_ver)] = tmp
-
-    return output
-
-
-def _write_dot_graph_to_disk(nodes, edges, filename):
-    """
-    Write dot graph to disk.
-    :param nodes: list of nodes to write (package, version) tuple
-    :param edges: list of connected nodes and optionally specs
-    :param filename: string of output filename
-    """
-
-    node_template = 'n{}'
-    node_index = {(nodes[x][0].lower(), nodes[x][1]): node_template.format(x+1)
-                  for x in range(len(nodes))}
-    node_index[('root', '0.0.0')] = node_template.format(0)
-
-    # Fill in nodes
-    node_template = '    {0} [label="{1}"];\n'
-
-    with open(filename, 'wb') as f:
-
-        f.write('digraph magout {\n')
-
-        # Nodes
-        f.write(node_template.format("n0", "root"))
-        for n in node_index:
-            f.write(node_template.format(node_index[n], n))
-
-        # Fill in edge
-        for e in edges:
-            from_e = (e[0][0].lower(), e[0][1])
-            to_e = (e[1][0].lower(), e[1][1])
-            try:
-                f.write("    {0} -> {1};\n"
-                        .format(node_index[from_e], node_index[to_e]))
-            except KeyError:
-                pass  # don't write node if key error.
-
-        f.write('}')

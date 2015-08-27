@@ -4,6 +4,8 @@
 """
 Package contains numerous analysis routines and links to third party libraries
 in order to analyse and explore packages for Magellan.
+
+NB: This module is likely to be removed from Magellan in the near future.
 """
 
 
