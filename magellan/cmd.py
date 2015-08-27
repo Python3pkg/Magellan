@@ -59,7 +59,7 @@ def _go(venv_name, **kwargs):
         elif requirements_file:
             print("Analysing requirements file for outdated packages.")
             Requirements.check_outdated_requirements_file(
-                requirements_file, print_col)
+                requirements_file, pretty=print_col)
         else:  # if nothing passed in then check local env.
             Package.check_outdated_packages(venv.all_packages, print_col)
 
@@ -90,11 +90,9 @@ def _go(venv_name, **kwargs):
             print("Please specify a requirements file with -r <file>")
         else:
             same, verdiff, req_only, env_only = \
-                Requirements.compare_req_file_to_env(
-                    requirements_file, venv, print_col)
+                Requirements.compare_req_file_to_env(requirements_file, venv)
             Requirements.print_req_env_comp_lists(
                 same, verdiff, req_only, env_only, print_col)
-
 
     # Analysis
     if package_list:
@@ -161,6 +159,13 @@ def cmds():
     parser.add_argument('packages', nargs='*', type=str,
                         help="Packages to explore.")
 
+    parser.add_argument(
+        '-f', '--package-file', type=str, metavar="<package_file>",
+        help="File with list of packages")
+    parser.add_argument(
+        '-r', '--requirements-file', type=str, metavar="<requirements_file>",
+        help="requirements file (e.g. requirements.txt) to check.")
+
     # Optional Arguments
     parser.add_argument(
         '-n', '--venv-name', default=None, metavar="<venv_name>",
@@ -191,16 +196,9 @@ def cmds():
               "Usage -P <package-name> <version>."))
 
     parser.add_argument(
-        '-o', '--outdated', action='store_true', default=False,
+        '-O', '--outdated', action='store_true', default=False,
         help=("Just checks the versions of input packages and exits. "
               "Make sure this is not superseded by '-s'"))
-
-    parser.add_argument(
-        '-f', '--package-file', type=str, metavar="<package_file>",
-        help="File with list of packages")
-    parser.add_argument(
-        '-r', '--requirements-file', type=str, metavar="<requirements_file>",
-        help="requirements file (e.g. requirements.txt) to check.")
 
     parser.add_argument(
         '-R', '--compare-env-to-req-file', action='store_true', default=False,
@@ -257,6 +255,8 @@ def cmds():
         help="Don't delete the nodes, edges, package_requirements env files.")
 
     # todo (aj) remove before release
+    # We're import pip to parse the requirements files; but as pip in a CL tool
+    # this is perhaps not guaranteed to be future proof.
     # pip_options = ("-f http://sw-srv.maplecroft.com/deployment_libs/ "
     #                "--trusted-host sw-srv.maplecroft.com ")
     # parser.add_argument(
