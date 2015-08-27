@@ -15,7 +15,6 @@ this requires a solution.
 
 *NB: Logic of running script subject to change at any point before version 1.0*
 
-
 **Installation:**
 
 python setup.py install
@@ -35,48 +34,46 @@ magellan <options>
 
 *Optional Arguments*
 
-*Fundamental*
-
 ``-h, --help``
     Show this help message and exit
+
+``-f <package_file>, --package-file <package_file>``
+    File with list of packages
+
+``-r <requirements_file>, --install-requirements <requirements_file>``
+                        Requirements file (e.g. requirements.txt) to install.
 
 ``-n <venv_name>, --venv-name <venv_name>``
     Specify name for virtual environment, default isMagEnv0, MagEnv1 etc
 
-``-r <requirements_file>, --install-requirements <requirements_file>``
-    Requirements file (e.g. requirements.txt) to install.
-
 *Functional with output*
-
-``-l <package>, --list-all-versions <package>``
-    List all versions of package on PyPI and exit. NB Can be used multiple times; supersedes -s/-p.
-
-``-P <package> <version>, --package-conflicts <package> <version>``
-    Check whether a package will conflict with the current environment, either through addition or change. NB Can be used multiple times but must always specify desired version.
-
-``-D <package-name> <version>, --get-dependencies <package-name> <version>``
-    Get dependencies of package, version combo, from PyPI. NB Can be used multiple times but must always specify desired version. Usage -D <package-name> <version>.
 
 ``-A <package-name>, --get-ancestors <package-name>``
      Show which packages in environment depend on <package-name>
 
-``-c, --check-versions``
-    Just checks the versions of input packages and exits. Make sure this is not superseded by '-s'
+``-D <package-name> <version>, --get-dependencies <package-name> <version>``
+    Get dependencies of package, version combo, from PyPI. NB Can be used multiple times but must always specify desired version. Usage -D <package-name> <version>.
 
-``-d, --detect-env-conflicts``
+``-C, --detect-env-conflicts``
     Runs through installed packages in specified environment to detect if there are any conflicts between dependencies and versions.
+
+``-P <package> <version>, --package-conflicts <package> <version>``
+    Check whether a package will conflict with the current environment, either through addition or change. NB Can be used multiple times but must always specify desired version.
+
+``-O, --outdated``
+    Checks whether the major/minor versions of a package are outdated.
+
+``-R, --compare-env-to-req-file``
+    Compare a requirements file to an environment.
+
+``-l <package>, --list-all-versions <package>``
+    List all versions of package on PyPI and exit. NB Can be used multiple times; supersedes -s/-p.
 
 ``-s, --show-all-packages``
     Show all packages by name and exit.
 
 ``-p, --show-all-packages-and-versions``
     Show all packages with versions and exit.
-
-``--output-dot-file``
-    Output a .gv file showing connectedness of package.
-
-``--get-ancestor-trace``
-    Output .gv files showing ancestor trace of package and a truncated version.
 
 *Configuration Arguments*
 
@@ -86,23 +83,11 @@ magellan <options>
 ``--super-verbose``
     Super verbose mode
 
-``-o pip_string, --pip-options pip_string``
-    String. Pip options for installation of requirements.txt. E.g. '-f http://my_server.com/deployment_libs/ --trusted-host my_server.com'
-
 ``--path-to-env-bin <path-to-env-bin>``
     Path to virtual env bin
 
-``-f <package_file>, --package-file <package_file>``
-    File with list of packages
-
-``--output-dir <output_dir>``
-    Set output directory for package specific reports, default = 'MagellanReports'
-
 ``--cache-dir <cache-dir>``
     Cache directory - used for pip installs.
-
-``--keep-pipdeptree-output``
-    Don't delete the pipdeptree output reports.
 
 ``--keep-env-files``
     Don't delete the nodes, edges, package_requirements env files.
@@ -112,6 +97,7 @@ magellan <options>
 
 ``--logfile``
     Set this flag to enable output to magellan.log.
+
 ``--colour  |  --color``
     Prints output to console with pretty colours.
 
@@ -120,16 +106,16 @@ magellan <options>
 
 - ``magellan  |  magellan -h``
         Prints out help file.
-- ``magellan -r requirements.txt -n MyEnv``
-        Sets up virtual environment "MyEnv", installs the requirements file using pip and runs generic analysis.
-- ``magellan <packages> -c  |  magellan -c  |  magellan -c -f myPackageFile.txt``
+- ``magellan -R -r requirements.txt -n MyEnv``
+        Compares requirements file to environment for differences.
+- ``magellan <packages> -O  |  magellan -O  |  magellan -O -f myPackageFile.txt  |  magellan -O -r requirements.txt``
         Checks packages to see if they are outdated on major/minor versions. If no packages or files are specified it checks all within the environment.
-- ``magellan -n MyEnv -f myPackageFile.txt -c``
+- ``magellan -n MyEnv -f myPackageFile.txt -O``
         Only check versions of everything in myPackageFile.txt that is in MyEnv.
 - ``magellan -n MyEnv -P PackageToCheck Version``
         Highlight conflicts with current environment when upgrading or adding a new package.
         Note this argument can be called multiple times, e.g., "magellan -n MyEnv -P Django 1.8.1 -P pbr 1.0.1"
-- ``magellan -n MyEnv -d``
+- ``magellan -n MyEnv -C``
         Detect conflicts in environment "MyEnv"
 - ``magellan Package1 Package2 -n MyEnv -v``
         Searches MyEnv for the packages "Package1" and "Package2" in verbose mode. Will produce a report for MyEnv as well as reports for the specified package.
@@ -140,7 +126,7 @@ magellan <options>
         Analyse packages in myPackageFile.txt, using "super verbose" (i.e. debug) mode.
 - ``magellan -l <package>``
         List all versions of <package> available on PyPI.
-- ``magellan -s | magellan -p``
+- ``magellan -s / magellan -p``
         Shows all packages in current environment (-p with versions). Performs no further analysis.
 - ``magellan -s -n MyEnv``
         Shows all packages in MyEnv environment.

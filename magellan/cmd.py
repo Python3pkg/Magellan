@@ -60,8 +60,8 @@ def cmds():
 
     parser.add_argument(
         '-O', '--outdated', action='store_true', default=False,
-        help=("Just checks the versions of input packages and exits. "
-              "Make sure this is not superseded by '-s'"))
+        help=("Checks whether the major/minor versions of a package "
+              "are outdated."))
 
     parser.add_argument(
         '-R', '--compare-env-to-req-file', action='store_true', default=False,
