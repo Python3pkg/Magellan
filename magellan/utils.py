@@ -2,7 +2,7 @@ import os
 import errno
 import subprocess
 import shlex
-
+from pkg_resources import resource_filename as pkg_res_resource_filename
 
 class MagellanConfig(object):
     """Holds magellan config info"""
@@ -10,6 +10,9 @@ class MagellanConfig(object):
     caching = True
     cache_dir = os.path.join(tmp_dir, 'cache')
     tmp_env_dir = "MagellanTmp"
+    vexrc = pkg_res_resource_filename('magellan', 'tmpVexRC')
+    vex_options = '--config {}'.format(vexrc)
+
 
     @staticmethod
     def setup_cache():
