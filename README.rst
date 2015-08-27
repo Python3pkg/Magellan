@@ -108,10 +108,10 @@ magellan <options>
         Prints out help file.
 - ``magellan -R -r requirements.txt -n MyEnv``
         Compares requirements file to environment for differences.
-- ``magellan <packages> -O  |  magellan -O  |  magellan -O -f myPackageFile.txt  |  magellan -O -r requirements.txt``
+- ``magellan <packages> -O  |  magellan -O  |  magellan -O -f myPackageFile.txt``
         Checks packages to see if they are outdated on major/minor versions. If no packages or files are specified it checks all within the environment.
-- ``magellan -n MyEnv -f myPackageFile.txt -O``
-        Only check versions of everything in myPackageFile.txt that is in MyEnv.
+- ``magellan -r requirements.txt -O``
+        Checks outdated major/minor versions in requirements file.
 - ``magellan -n MyEnv -P PackageToCheck Version``
         Highlight conflicts with current environment when upgrading or adding a new package.
         Note this argument can be called multiple times, e.g., "magellan -n MyEnv -P Django 1.8.1 -P pbr 1.0.1"
