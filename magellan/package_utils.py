@@ -115,8 +115,7 @@ class Package(object):
         :return: dict indicating ancestor trace of package
         """
 
-        # todo (aj) this doesn't do much at present:
-        include_root=True
+        include_root = True
 
         if self._ancestor_trace and not do_full_calc:
             return self._ancestor_trace
@@ -446,7 +445,6 @@ class Package(object):
             maglog.info("{0} version {1} is beyond latest PyPI version {2}"
                         .format(package, version, latest_major_version))
             # If beyond up to date then latest version is not the PyPI ver.
-            latest_major_version = version
             return_info['code'] = 999
             return_info['major_version'] = {
                 "outdated": False, "latest": latest_major_version}
@@ -504,10 +502,18 @@ class Requirements(object):
 
     @staticmethod
     def parse_req_file(req_file=None):
-        if req_file:
-            with open(req_file, 'rb') as req_file:
-                return pkg_resources.parse_requirements(req_file.read())
+        """
+        We're import pip to parse the requirements files; but as pip in a
+        CL tool this is perhaps not guaranteed to be future proof.
 
+        :param req_file:
+        :return: generator object of parsed requiremnets.
+        """
+        if req_file:
+            from pip.req import parse_requirements
+            from pip.download import PipSession
+            return parse_requirements(req_file, session=PipSession())
+        return []
 
     @staticmethod
     def check_outdated_requirements_file(req_file=None, pretty=None):
@@ -520,15 +526,16 @@ class Requirements(object):
         if not parsed_req:
             return None
 
+        no_version_info = []
         for p in parsed_req:
-            package = p.key
+            package = p.req.key
 
             try:
-                version = p.specs[-1][-1]
+                version = p.req.specs[-1][-1]
             except IndexError as e:
                 maglog.debug("No version info for {} in requirements file."
                              .format(package))
-                version = None
+                no_version_info.append(package)
                 continue
 
             ver_info = Package.check_latest_major_minor_versions(
@@ -536,8 +543,14 @@ class Requirements(object):
             Package.detail_version_info(
                 ver_info, package, version, pretty)
 
+        if no_version_info:
+            header = ('No version info in file "{}" for the '
+                     'following packages'.format(req_file))
+            Requirements._print_req_env_comp_list(
+                header, no_version_info, pretty=pretty)
+
     @staticmethod
-    def compare_req_file_to_env(req_file, venv, pretty=None):
+    def compare_req_file_to_env(req_file, venv):
         """
         Compares a requirement file to the environment.
 
@@ -562,27 +575,28 @@ class Requirements(object):
         if not parsed_req:
             return None
 
-        all_reqs = {x.key: {'project_name': x.project_name, 'specs': x.specs}
+        all_reqs = {x.req.key: {'project_name': x.req.project_name,
+                                'specs': x.req.specs}
                     for x in parsed_req}
 
         req_only = [x for x in all_reqs if x not in venv.all_packages]
         env_only = [x for x in venv.all_packages if x not in all_reqs]
 
         # Version comparison:
+        REQ_NO_VERSION = '-1'  # value for when no requirements
         verdiff = []
         same = []
         ver_check = [x for x in all_reqs if x not in req_only]
-        req_no_version = '-1'  # value for when no requirements
         for package in ver_check:
             env_ver = venv.all_packages[package].version
 
             specs = all_reqs[package].get('specs')
             if not specs:
-                req_ver = req_no_version
+                req_ver = REQ_NO_VERSION
             else:
                 req_ver = [x[1] for x in specs if x[0] == '=='][0]
                 if not req_ver:
-                    req_ver = req_no_version
+                    req_ver = REQ_NO_VERSION
 
             if req_ver == env_ver:
                 same.append((package, env_ver))
@@ -605,7 +619,7 @@ class Requirements(object):
         Requirements._print_req_env_comp_list(header, same, pretty=pretty)
 
         header = ("Versions differ (package, req_version, env_version):"
-                  "(NB: '-1' indicates no version information or version "
+                  "\n(NB: '-1' indicates no version information or version "
                   "not '==' specific)")
         Requirements._print_req_env_comp_list(header, verdiff, pretty=pretty)
 

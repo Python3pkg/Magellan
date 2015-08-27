@@ -176,13 +176,18 @@ class TestPackageCheckVersion(TestPackageClass):
 
         self.curp = 'foo'  # test package
         self.curv = '1.9.9'  # test version
+
+        the checking will return the versions in version_list
+
+        so 1.9.9 > 1.8.1 but that is the latest on PyPI.
+
         """
         version_list = ['1.8.1']
         info = self.run_as_pypi_patched(version_list)
         self.assertEqual(info['minor_version']['outdated'], False)
-        self.assertEqual(info['minor_version']['latest'], '1.9.9')
+        self.assertEqual(info['minor_version']['latest'], '1.8.1')
         self.assertEqual(info['major_version']['outdated'], False)
-        self.assertEqual(info['major_version']['latest'], '1.9.9')
+        self.assertEqual(info['major_version']['latest'], '1.8.1')
 
 
 class TestPackageDescendantsAncestors(TestPackageClass):
