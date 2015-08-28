@@ -10,7 +10,7 @@ class MagellanConfig(object):
     caching = True
     cache_dir = os.path.join(tmp_dir, 'cache')
     tmp_env_dir = "MagellanTmp"
-    vexrc = pkg_res_resource_filename('magellan', 'tmpVexRC')
+    vexrc = pkg_res_resource_filename('magellan', 'data/tmpVexRC')
     vex_options = '--config {}'.format(vexrc)
 
 

@@ -1,3 +1,4 @@
+setuptools>=17.1
 yarg
 virtualenv
 vex
