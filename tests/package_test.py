@@ -517,7 +517,7 @@ class TestPackageGetDirectLinksToAnyPackage(TestPackageClass):
         self.assertEqual(dec, [])
 
     def test_raise_invalid_edges_with_invalid_edges(self):
-        """Raises InvalidEdges Exception is given bad data"""
+        """Raises InvalidEdges Exception if given bad data"""
         args = ('celery', 1)
         self.assertRaises(InvalidEdges,
                           Package.get_direct_links_to_any_package, *args)

@@ -1,6 +1,14 @@
 from setuptools import setup
+import os
 
+
+# req_file = os.path.join(
+#     os.path.split(os.path.abspath(__file__))[0], 'requirements.txt')
+# install_requires = open(req_file).read().split()
+print("*="*100)
+print(__file__)
 install_requires = open('requirements.txt').read().split()
+
 test_requires = ['mock',]  # for Python2.*
 
 classifiers = ['Development Status :: 2 - Pre-Alpha',
