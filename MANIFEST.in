@@ -1,0 +1,2 @@
+global-include requirements.txt
+global-exclude *.pyc
