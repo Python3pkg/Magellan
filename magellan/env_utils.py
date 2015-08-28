@@ -194,11 +194,11 @@ class Environment(object):
                      .format(e))
 
         # Load in nodes and edges pickles
-        self.nodes = pickle.load(open('nodes.p', 'rb'))
-        self.edges = pickle.load(open('edges.p', 'rb'))
+        self.nodes = pickle.load(open('nodes.p', 'r'))
+        self.edges = pickle.load(open('edges.p', 'r'))
 
         self.package_requirements = pickle.load(
-            open('package_requirements.p', 'rb'))
+            open('package_requirements.p', 'r'))
         self.add_file_to_extant_env_files('package_requirements.p')
 
     def add_file_to_extant_env_files(self, file_to_add):

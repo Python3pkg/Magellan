@@ -159,7 +159,7 @@ class Package(object):
         f_pkgs = []
         if p_file:
             try:
-                with open(p_file, 'rb') as pf:
+                with open(p_file, 'r') as pf:
                     f_pkgs = [x for x in re.split(',|\s|\n', pf.read())
                               if x != '']
             except IOError as e:

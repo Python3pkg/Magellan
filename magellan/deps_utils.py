@@ -180,7 +180,7 @@ class DepTools(object):
         if os.path.exists(cached_file):
             maglog.info("Using previously cached result at {0}"
                         .format(cached_file))
-            return json.load(open(cached_file, 'rb'))
+            return json.load(open(cached_file, 'r'))
 
         # 1. Set up temporary virtualenv
         tmp_env = Environment(name=MagellanConfig.tmp_env_dir)
@@ -210,7 +210,7 @@ class DepTools(object):
 
         # 5. reads that file from current program
         try:
-            result = json.load(open(cached_file, 'rb'))
+            result = json.load(open(cached_file, 'r'))
         except IOError:
             result = {}
 

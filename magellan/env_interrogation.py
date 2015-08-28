@@ -30,8 +30,8 @@ for p in pkgs:
             edges.append([p_tup, r_tup, r.specs])
 
 # Record nodes and edges to disk to be read in  by main program if needed.
-pickle.dump(nodes, open('nodes.p', 'wb'), protocol=2)
-pickle.dump(edges, open('edges.p', 'wb'), protocol=2)
+pickle.dump(nodes, open('nodes.p', 'w'), protocol=2)
+pickle.dump(edges, open('edges.p', 'w'), protocol=2)
 
 # Was having issues with pickle so writing custom dict.
 pkgs_out = {}
@@ -45,4 +45,4 @@ for p in pkgs:
         pkgs_out[p.key]['requires'][r.key]['project_name'] = r.project_name
         pkgs_out[p.key]['requires'][r.key]['specs'] = r.specs
 
-pickle.dump(pkgs_out, open('package_requirements.p', 'wb'), protocol=2)
+pickle.dump(pkgs_out, open('package_requirements.p', 'w'), protocol=2)

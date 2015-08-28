@@ -36,4 +36,4 @@ for r in p.requires():
 fn = "{0}_{1}_req.json".format(p.key, p.version.replace(".", "_"))
 fn = os.path.join(cache_dir, fn)
 
-json.dump(req_dic, open(fn, 'wb'))
+json.dump(req_dic, open(fn, 'w'))
