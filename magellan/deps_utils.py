@@ -905,7 +905,7 @@ class PyPIHelper(object):
 
         if os.path.exists(f):
             maglog.info("retrieving file {0} from local cache".format(f))
-            with open(f, 'rb') as ff:
+            with open(f, 'r') as ff:
                 return json.load(ff)
 
         pypi_template = 'https://pypi.python.org/pypi/{0}/json'
@@ -937,8 +937,9 @@ class PyPIHelper(object):
         :rtype: list
         :return: list of all package versions
         """
+
         all_package_info = PyPIHelper.acquire_package_json_info(package)
         out = []
         if 'releases' in all_package_info:
-            out = all_package_info['releases'].keys()
+            out = list(all_package_info['releases'].keys())
         return out

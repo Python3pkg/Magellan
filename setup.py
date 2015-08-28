@@ -9,7 +9,7 @@ print("*="*100)
 print(__file__)
 install_requires = open('requirements.txt').read().split()
 
-test_requires = ['mock',]  # for Python2.*
+test_requires = ['mock', 'tox']
 
 classifiers = ['Development Status :: 2 - Pre-Alpha',
                'Intended Audience :: Developers',

@@ -185,7 +185,8 @@ class Package(object):
         :param edges: connections in the graph
         :return: ancestors and descendants.
         """
-        if not hasattr(edges, "__iter__") or not edges:
+        if not hasattr(edges, "__iter__") \
+                or not edges or type(edges) is not list:
             raise InvalidEdges
 
         ancestors = [x for x in edges if package.lower() == x[1][0].lower()]
@@ -199,7 +200,7 @@ class Package(object):
 
         return list: version info
         """
-        from distutils.version import LooseVersion
+        from natsort import natsorted
         import yarg
 
         try:
@@ -211,7 +212,7 @@ class Package(object):
             # log e
             return None
 
-        rels.sort(key=LooseVersion)
+        rels = natsorted(rels)
         if not rels:
             maglog.info('No version info available for "{}" '
                         'at CheeseShop (PyPI)'.format(package))

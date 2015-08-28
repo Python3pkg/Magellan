@@ -5,3 +5,4 @@ vex
 argparse
 terminaltables
 colorclass
+natsort>=4.0.0

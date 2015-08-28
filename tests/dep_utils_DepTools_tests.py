@@ -63,7 +63,7 @@ class TestDependencySet(TestPackageClass):
         self.package = "fabtools"
         self.version = "0.19.0"
         self.fab_reqs = json.load(
-            open("tests/deputils_data/fabtools_0_19_0_req.json", 'rb'))
+            open("tests/deputils_data/fabtools_0_19_0_req.json", 'r'))
 
         self.ancestors, self.descendants = \
             Package.get_direct_links_to_any_package(
@@ -301,7 +301,7 @@ class TestRequiredVersions(TestPackageClass):
         self.package = "fabtools"
         self.version = "0.19.0"
         self.fab_reqs = json.load(
-            open("tests/deputils_data/fabtools_0_19_0_req.json", 'rb'))
+            open("tests/deputils_data/fabtools_0_19_0_req.json", 'r'))
 
         self.ancestors, self.descendants = \
             Package.get_direct_links_to_any_package(
