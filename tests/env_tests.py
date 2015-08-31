@@ -37,5 +37,18 @@ class TestPackageClass(unittest.TestCase):
         pass
 
 
+class TestVexCheckEnvExists(unittest.TestCase):
+    """
+    Should invoke vex to check found environments.
+    Buffer API and string issues crop up in py34
+    """
+
+    def test_sanity(self):
+        """should run"""
+
+        bool_back = Environment.vex_check_venv_exists('TestName')
+        self.assertIn(bool_back, [True, False])
+
+
 if __name__ == '__main__':
     unittest.main()

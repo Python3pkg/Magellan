@@ -84,10 +84,11 @@ class Environment(object):
     def vex_check_venv_exists(venv_name, vex_options=None):
         """ Checks whether a virtual env exists using vex.
         :return : Bool if env exists or not."""
+
         if vex_options is None:
             vex_options = ''
         vex_list = run_in_subp_ret_stdout('vex {} --list'.format(vex_options))
-        return venv_name in vex_list[0].split("\n")
+        return venv_name in vex_list[0].decode('utf-8').split("\n")
 
     @staticmethod
     def vex_install_requirement(install_location, requirement, pip_options,
