@@ -4,8 +4,8 @@ Collection of methods concerning analysis of virtual environment.
 """
 
 import logging
+import json
 import os
-import pickle
 import sys
 from pkg_resources import resource_filename as pkg_res_resource_filename
 
@@ -178,8 +178,8 @@ class Environment(object):
             'magellan', 'env_interrogation.py')
 
         # execute
-        self.add_file_to_extant_env_files('nodes.p')
-        self.add_file_to_extant_env_files('edges.p')
+        self.add_file_to_extant_env_files('nodes.json')
+        self.add_file_to_extant_env_files('edges.json')
         try:
             if self.name == "":
                 run_in_subprocess("python {}".format(interrogation_file))
@@ -194,12 +194,12 @@ class Environment(object):
                      .format(e))
 
         # Load in nodes and edges pickles
-        self.nodes = pickle.load(open('nodes.p', 'r'))
-        self.edges = pickle.load(open('edges.p', 'r'))
+        self.nodes = json.load(open('nodes.json', 'r'))
+        self.edges = json.load(open('edges.json', 'r'))
 
-        self.package_requirements = pickle.load(
-            open('package_requirements.p', 'r'))
-        self.add_file_to_extant_env_files('package_requirements.p')
+        self.package_requirements = json.load(
+            open('package_requirements.json', 'r'))
+        self.add_file_to_extant_env_files('package_requirements.json')
 
     def add_file_to_extant_env_files(self, file_to_add):
         """

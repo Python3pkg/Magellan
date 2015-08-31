@@ -12,7 +12,7 @@ from magellan.utils import MagellanConfig
 maglog = logging.getLogger('magellan_logger')
 
 def cmds():
-    """Command line entry point for magellan."""
+    """Commands for magellan."""
 
     parser = argparse.ArgumentParser(
         prog="Magellan",
