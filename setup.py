@@ -1,13 +1,10 @@
 from setuptools import setup
-import os
 
+from pip.req import parse_requirements
+from pip.download import PipSession
 
-# req_file = os.path.join(
-#     os.path.split(os.path.abspath(__file__))[0], 'requirements.txt')
-# install_requires = open(req_file).read().split()
-print("*="*100)
-print(__file__)
-install_requires = open('requirements.txt').read().split()
+install_requires = [str(p.req) for p in parse_requirements(
+    'requirements.txt', session=PipSession())]
 
 test_requires = ['mock', 'tox']
 
