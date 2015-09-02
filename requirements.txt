@@ -6,4 +6,4 @@ argparse
 terminaltables
 colorclass
 natsort>=4.0.0
-pip
+pip==6.1.1

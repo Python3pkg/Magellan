@@ -7,8 +7,7 @@ from pip.req import parse_requirements
 from pip.download import PipSession
 
 # imports __version__ into setup.py namespace
-with open('magellan/_version.py') as version:
-    exec(version.read())
+execfile('magellan/_version.py')
 
 install_requires = [str(parsed.req) for parsed in parse_requirements(
     'requirements.txt', session=PipSession())]
@@ -43,8 +42,10 @@ setup(
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
         'Natural Language :: English',
+        'L'
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
     ],
     long_description=open('README.rst').read(),
     packages=['magellan'],
@@ -54,4 +55,5 @@ setup(
     tests_require=tests_require,
     cmdclass={'test': Tox},
     entry_points={'console_scripts': ['magellan = magellan.main:main']},
+    keywords='package management conflict detection'
 )

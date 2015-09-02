@@ -1,0 +1,15 @@
+dist/
+.tox/
+blah.py
+docs/
+magellan.egg-info/
+build/
+localcache/
+testcode/
+3rdPartySolns/
+examp/
+dev/
+*.pyc
+*.zip
+*.egg
+.idea*
