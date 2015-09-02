@@ -42,11 +42,12 @@ setup(
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
         'Natural Language :: English',
-        'L'
+        'License :: OSI Approved :: MIT License',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.4',
     ],
+    license='MIT',
     long_description=open('README.rst').read(),
     packages=['magellan'],
     package_dir={'magellan': 'magellan'},
@@ -55,5 +56,6 @@ setup(
     tests_require=tests_require,
     cmdclass={'test': Tox},
     entry_points={'console_scripts': ['magellan = magellan.main:main']},
-    keywords='package management conflict detection'
+    keywords='package management conflict detection',
+    url='https://github.com/Maplecroft/Magellan/',
 )
