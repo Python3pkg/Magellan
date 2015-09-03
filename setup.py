@@ -46,6 +46,8 @@ setup(
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.4',
+        'Topic :: Software Development :: Quality Assurance',
+        'Topic :: Utilities',
     ],
     license='MIT',
     long_description=open('README.rst').read(),
