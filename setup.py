@@ -39,7 +39,7 @@ setup(
     author_email='anthony.de-gol@maplecroft.com',
     version=__version__,
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Natural Language :: English',
         'License :: OSI Approved :: MIT License',

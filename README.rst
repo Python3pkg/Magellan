@@ -13,9 +13,9 @@ depend on the earlier versions. It may be necessary to upgrade due to
 important security updates no longer being maintained on a platform, thus
 this requires a solution.
 
-*NB: Logic of running script subject to change at any point before version 1.0*
-
 **Installation:**
+
+NB: Best to install Magellan into its own dedicated environment so as not to pollute the results you are interrogating.
 
 python setup.py install
 
@@ -117,11 +117,6 @@ magellan <options>
         Note this argument can be called multiple times, e.g., "magellan -n MyEnv -P Django 1.8.1 -P pbr 1.0.1"
 - ``magellan -n MyEnv -C``
         Detect conflicts in environment "MyEnv"
-- ``magellan Package1 Package2 -n MyEnv -v``
-        Searches MyEnv for the packages "Package1" and "Package2" in verbose mode. Will produce a report for MyEnv as well as reports for the specified package.
-- ``magellan Package1 Package2 -n MyEnv --package-file myPackageFile.txt``
-        Same as above but will also take, in addition to Package[s]1/2 a
-        file containing a list of packages (csv, space or newline delimited.)
 - ``magellan -n MyEnv --package-file myPackageFile.txt --super-verbose``
         Analyse packages in myPackageFile.txt, using "super verbose" (i.e. debug) mode.
 - ``magellan -l <package>``
