@@ -6,6 +6,7 @@ from __future__ import print_function
 import argparse
 import logging
 import sys
+import pkg_resources
 
 from magellan.utils import MagellanConfig
 
@@ -112,6 +113,10 @@ def cmds():
     parser.add_argument(
         '--colour', '--color', action='store_true', default=False,
         help="Prints output to console with pretty colours.")
+
+    mag_ver = [x for x in pkg_resources.working_set
+               if x.key == 'magellan'][0].version
+    parser.add_argument('--version', action='version', version=mag_ver)
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
