@@ -68,6 +68,11 @@ def _go(venv_name, **kwargs):
             DepTools.get_ancestors_of_packages(
                 kwargs['get_ancestors'], venv, print_col)
 
+    if kwargs['get_descendants']:  # -Z
+        descendants_dictionary = \
+            DepTools.get_descendants_of_packages(
+                kwargs['get_descendants'], venv, print_col)
+
     if kwargs['package_conflicts']:  # -P
         addition_conflicts, upgrade_conflicts = \
             DepTools.process_package_conflicts(
@@ -85,6 +90,8 @@ def _go(venv_name, **kwargs):
                 Requirements.compare_req_file_to_env(requirements_file, venv)
             Requirements.print_req_env_comp_lists(
                 same, verdiff, req_only, env_only, print_col)
+
+
 
 
 def main():

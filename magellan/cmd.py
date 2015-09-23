@@ -41,6 +41,11 @@ def cmds():
         metavar="<package-name>",
         help="Show which packages in environment depend on <package-name>")
     parser.add_argument(
+        '-Z', '--get-descendants', action='append', nargs=1,
+        metavar="<package-name>",
+        help="Show which packages in environment <package-name> depends on; "
+             "can be useful if package not on PyPI.")
+    parser.add_argument(
         '-D', '--get-dependencies', action='append', nargs=2,
         metavar=("<package-name>", "<version>"),
         help=("Get dependencies of package, version combo, from PyPI. "

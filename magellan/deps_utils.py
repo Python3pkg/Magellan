@@ -751,6 +751,54 @@ class DepTools(object):
                     except Exception as e:
                         maglog.exception(e)
 
+    @staticmethod
+    def get_descendants_of_packages(package_list, venv, pretty=False):
+        """
+        Prints a list of descendants of package to indicate what brought a
+        package into the environment.
+
+        :param package_list: list of names of package to query
+        :param venv: magellan.env_utils.Environment
+
+        :rtype dict:
+        :returns: dictionary with list of descendants.
+        """
+
+        dec_dic = {}
+        for p in package_list:
+            p_key = p[0].lower()  # [0] as list of lists from argparse
+            if p_key not in venv.all_packages:
+                dec_dic[p_key] = None
+                maglog.info("{} not found in env".format(p_key))
+                continue
+            decs = venv.all_packages[p_key].descendants(venv.edges)
+            dec_dic[p_key] = [x[1] for x in decs]
+
+        DepTools().pprint_anc_dict(dec_dic, venv, pretty)
+        return dec_dic
+
+    # todo (aj) refactor the anc dic
+    @staticmethod
+    def pprint_anc_dict(descendant_dictionary, venv, pretty=False):
+        """
+        Pretty prints ancestors dictionary to standard out.
+
+        :param descendant_dictionary:
+        :param venv: magellan.env_utils.Environment
+        """
+        env_name = "the current environment" if not venv.name else venv.name
+
+        for pk, p in descendant_dictionary.items():
+            if p:
+                s = "{} depends on these packages in {}:"\
+                    .format(venv.all_packages[pk].name, env_name)
+                print_col(s, pretty=pretty, header=True)
+                for a in p:
+                    try:
+                        print_col("{} {}".format(a[0], a[1]), pretty=pretty)
+                    except Exception as e:
+                        maglog.exception(e)
+
 
 def _table_print_requirements(requirements, pretty=False):
     """
