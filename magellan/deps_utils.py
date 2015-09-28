@@ -774,12 +774,12 @@ class DepTools(object):
             decs = venv.all_packages[p_key].descendants(venv.edges)
             dec_dic[p_key] = [x[1] for x in decs]
 
-        DepTools().pprint_anc_dict(dec_dic, venv, pretty)
+        DepTools().pprint_dec_dict(dec_dic, venv, pretty)
         return dec_dic
 
     # todo (aj) refactor the anc dic
     @staticmethod
-    def pprint_anc_dict(descendant_dictionary, venv, pretty=False):
+    def pprint_dec_dict(descendant_dictionary, venv, pretty=False):
         """
         Pretty prints ancestors dictionary to standard out.
 
