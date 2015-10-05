@@ -51,6 +51,9 @@ magellan <options>
 ``-A <package-name>, --get-ancestors <package-name>``
      Show which packages in environment depend on <package-name>
 
+``-Z <package-name>, --get-descendants <package-name>``
+     Show which packages in environment <package-name> depends on; can be useful if package not on PyP.
+
 ``-D <package-name> <version>, --get-dependencies <package-name> <version>``
     Get dependencies of package, version combo, from PyPI. NB Can be used multiple times but must always specify desired version. Usage -D <package-name> <version>.
 
