@@ -9,9 +9,11 @@ from __future__ import print_function
 import logging
 import re
 
-import pkg_resources
+from natsort import natsorted
+import yarg
 
 from magellan.utils import print_col
+
 # Logging:
 maglog = logging.getLogger("magellan_logger")
 maglog.info("Env imported")
@@ -200,8 +202,6 @@ class Package(object):
 
         return list: version info
         """
-        from natsort import natsorted
-        import yarg
 
         try:
             yp = yarg.get(package)

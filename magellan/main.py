@@ -8,6 +8,8 @@ import os
 import sys
 from pprint import pprint
 
+from natsort import natsorted
+
 from magellan.utils import MagellanConfig
 from magellan.env_utils import Environment
 from magellan.package_utils import Package, Requirements
@@ -29,15 +31,17 @@ def _go(venv_name, **kwargs):
 
     print_col = kwargs.get('colour')  # print in colour
 
-    if kwargs['list_all_versions']:
-        for p in kwargs['list_all_versions']:
-            print(p[0])
-            pprint(sorted(PyPIHelper.all_package_versions_on_pypi(p[0])))
-        sys.exit()
-
     # Environment Setup
     if not os.path.exists(MagellanConfig.cache_dir) and MagellanConfig.caching:
         MagellanConfig.setup_cache()
+
+    if kwargs['list_all_versions']:
+        for p in kwargs['list_all_versions']:
+            print(p[0])
+            all_package_versions = PyPIHelper.all_package_versions_on_pypi(
+                p[0])
+            pprint(natsorted(all_package_versions))
+        sys.exit()
 
     venv = Environment(venv_name)
     venv.magellan_setup_go_env(kwargs)
