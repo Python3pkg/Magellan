@@ -221,7 +221,7 @@ class Package(object):
         return rels
 
     @staticmethod
-    def check_outdated_packages(package_list, pretty=False):
+    def check_outdated_packages(package_list):
         """
         Convenience function to print major/minor versions based on filtered
         input.
@@ -233,40 +233,37 @@ class Package(object):
             version_info = p.check_versions()
             maglog.debug(version_info)
             Package.detail_version_info(
-                version_info, p.name, p.version, pretty)
+                version_info, p.name, p.version)
 
     @staticmethod
-    def detail_version_info(version_info, package, version, pretty=False):
+    def detail_version_info(version_info, package, version):
         """
         Outputs to console the result of
         Package.check_latest_major_minor_versions
         """
-        print_col("Analysing {} {}".format(package, version),
-                  pretty=pretty, header=True)
+        print_col("Analysing {} {}".format(package, version), header=True)
 
         status = version_info.get("code")
 
         if status == -1:  # Error
             print_col("There was an error, see [super] verbose output "
-                      "for details", pretty=pretty)
+                      "for details")
         elif status == 0:  # Up to date
-            print_col("Up to date.", pretty=pretty)
+            print_col("Up to date.")
         elif status == 999:  # beyond
             print_col("{} is BEYOND latest PyPI version {}".format(
-                version,
-                version_info.get("minor_version").get("latest")),
-                pretty=pretty)
+                version, version_info.get("minor_version").get("latest")))
         else:
             maj_out = version_info.get("major_version").get("outdated")
             min_out = version_info.get("minor_version").get("outdated")
             if maj_out:
                 print_col("Major version outdated {} > {}".format(
                     version_info.get("major_version").get("latest"),
-                    version), pretty=pretty)
+                    version))
             if min_out:
                 print_col("Minor version outdated {} > {}".format(
                     version_info.get("minor_version").get("latest"),
-                    version), pretty=pretty)
+                    version))
 
     @staticmethod
     def check_latest_major_minor_versions(package, version=None):
@@ -380,7 +377,7 @@ class Requirements(object):
         return []
 
     @staticmethod
-    def check_outdated_requirements_file(req_file=None, pretty=None):
+    def check_outdated_requirements_file(req_file=None):
         """
         Reads a requirements file and prints whether the major or minor
         versions are outdated.
@@ -405,13 +402,13 @@ class Requirements(object):
             ver_info = Package.check_latest_major_minor_versions(
                 package, version)
             Package.detail_version_info(
-                ver_info, package, version, pretty)
+                ver_info, package, version)
 
         if no_version_info:
             header = ('No version info in file "{}" for the '
                      'following packages'.format(req_file))
             Requirements._print_req_env_comp_list(
-                header, no_version_info, pretty=pretty)
+                header, no_version_info)
 
     @staticmethod
     def compare_req_file_to_env(req_file, venv):
@@ -431,7 +428,6 @@ class Requirements(object):
 
         :param req_file: requirements file.
         :param venv: virtual environment
-        :param pretty: prints in color.
         :return: 4 x lists.
         """
 
@@ -471,26 +467,26 @@ class Requirements(object):
 
     @staticmethod
     def print_req_env_comp_lists(
-            same, verdiff, req_only, env_only, pretty=False):
+            same, verdiff, req_only, env_only):
 
         header = 'Only in requirements file:'
-        Requirements._print_req_env_comp_list(header, req_only, pretty=pretty)
+        Requirements._print_req_env_comp_list(header, req_only)
 
         header = 'Only in environment:'
-        Requirements._print_req_env_comp_list(header, env_only, pretty=pretty)
+        Requirements._print_req_env_comp_list(header, env_only)
 
         header = 'Same in requirements file and environment:'
-        Requirements._print_req_env_comp_list(header, same, pretty=pretty)
+        Requirements._print_req_env_comp_list(header, same,)
 
         header = ("Versions differ (package, req_version, env_version):"
                   "\n(NB: '-1' indicates no version information or version "
                   "not '==' specific)")
-        Requirements._print_req_env_comp_list(header, verdiff, pretty=pretty)
+        Requirements._print_req_env_comp_list(header, verdiff)
 
     @staticmethod
-    def _print_req_env_comp_list(header, in_list, pretty=False):
-        print_col(header, header=True, pretty=pretty)
+    def _print_req_env_comp_list(header, in_list):
+        print_col(header, header=True)
         for line in in_list:
-            print_col(str(line), pretty=pretty)
+            print_col(str(line))
         if not in_list:
-            print_col("None", pretty=pretty)
+            print_col("None")

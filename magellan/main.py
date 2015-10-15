@@ -29,7 +29,7 @@ def _go(venv_name, **kwargs):
     Otherwise perform general analysis on environment.
     """
 
-    print_col = kwargs.get('colour')  # print in colour
+    MagellanConfig.print_in_colour = kwargs.get('colour')  # print in colour
 
     # Environment Setup
     if not os.path.exists(MagellanConfig.cache_dir) and MagellanConfig.caching:
@@ -53,38 +53,38 @@ def _go(venv_name, **kwargs):
 
     if kwargs['outdated']:
         if package_list:
-            Package.check_outdated_packages(packages, print_col)
+            Package.check_outdated_packages(packages)
         elif requirements_file:
             print("Analysing requirements file for outdated packages.")
             Requirements.check_outdated_requirements_file(
-                requirements_file, pretty=print_col)
+                requirements_file)
         else:  # if nothing passed in then check local env.
-            Package.check_outdated_packages(venv.all_packages, print_col)
+            Package.check_outdated_packages(venv.all_packages)
 
         sys.exit()
 
     if kwargs['get_dependencies']:  # -D
         DepTools.acquire_and_display_dependencies(
-            kwargs['get_dependencies'], print_col)
+            kwargs['get_dependencies'])
 
     if kwargs['get_ancestors']:  # -A
         ancestor_dictionary = \
             DepTools.get_ancestors_of_packages(
-                kwargs['get_ancestors'], venv, print_col)
+                kwargs['get_ancestors'], venv)
 
     if kwargs['get_descendants']:  # -Z
         descendants_dictionary = \
             DepTools.get_descendants_of_packages(
-                kwargs['get_descendants'], venv, print_col)
+                kwargs['get_descendants'], venv)
 
     if kwargs['package_conflicts']:  # -P
         addition_conflicts, upgrade_conflicts = \
             DepTools.process_package_conflicts(
-                kwargs['package_conflicts'], venv, print_col)
+                kwargs['package_conflicts'], venv)
 
     if kwargs['detect_env_conflicts']:  # -C
         cur_env_conflicts = DepTools.highlight_conflicts_in_current_env(
-            venv.nodes, venv.package_requirements, print_col)
+            venv.nodes, venv.package_requirements)
 
     if kwargs['compare_env_to_req_file']:  # -R
         if not requirements_file:
@@ -93,7 +93,7 @@ def _go(venv_name, **kwargs):
             same, verdiff, req_only, env_only = \
                 Requirements.compare_req_file_to_env(requirements_file, venv)
             Requirements.print_req_env_comp_lists(
-                same, verdiff, req_only, env_only, print_col)
+                same, verdiff, req_only, env_only)
 
 
 

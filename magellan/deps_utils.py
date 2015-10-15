@@ -264,7 +264,7 @@ class DepTools(object):
         return {'checks': checks, 'conflicts': conflicts}
 
     @staticmethod
-    def detect_upgrade_conflicts(packages, venv, pretty=False):
+    def detect_upgrade_conflicts(packages, venv):
         """
         Detect conflicts between packages in current environment when upgrading
         other packages.
@@ -303,7 +303,7 @@ class DepTools(object):
             if parse_version(cur_ver) == parse_version(version):
                 s = ("{} version {} is same as current!"
                      .format(package, version))
-                print_col(s, 'red', 'black', pretty)
+                print_col(s, 'red', 'black')
 
                 continue
 
@@ -349,7 +349,7 @@ class DepTools(object):
 
     @staticmethod
     def highlight_conflicts_in_current_env(
-            nodes, package_requirements, pretty=False):
+            nodes, package_requirements):
         """
         Checks through all nodes (packages) in the venv environment
 
@@ -395,7 +395,7 @@ class DepTools(object):
                             (n, node_requirements[r]['project_name'],
                              req_details))
 
-        DepTools.table_print_cur_env_conflicts(current_env_conflicts, pretty)
+        DepTools.table_print_cur_env_conflicts(current_env_conflicts)
         return current_env_conflicts
 
     @staticmethod
@@ -509,7 +509,7 @@ class DepTools(object):
             return False, {}
 
     @staticmethod
-    def process_package_conflicts(conflict_list, venv, pretty=False):
+    def process_package_conflicts(conflict_list, venv):
         """
         :param conflict_list: list of (package, version) tuples passed in
         from CLI
@@ -528,10 +528,10 @@ class DepTools(object):
         if upgrade_conflicts:
             maglog.info(upgrade_conflicts)
             upgrade_conflicts, uc_deps = DepTools.detect_upgrade_conflicts(
-                upgrade_conflicts, venv, pretty)
+                upgrade_conflicts, venv)
 
             DepTools.table_print_upgrade_conflicts(
-                upgrade_conflicts, uc_deps, venv, pretty)
+                upgrade_conflicts, uc_deps, venv)
             maglog.info(pformat(upgrade_conflicts))
             maglog.debug(pformat(uc_deps))
 
@@ -541,13 +541,13 @@ class DepTools(object):
                 addition_conflicts, venv)
 
             DepTools.table_print_additional_package_conflicts(
-                addition_conflicts, pretty)
+                addition_conflicts)
             maglog.info(pformat(addition_conflicts))
 
         return addition_conflicts, upgrade_conflicts
 
     @staticmethod
-    def table_print_upgrade_conflicts(conflicts, dep_info, venv, pretty=False):
+    def table_print_upgrade_conflicts(conflicts, dep_info, venv):
         """
         Prints the upgrade conflicts to stdout in format easily digestible
         for people.
@@ -561,7 +561,7 @@ class DepTools(object):
             return
         print("\n")
         s = "Upgrade Conflicts:"
-        print_col(s, pretty=pretty, header=True)
+        print_col(s, header=True)
 
         for p_k, p in conflicts.items():
 
@@ -569,7 +569,7 @@ class DepTools(object):
             if not has_recs:
                 print_col("Requirements not found for {}, possible failure "
                            "when installating package into temporary "
-                           "directory?".format(p_k), pretty=pretty)
+                           "directory?".format(p_k))
                 continue
 
             p_name = dep_info[p_k]['requirements']['project_name']
@@ -583,7 +583,7 @@ class DepTools(object):
 
             s = ("{} {}: {} from {} to {}.".format(
                 p_name, ver, direction, cur_ver, ver))
-            print_col(s, pretty=pretty)
+            print_col(s)
 
             missing_from_env = p['missing_packages']
             new_dependencies = p['dep_set']['new_deps']
@@ -593,45 +593,41 @@ class DepTools(object):
 
             if not (missing_from_env or new_dependencies
                     or removed_dependencies or broken_reqs):
-                print_col("No conflicts detected", pretty=pretty)
+                print_col("No conflicts detected")
 
             _print_if(missing_from_env,
-                      "Packages not in environment (to be installed):",
-                      pretty=pretty)
+                      "Packages not in environment (to be installed):")
             _print_if(new_dependencies,
-                      "New dependencies of {}:".format(p_name), pretty=pretty)
+                      "New dependencies of {}:".format(p_name))
             _print_if(removed_dependencies,
-                      "{} will no longer depend on:".format(p_name),
-                      pretty=pretty)
+                      "{} will no longer depend on:".format(p_name))
             _print_if(broken_reqs,
-                      "These packages will have their requirements broken:{}",
-                      pretty=pretty)
+                      "These packages will have their requirements broken:{}")
 
             print("\n")
 
     @staticmethod
-    def table_print_additional_package_conflicts(conflicts, pretty=False):
+    def table_print_additional_package_conflicts(conflicts):
         """
         Prints the upgrade conflicts to stdout in format easily digestible
         for people.
 
         :param conflicts: dict of upgrade conflicts
         """
-        print_col("Package Addition Conflicts:", pretty=pretty, header=True)
+        print_col("Package Addition Conflicts:", header=True)
 
         for p_k, p in conflicts.items():
             has_recs = p.get('requirements')
             if not has_recs:
                 print_col("Requirements not found for {}, possible failure "
                            "when installating package into temporary "
-                           "directory?".format(p_k), pretty=pretty)
+                           "directory?".format(p_k))
                 continue
 
             p_name = p.get('requirements').get('project_name')
             ver = p.get('requirements').get('version')
 
-            print_col("{0} {1}:".format(p_name, ver),
-                      pretty=pretty, header=True)
+            print_col("{0} {1}:".format(p_name, ver), header=True)
 
             okay = p['may_be_okay']
             up = p['may_try_upgrade']
@@ -640,16 +636,16 @@ class DepTools(object):
             if not (okay or up or new_ps):
                 s = ("  No conflicts detected for the addition of {0} {1}."
                      .format(p_name, ver))
-                print_col(s, pretty=pretty)
+                print_col(s)
 
-            _print_if(okay, "Should be okay:", pretty=pretty)
-            _print_if(up, "May try to upgrade:", pretty=pretty)
-            _print_if(new_ps, "New packages to add:", pretty=pretty)
+            _print_if(okay, "Should be okay:")
+            _print_if(up, "May try to upgrade:")
+            _print_if(new_ps, "New packages to add:")
 
             print("\n")
 
     @staticmethod
-    def table_print_cur_env_conflicts(conflicts, pretty=False):
+    def table_print_cur_env_conflicts(conflicts):
         """
         Print current conflicts in environment using terminaltables.
         """
@@ -657,7 +653,7 @@ class DepTools(object):
         ts = "No conflicts detected in environment"
 
         if conflicts:
-            print_col("Conflicts in environment:", pretty=pretty, header=True)
+            print_col("Conflicts in environment:", header=True)
 
             table_data = [['PACKAGE', 'DEPENDENCY', 'CONFLICT']]
 
@@ -681,10 +677,10 @@ class DepTools(object):
 
             ts = OutputTableType(table_data).table
 
-        print_col(ts, pretty=pretty)
+        print_col(ts)
 
     @staticmethod
-    def acquire_and_display_dependencies(package_version_list, pretty=False):
+    def acquire_and_display_dependencies(package_version_list):
         """
         Gets the dependencies information by installing the package and
         version from PyPI
@@ -695,17 +691,17 @@ class DepTools(object):
 
             if not PyPIHelper.check_package_version_on_pypi(package, version):
                 print_col("{} {} not found on PyPI.".format(package, version),
-                          pretty=pretty, header=True)
+                          header=True)
                 continue
 
             requirements = DepTools.get_deps_for_package_version(
                 package, version, vex_options=MagellanConfig.vex_options)
 
             maglog.debug(pformat(requirements))
-            _table_print_requirements(requirements, pretty)
+            _table_print_requirements(requirements)
 
     @staticmethod
-    def get_ancestors_of_packages(package_list, venv, pretty=False):
+    def get_ancestors_of_packages(package_list, venv):
         """
         Prints a list of ancestors of package to indicate what brought a
         package into the environment.
@@ -727,11 +723,11 @@ class DepTools(object):
             ancs = venv.all_packages[p_key].ancestors(venv.edges)
             anc_dict[p_key] = [x[0] for x in ancs if x[0][0] != "root"]
 
-        DepTools().pprint_anc_dict(anc_dict, venv, pretty)
+        DepTools().pprint_anc_dict(anc_dict, venv)
         return anc_dict
 
     @staticmethod
-    def pprint_anc_dict(ancestor_dictionary, venv, pretty=False):
+    def pprint_anc_dict(ancestor_dictionary, venv):
         """
         Pretty prints ancestors dictionary to standard out.
 
@@ -744,15 +740,15 @@ class DepTools(object):
             if p:
                 s = "These packages depend on {} in {}:"\
                     .format(venv.all_packages[pk].name, env_name)
-                print_col(s, pretty=pretty, header=True)
+                print_col(s, header=True)
                 for a in p:
                     try:
-                        print_col("{} {}".format(a[0], a[1]), pretty=pretty)
+                        print_col("{} {}".format(a[0], a[1]))
                     except Exception as e:
                         maglog.exception(e)
 
     @staticmethod
-    def get_descendants_of_packages(package_list, venv, pretty=False):
+    def get_descendants_of_packages(package_list, venv):
         """
         Prints a list of descendants of package to indicate what brought a
         package into the environment.
@@ -774,12 +770,12 @@ class DepTools(object):
             decs = venv.all_packages[p_key].descendants(venv.edges)
             dec_dic[p_key] = [x[1] for x in decs]
 
-        DepTools().pprint_dec_dict(dec_dic, venv, pretty)
+        DepTools().pprint_dec_dict(dec_dic, venv)
         return dec_dic
 
     # todo (aj) refactor the anc dic
     @staticmethod
-    def pprint_dec_dict(descendant_dictionary, venv, pretty=False):
+    def pprint_dec_dict(descendant_dictionary, venv):
         """
         Pretty prints ancestors dictionary to standard out.
 
@@ -792,15 +788,15 @@ class DepTools(object):
             if p:
                 s = "{} depends on these packages in {}:"\
                     .format(venv.all_packages[pk].name, env_name)
-                print_col(s, pretty=pretty, header=True)
+                print_col(s, header=True)
                 for a in p:
                     try:
-                        print_col("{} {}".format(a[0], a[1]), pretty=pretty)
+                        print_col("{} {}".format(a[0], a[1]))
                     except Exception as e:
                         maglog.exception(e)
 
 
-def _table_print_requirements(requirements, pretty=False):
+def _table_print_requirements(requirements):
     """
     Table print requirements to stdout for human consumption.
 
@@ -814,10 +810,10 @@ def _table_print_requirements(requirements, pretty=False):
 
     if not reqs:
         s = "{} {} appears to have no dependencies.".format(package, version)
-        print_col(s, pretty=pretty, header=True)
+        print_col(s, header=True)
     else:
         s = "Dependencies of {} {}:".format(package, version)
-        print_col(s, pretty=pretty, header=True)
+        print_col(s, header=True)
 
         table_data = [['PACKAGE', 'SPECS']]
 
@@ -834,10 +830,10 @@ def _table_print_requirements(requirements, pretty=False):
             table_data.append(table_row)
 
         table = OutputTableType(table_data)
-        print_col(table.table, pretty=pretty)
+        print_col(table.table)
 
 
-def _print_if(list_in, lead_in_text=None, tab_space=2, pretty=False):
+def _print_if(list_in, lead_in_text=None, tab_space=2):
     """
     prints the list if it has items.
     :param list list_in: list of input items
@@ -847,14 +843,14 @@ def _print_if(list_in, lead_in_text=None, tab_space=2, pretty=False):
     """
     if list_in:
         if lead_in_text:
-            print_col(" "*tab_space + lead_in_text, pretty=pretty)
+            print_col(" "*tab_space + lead_in_text)
 
         for item in list_in:
             if type(item) == tuple:
                 _item = item[0] + " as " + _string_requirement_details(item[1])
             else:
                 _item = item
-            print_col("  "*tab_space + "".join(_item), pretty=pretty)
+            print_col("  "*tab_space + "".join(_item))
 
 
 def _string_requirement_details(dets):

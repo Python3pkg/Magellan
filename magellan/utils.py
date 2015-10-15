@@ -4,6 +4,8 @@ import subprocess
 import shlex
 from pkg_resources import resource_filename as pkg_res_resource_filename
 
+from colorclass import Color  # better at top?
+
 class MagellanConfig(object):
     """Holds magellan config info"""
     tmp_dir = '/tmp/magellan'
@@ -12,7 +14,7 @@ class MagellanConfig(object):
     tmp_env_dir = "MagellanTmp"
     vexrc = pkg_res_resource_filename('magellan', 'data/tmpVexRC')
     vex_options = '--config {}'.format(vexrc)
-
+    print_in_colour = False
 
     @staticmethod
     def setup_cache():
@@ -55,8 +57,9 @@ def mkdir_p(path):
             raise
 
 
-def print_col(s, bg=None, fg=None, pretty=False, header=False):
+def print_col(s, bg=None, fg=None, header=False):
     """Interface for pretty printing in colour"""
+
     if not (bg or fg):
         if header:
             bg = "white"
@@ -68,10 +71,12 @@ def print_col(s, bg=None, fg=None, pretty=False, header=False):
         bg = "white"
     if not fg:
         fg = "black"
-    _print_col(s, bg, fg, pretty)
+
+    print_in_colour = MagellanConfig.print_in_colour
+    _print_col(s, bg, fg, print_in_colour)
 
 
-def _print_col(s, bg, fg, pretty=False):
+def _print_col(s, bg, fg, print_in_colour=False):
     """
     Save some boilerplate with Colour class.
 
@@ -81,11 +86,9 @@ def _print_col(s, bg, fg, pretty=False):
     :param bg: background colour
     :param fg:  text colour
     """
-    from colorclass import Color  # better at top?
-
     # This looks dense because of escaping; essentially it's to get something
     # that looks like: {bgcolor}{fgcolor}#string_to_print#{/bgcolor}{/fgcolor}
-    if pretty:
+    if print_in_colour:
         full_s = r'{{bg{0}}}{{{1}}}{2}{{/bg{0}}}{{/{1}}}'.format(bg, fg, s)
         print(Color(full_s))
     else:
