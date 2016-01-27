@@ -458,7 +458,11 @@ class Requirements(object):
             if not specs:
                 req_ver = REQ_NO_VERSION
             else:
-                req_ver = [x[1] for x in specs if x[0] == '=='][0]
+                try:
+                    req_ver = [x[1] for x in specs if x[0] == '=='][0]
+                except IndexError:  # assume no index info
+                    req_ver = REQ_NO_VERSION
+
                 if not req_ver:
                     req_ver = REQ_NO_VERSION
 
