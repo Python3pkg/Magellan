@@ -121,7 +121,7 @@ def cmds():
 
     mag_ver = [x for x in pkg_resources.working_set
                if x.key == 'magellan'][0].version
-    parser.add_argument('--version', action='version', version=mag_ver)
+    parser.add_argument('-V', '--version', action='version', version=mag_ver)
 
     # If no args, just display help and exit
     if len(sys.argv) < 2:
