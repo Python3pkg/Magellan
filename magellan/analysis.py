@@ -142,7 +142,7 @@ def print_pdp_tree_parsed(pdp_tree_parsed):
         print(n)
     print("pipdeptree deps:")
     for n in pdp_tree_parsed['dependencies']:
-        print('-'*72)
+        print(('-'*72))
         print(n)
         for d in pdp_tree_parsed['dependencies'][n]:
             print(d)

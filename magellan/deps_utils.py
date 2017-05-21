@@ -50,7 +50,7 @@ class DepTools(object):
 
         try:
             rec_keys = {x['key']: x['project_name']
-                        for x in requirements['requires'].values()}
+                        for x in list(requirements['requires'].values())}
         except KeyError as e:
             maglog.debug("Error in check_changes_in_requirements_vs_env: {}"
                          .format(e))
@@ -98,13 +98,13 @@ class DepTools(object):
                          "check_req_deps_satisfied_by_current_env")
             return
 
-        for r in requirements['requires'].values():
+        for r in list(requirements['requires'].values()):
             key = r['key']
             project_name = r['project_name']
             specs = r['specs']
             checks[project_name] = []
 
-            if key not in node_keys.keys():
+            if key not in list(node_keys.keys()):
                 maglog.info("Requirement {0}{1} not in current environment"
                             .format(project_name, specs))
                 checks[project_name].append(None)
@@ -373,11 +373,11 @@ class DepTools(object):
             n_key = n[0].lower()
 
             if n_key not in package_requirements:
-                print ("{} missing from package_requirements".format(n))
+                print(("{} missing from package_requirements".format(n)))
                 continue
 
             if 'requires' not in package_requirements[n_key]:
-                print("{} does not have key 'requires'".format(n_key))
+                print(("{} does not have key 'requires'".format(n_key)))
                 continue
 
             node_requirements = package_requirements[n_key]['requires']
@@ -426,8 +426,8 @@ class DepTools(object):
             deps[p_v] = {}
 
             if not PyPIHelper.check_package_version_on_pypi(package, version):
-                print("Cannot get package info for {} {} on PyPI"
-                      .format(package, version))
+                print(("Cannot get package info for {} {} on PyPI"
+                      .format(package, version)))
                 deps[p_v]['status'] = "No package info on PyPI."
                 continue
 
@@ -563,7 +563,7 @@ class DepTools(object):
         s = "Upgrade Conflicts:"
         print_col(s, pretty=pretty, header=True)
 
-        for p_k, p in conflicts.items():
+        for p_k, p in list(conflicts.items()):
 
             has_recs = dep_info.get(p_k).get('requirements')
             if not has_recs:
@@ -589,7 +589,7 @@ class DepTools(object):
             new_dependencies = p['dep_set']['new_deps']
             removed_dependencies = p['dep_set']['removed_deps']
             broken_reqs = ["{0}: {1}".format(x, v)
-                           for x, v in p['anc_dep'].items()]
+                           for x, v in list(p['anc_dep'].items())]
 
             if not (missing_from_env or new_dependencies
                     or removed_dependencies or broken_reqs):
@@ -619,7 +619,7 @@ class DepTools(object):
         """
         print_col("Package Addition Conflicts:", pretty=pretty, header=True)
 
-        for p_k, p in conflicts.items():
+        for p_k, p in list(conflicts.items()):
             has_recs = p.get('requirements')
             if not has_recs:
                 print_col("Requirements not found for {}, possible failure "
@@ -740,7 +740,7 @@ class DepTools(object):
         """
         env_name = "the current environment" if not venv.name else venv.name
 
-        for pk, p in ancestor_dictionary.items():
+        for pk, p in list(ancestor_dictionary.items()):
             if p:
                 s = "These packages depend on {} in {}:"\
                     .format(venv.all_packages[pk].name, env_name)
@@ -788,7 +788,7 @@ class DepTools(object):
         """
         env_name = "the current environment" if not venv.name else venv.name
 
-        for pk, p in descendant_dictionary.items():
+        for pk, p in list(descendant_dictionary.items()):
             if p:
                 s = "{} depends on these packages in {}:"\
                     .format(venv.all_packages[pk].name, env_name)
@@ -821,7 +821,7 @@ def _table_print_requirements(requirements, pretty=False):
 
         table_data = [['PACKAGE', 'SPECS']]
 
-        for r_key, r in reqs.items():
+        for r_key, r in list(reqs.items()):
             table_row = [r['project_name']]
             if r['specs']:
                 spec_string = ""
@@ -932,7 +932,7 @@ class PyPIHelper(object):
             return False
         else:
             # print("JSON acquired")
-            return version in package_json['releases'].keys()
+            return version in list(package_json['releases'].keys())
 
     @staticmethod
     def acquire_package_json_info(package, localcache=None):

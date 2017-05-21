@@ -87,7 +87,7 @@ def _print_col(s, bg, fg, pretty=False):
     # that looks like: {bgcolor}{fgcolor}#string_to_print#{/bgcolor}{/fgcolor}
     if pretty:
         full_s = r'{{bg{0}}}{{{1}}}{2}{{/bg{0}}}{{/{1}}}'.format(bg, fg, s)
-        print(Color(full_s))
+        print((Color(full_s)))
     else:
         print(s)
 

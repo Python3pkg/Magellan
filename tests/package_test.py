@@ -248,7 +248,7 @@ class TestPackageDescendantsAncestors(TestPackageClass):
         2nd call should come from cached result.
         """
         packages = {x[0].lower(): Package(x[0], x[1]) for x in self.nodes}
-        for p, P in packages.items():
+        for p, P in list(packages.items()):
             _ = P.ancestors(self.edges)
             _ = P.ancestors(self.edges)
             _ = P.descendants(self.edges)

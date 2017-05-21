@@ -20,8 +20,8 @@ pkgs = [d for d in pkg_resources.working_set]
 try:
     p = [x for x in pkgs if x.key == p_key][0]
 except IndexError:
-    print("Package {} not found in env, installation successful?"
-          .format(package))
+    print(("Package {} not found in env, installation successful?"
+          .format(package)))
     sys.exit(1)
 
 req_dic = {'project_name': p.project_name,

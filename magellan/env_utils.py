@@ -77,7 +77,7 @@ class Environment(object):
                     vex_options, self.name))
 
         # vex -m ; makes env
-        print("Creating virtual env: {}".format(self.name))
+        print(("Creating virtual env: {}".format(self.name)))
         run_in_subprocess("vex {} -m {} true".format(vex_options, self.name))
 
     @staticmethod
@@ -238,11 +238,11 @@ class Environment(object):
     def show_all_packages_and_exit(self, with_versions=False):
         """ Prints nodes and exits"""
         maglog.info('"Show all packages" selected. Nodes found:')
-        for _, p in self.all_packages.items():
+        for _, p in list(self.all_packages.items()):
             if with_versions:
-                print("{0} : {1} ".format(p.name, p.version))
+                print(("{0} : {1} ".format(p.name, p.version)))
             else:
-                print(p.name)  # just show nodes
+                print((p.name))  # just show nodes
         sys.exit(0)
 
     def package_in_env(self, package):
@@ -255,7 +255,7 @@ class Environment(object):
         """
 
         p_key = package.lower()
-        if p_key in self.package_requirements.keys():
+        if p_key in list(self.package_requirements.keys()):
             return True, (
                 self.package_requirements[p_key]['project_name'],
                 self.package_requirements[p_key]['version'], )

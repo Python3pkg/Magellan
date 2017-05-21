@@ -7,7 +7,7 @@ from pip.req import parse_requirements
 from pip.download import PipSession
 
 # imports __version__ into setup.py namespace
-execfile('magellan/_version.py')
+exec(compile(open('magellan/_version.py').read(), 'magellan/_version.py', 'exec'))
 
 install_requires = [str(parsed.req) for parsed in parse_requirements(
     'requirements.txt', session=PipSession())]

@@ -4,7 +4,7 @@ Module containing Package class.
 This is a collection of methods concerning packages and their analysis.
 """
 
-from __future__ import print_function
+
 
 import logging
 import re
@@ -229,7 +229,7 @@ class Package(object):
         :param package_list: dict of magellan.package_utils.Package objects
         """
 
-        for p_k, p in package_list.items():
+        for p_k, p in list(package_list.items()):
             version_info = p.check_versions()
             maglog.debug(version_info)
             Package.detail_version_info(
